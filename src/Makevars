@@ -1,0 +1,27 @@
+PKG_CPPFLAGS = -std=c++0x -I$(LUNA_BASE)/
+PKG_LIBS = $(LUNA_BASE)/eval.o $(LUNA_BASE)/globals.o
+PKG_LIBS += $(LUNA_BASE)/libannot.a
+PKG_LIBS += $(LUNA_BASE)/libtimeline.a
+PKG_LIBS += $(LUNA_BASE)/libedf.a
+PKG_LIBS += $(LUNA_BASE)/libartifacts.a
+PKG_LIBS += $(LUNA_BASE)/libdsp.a
+PKG_LIBS += $(LUNA_BASE)/libmtm.a
+PKG_LIBS += $(LUNA_BASE)/libpdc.a
+PKG_LIBS += $(LUNA_BASE)/libspindles.a
+PKG_LIBS += $(LUNA_BASE)/libdb.a
+PKG_LIBS += $(LUNA_BASE)/libdefs.a
+PKG_LIBS += $(LUNA_BASE)/libfftwrap.a
+PKG_LIBS += $(LUNA_BASE)/libica.a
+PKG_LIBS += $(LUNA_BASE)/libclocs.a
+PKG_LIBS += $(LUNA_BASE)/libintervals.a
+PKG_LIBS += $(LUNA_BASE)/libmiscmath.a
+PKG_LIBS += $(LUNA_BASE)/libsstore.a
+PKG_LIBS += $(LUNA_BASE)/libstaging.a
+PKG_LIBS += $(LUNA_BASE)/libstats.a
+PKG_LIBS += $(LUNA_BASE)/libhelper.a
+PKG_LIBS += $(LUNA_BASE)/libtinyxml.a
+PKG_LIBS += $(LUNA_BASE)/libzfile.a
+PKG_LIBS += $(LUNA_BASE)/libcwt.a
+PKG_LIBS += $(LUNA_BASE)/libgraphics.a
+PKG_LIBS += -L$(LUNA_DEP)/lib/
+PKG_LIBS += -lfftw3 -lhpdf -lpng -lsamplerate -lz

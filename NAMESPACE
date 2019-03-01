@@ -1,0 +1,3 @@
+exportPattern("^[^\\.]")
+useDynLib( rluna , Rextract_my_signals_by_epoch )
+useDynLib( rluna , Repoch_data )
