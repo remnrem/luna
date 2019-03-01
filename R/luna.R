@@ -153,6 +153,34 @@ luna.head <- function() {
 ####################################################
 
 
+lstrat <- function( l , cmd = "" )
+{
+   if ( cmd == "" )
+   {
+        n <- names(l)
+        for (i in n) cat( i , ":" , lstrat( l	, i ) ,	"\n" , sep=" " )
+   }
+   else
+   {
+        names(l[[cmd]])
+   }
+}
+
+
+lx <- function( l , cmd , f = "" , ... )
+{
+   f <- paste(sort( unlist( c( f , list(...) )  )  ), sep="" , collapse="_" )
+   if (	f != ""	    )
+      l[[cmd]][[f]]
+   else 
+      l[[cmd]]
+}
+
+
+
+
+
+
 lunar.test <- function(x)
 {
  .Call("Rtest", as.integer(x) , PACKAGE = "rluna" );
