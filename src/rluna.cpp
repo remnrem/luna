@@ -794,7 +794,7 @@ SEXP Rout_list( retval_t & r )
 	      // what type of variable is this?
 	      // vv->is_string(), vv->is_double(), vv->is_int()
 	      
-	      std::cout << " var -> " << var.name << "\n";
+	      ///	      std::cout << " var -> " << var.name << "\n";
 	      
 	      bool var_is_string = r.var_has_strings.find( var.name ) != r.var_has_strings.end();
 	      bool var_is_double = r.var_has_doubles.find( var.name ) != r.var_has_doubles.end();
@@ -834,20 +834,27 @@ SEXP Rout_list( retval_t & r )
 		      if      ( var_is_string ) SET_STRING_ELT( col,r_cnt, NA_STRING );
 		      else if ( var_is_double ) REAL(col)[ r_cnt ] = NA_REAL;
 		      else                      INTEGER(col)[ r_cnt ] = NA_INTEGER;
-		      
-		      std::cout << " db MISS " << var.name << "\t" << rr->print() << "\n";
-		      
+		      		      
 		    }
 		  else // ...is present
 		    {
-		      // *assume* that every value of var is of the same type...
+		      // because of how sqlite stores numeric values, a double may be cast as an int;
+		      // therefore, some values for a double variable may in fact be stored as value.i (i.e. if 1.0, etc)
+		      // therefore, we need to check for this special case, for data coming from db2retval at least
+		      // (this will all be fine if coming from a luna eval() 
 		      
-		      if      ( var_is_string ) SET_STRING_ELT( col, r_cnt, Rf_mkChar( yy->second.s.c_str() ) );
-		      else if ( var_is_double ) REAL(col)[ r_cnt ] = yy->second.d ;
-		      else                      INTEGER(col)[ r_cnt ] = yy->second.i ; 
-
-		      if ( var.name == "RELPSD" ) 
-			std::cout << " db VAL " << var.name << "\t" << yy->first.print() << "\t" << yy->second.d  << " " << yy->second.i << "\n";
+		      if      ( var_is_string ) 
+			SET_STRING_ELT( col, r_cnt, Rf_mkChar( yy->second.s.c_str() ) );
+		      else if ( var_is_double ) 
+			{
+			  // special case
+			  if ( yy->second.is_int )
+			    REAL(col)[ r_cnt ] = yy->second.i ;
+			  else
+			    REAL(col)[ r_cnt ] = yy->second.d ;
+			}
+		      else                      
+			INTEGER(col)[ r_cnt ] = yy->second.i ; 
 		      
 		    }
 		  
