@@ -485,9 +485,14 @@ SEXP Reval_cmd( SEXP x )
   
   // swtich 'off' this stream for the next command
   // as it will get deleted on leaving this function
-
+  
   writer.use_retval( NULL );
-
+  
+  // and we need to completely clear the writer (i.e. so that old
+  // factor/level labels are not in place for the next run, etc)
+  
+  writer.clear();
+  
   // convert retval_t to R list and return 
 
   return Rout_list( ret );
