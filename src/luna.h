@@ -37,7 +37,7 @@ extern "C" {
 
   // initialize luna library
   
-  void R_init_rluna(DllInfo *info);
+  void R_init_luna(DllInfo *info);
 
   // attach an EDF (ID, annots)
   

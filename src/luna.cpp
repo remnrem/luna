@@ -21,7 +21,7 @@
 //    --------------------------------------------------------------------
 
 
-#include "rluna.h"
+#include "luna.h"
 
 extern globals global;
 
@@ -40,7 +40,7 @@ std::string Rversion()
 }
 
 
-void R_init_rluna(DllInfo *info)
+void R_init_luna(DllInfo *info)
 {
 
   global.init_defs();

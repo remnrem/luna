@@ -1,13 +1,13 @@
 
 ####################################################
 ##                                                ##
-## Rluna                                          ##
+## lunaR                                          ##
 ##                                                ##
 ####################################################
 
-rluna.version <- "v0.2"
+lunaR.version <- "v0.2"
 
-rluna.date    <- "1-Mar-2019"
+lunaR.date    <- "1-Mar-2019"
 
 
 ####################################################
@@ -18,13 +18,13 @@ rluna.date    <- "1-Mar-2019"
 
 .onLoad <- function(libname, pkgname) 
 {
-  packageStartupMessage( paste( "** rluna" , rluna.version , rluna.date ) )
-  library.dynam("rluna", package="rluna", lib.loc = NULL)
+  packageStartupMessage( paste( "** lunaR" , lunaR.version , lunaR.date ) )
+  library.dynam("luna", package="luna", lib.loc = NULL)
 }
 
 
 .onUnload <- function (libpath) {
-  library.dynam.unload("rluna", libpath)
+  library.dynam.unload("luna", libpath)
 }
 
 
@@ -62,37 +62,37 @@ l
 ledf <- function( x , y = "." , z = character(0) )
 {
  # EDF, ID, annotations
- .Call("Rattach_edf", as.character(x) , as.character(y) , as.character(z) , PACKAGE = "rluna" );
+ .Call("Rattach_edf", as.character(x) , as.character(y) , as.character(z) , PACKAGE = "luna" );
  lstat()
  invisible(1)
 } 
 
 ## report on the in-memory EDF what is in memory
 lstat <- function() { 
- invisible( .Call("Rstat" , PACKAGE = "rluna" ) );
+ invisible( .Call("Rstat" , PACKAGE = "luna" ) );
 }
 
 ## report on the in-memory EDF what is in memory
 ldesc <- function() { 
- invisible( .Call("Rdesc" , PACKAGE = "rluna" ) );
+ invisible( .Call("Rdesc" , PACKAGE = "luna" ) );
 }
 
 llog <- function(x) { 
- if ( length(x) == 1 ) .Call("Rlogmode" , as.integer(x) , PACKAGE = "rluna" );
+ if ( length(x) == 1 ) .Call("Rlogmode" , as.integer(x) , PACKAGE = "luna" );
  invisible(1)
 }
 
 lepoch <- function( d , i = -1 ) 
 {
- if ( i <= 0  ) .Call( "Repoch_data" , as.double(d), as.double(d) , PACKAGE = "rluna" );
- if ( i > 0   ) .Call( "Repoch_data" , as.double(d), as.double(i) , PACKAGE = "rluna" );
+ if ( i <= 0  ) .Call( "Repoch_data" , as.double(d), as.double(d) , PACKAGE = "luna" );
+ if ( i > 0   ) .Call( "Repoch_data" , as.double(d), as.double(i) , PACKAGE = "luna" );
  invisible(1)
 }
 
 
 ldrop <- function()
 {
- .Call( "Rclear" , PACKAGE = "rluna" );
+ .Call( "Rclear" , PACKAGE = "luna" );
  invisible(1)
 } 
 
@@ -111,7 +111,7 @@ stop("not implemented yet")
 
 leval <- function( x )
 {	
- retval <- .Call("Reval_cmd", as.character(x) , PACKAGE = "rluna" )
+ retval <- .Call("Reval_cmd", as.character(x) , PACKAGE = "luna" )
  lstat()
  invisible(retval)
 } 
@@ -125,7 +125,7 @@ leval <- function( x )
 
 ldb <- function( x , y = "" )
 {	
- .Call("Rdb2retval", as.character(x) , as.character(y) , PACKAGE = "rluna" );
+ .Call("Rdb2retval", as.character(x) , as.character(y) , PACKAGE = "luna" );
 } 
 
 
@@ -142,7 +142,7 @@ tmp <- .Call( "Riterate" ,
        	       as.function(func) ,
 	       as.integer(epoch_size) ,
 	       new.env() ,
-	       PACKAGE = "rluna" )
+	       PACKAGE = "luna" )
 }
 
 
@@ -156,7 +156,7 @@ tmp <- .Call( "Riterate" ,
 # returns a matrix
 lsig <- function( e , chs )
 {
- .Call( Rextract_my_signals_by_epoch, PACKAGE = 'rluna' , as.integer(e) , as.character(chs) );
+ .Call( Rextract_my_signals_by_epoch, PACKAGE = 'luna' , as.integer(e) , as.character(chs) );
 } 
 
 
@@ -197,7 +197,7 @@ lx <- function( l , cmd , f = "" , ... )
 
 lunar.test <- function(x)
 {
- .Call("Rtest", as.integer(x) , PACKAGE = "rluna" );
+ .Call("Rtest", as.integer(x) , PACKAGE = "luna" );
 }
 
 
