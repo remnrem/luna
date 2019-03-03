@@ -181,17 +181,15 @@ lstrat <- function( l , cmd = "" )
 }
 
 
-lx <- function( l , cmd , f = "" , ... )
+lx <- function( l , cmd = "" , f = "" , ... )
 {
+   if ( cmd == "" ) return(lstrat(l))
    f <- paste(sort( unlist( c( f , list(...) )  )  ), sep="" , collapse="_" )
    if (	f != ""	    )
       l[[cmd]][[f]]
    else 
       l[[cmd]]
 }
-
-
-
 
 
 

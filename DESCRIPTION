@@ -4,6 +4,6 @@ Title: luna R interface
 Author: Shaun Purcell
 Maintainer: Shaun Purcell <smpurcell@bwh.harvard.edu>
 Depends: R (>= 3.0.0)
-Description: lunaR: R interface for the luna sleep signal library
+Description: lunaR is an R interface for the luna sleep signal library.
 License: GPL (>= 2)
 URL: http://zzz.bwh.harvard.edu/luna
