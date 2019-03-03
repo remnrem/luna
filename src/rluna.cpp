@@ -66,6 +66,59 @@ void R_init_rluna(DllInfo *info)
   Rprintf( msg.c_str() );
 }
 
+
+
+SEXP Rlogmode( SEXP i )
+{
+  // will only be called with a single integer
+  //  int m = INTEGER(i)[0];
+ 
+  // set 'm' mode
+
+  // all done
+  return( R_NilValue );
+}
+
+
+
+SEXP Rstat()
+{
+
+  if ( rdata == NULL )
+    {
+      R_error( "no EDF attached" );
+      return( R_NilValue );
+    }
+
+
+  // Record duration, as hh:mm:ss string
+  uint64_t duration_tp = globals::tp_1sec
+    * (uint64_t)rdata->edf.header.nr
+    * rdata->edf.header.record_duration;
+  
+  std::string total_duration_hms = Helper::timestring( duration_tp );
+
+  std::stringstream ss;
+  
+  ss << rdata->edf.id << " : "
+     << rdata->edf.header.ns << " signals, "
+     << Helper::timestring( duration_tp ) ;
+  
+  if ( rdata->edf.timeline.epoched() )
+    {
+      ss << ", " << rdata->edf.timeline.num_epochs() 
+	 << " unmasked epochs, " 
+	 << rdata->edf.timeline.num_total_epochs() - rdata->edf.timeline.num_epochs()  << " masked";
+    }
+  
+  ss << "\n";
+
+  Rprintf( ss.str().c_str() );
+  
+  return( R_NilValue );
+
+}
+
 SEXP Rdesc()
 {
   
@@ -178,6 +231,7 @@ SEXP Rdesc()
 
     }
 
+
   //
   // Channels
   //
@@ -254,13 +308,16 @@ void R_warning( const std::string & s )
 // attach an EDF
 //
 
-SEXP Rattach_edf( SEXP x , SEXP id )
+SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
 {
 
   std::string edf_file = CHAR( STRING_ELT( x , 0 ) );
 
   std::string edf_id   = CHAR( STRING_ELT( id , 0 ) );
 
+  std::vector<std::string> annots = Rluna_to_strvector( ann );
+
+  // check EDF exists
   if ( ! Helper::fileExists( edf_file ) )
     Helper::halt( "cannot find " + edf_file );
 
@@ -271,7 +328,12 @@ SEXP Rattach_edf( SEXP x , SEXP id )
   
   bool okay = rdata->edf.attach( edf_file , edf_id );
 
-  if ( okay ) Rprintf( "attached EDF\n" );
+  if ( ! okay ) 
+    Helper::halt( "problem attaching EDF" + edf_file );
+
+  // attach annotations
+  for (int a=0;a<annots.size();a++)
+    rdata->add_annotations( annots[a] );
   
   return(R_NilValue);
 }
@@ -811,7 +873,8 @@ SEXP Rout_list( retval_t & r )
 	      else if ( var_is_double )
 	       	PROTECT( col = Rf_allocVector( REALSXP , nrows ) );
 	      else
-	       	PROTECT( col = Rf_allocVector( INTSXP , nrows ) );
+	       	//PROTECT( col = Rf_allocVector( INTSXP , nrows ) );  // because we might have long long ints returned, make everything REAL ...
+   	        PROTECT( col = Rf_allocVector( REALSXP , nrows ) );
 	      
 	      ++protect;
 	      	      
@@ -838,7 +901,8 @@ SEXP Rout_list( retval_t & r )
 		      // set to NA
 		      if      ( var_is_string ) SET_STRING_ELT( col,r_cnt, NA_STRING );
 		      else if ( var_is_double ) REAL(col)[ r_cnt ] = NA_REAL;
-		      else                      INTEGER(col)[ r_cnt ] = NA_INTEGER;
+		  //  else                      INTEGER(col)[ r_cnt ] = NA_INTEGER;
+		      else                      REAL(col)[ r_cnt ] = NA_REAL; // as we might have long long ints returned
 		      		      
 		    }
 		  else // ...is present
@@ -859,7 +923,8 @@ SEXP Rout_list( retval_t & r )
 			    REAL(col)[ r_cnt ] = yy->second.d ;
 			}
 		      else                      
-			INTEGER(col)[ r_cnt ] = yy->second.i ; 
+			//INTEGER(col)[ r_cnt ] = yy->second.i ; 
+		        REAL(col)[ r_cnt ] = yy->second.i ;  // as we might have long long ints returned...
 		      
 		    }
 		  
@@ -933,7 +998,9 @@ SEXP Rout_list( retval_t & r )
 	  SET_VECTOR_ELT( t_list , t_cnt , df );
 
 	  // label (factors, with _ delim)
-	  SET_STRING_ELT( t_names , t_cnt , Rf_mkChar( Helper::sanitize( Helper::stringize( table.factors , "_" )).c_str() ));
+	  std::string table_name = Helper::sanitize( Helper::stringize( table.factors , "_" ));
+	  if ( table_name == "" ) table_name = "BL";
+	  SET_STRING_ELT( t_names , t_cnt , Rf_mkChar( table_name.c_str() ));
 	  	  
 	  // Next virtual table
 	  ++t_cnt;

@@ -39,14 +39,22 @@ extern "C" {
   
   void R_init_rluna(DllInfo *info);
 
-  // attach an EDF
+  // attach an EDF (ID, annots)
   
-  SEXP Rattach_edf( SEXP x , SEXP y );
+  SEXP Rattach_edf( SEXP x , SEXP y , SEXP z );
 
   // basic stats on the loaded file
 
   SEXP Rdesc();
   
+  // simply console report of current in-memory EDF
+
+  SEXP Rstat();
+
+  // set log-mode (0/1)
+
+  SEXP Rlogmode( SEXP i );
+
   // epoch data 
   
   SEXP Repoch_data( SEXP e , SEXP i );
@@ -75,15 +83,18 @@ extern "C" {
 
   SEXP Riterate( SEXP fn , SEXP e , SEXP rho );
 
+  // clear/reset EDF store
+
+  void Rclear();
+
+
   //
   // Helper functions to report errors, etc
   //
 
   void R_error( const std::string & );
-  void R_warning( const std::string & );
 
-    // clear/reset EDF store
-  void Rclear();
+  void R_warning( const std::string & );
 
   
 }
@@ -125,18 +136,20 @@ struct Rfndata {
 
 
 
-
-
 void R_bail_function( const std::string & msg )
 {
   R_error( msg );
   return;
 }
 
-  // misc/tests 
-  std::string Rversion();
 
-  SEXP Rtest( SEXP x );
+//
+// misc/tests 
+//
+
+std::string Rversion();
+
+SEXP Rtest( SEXP x );
 
 
 #endif

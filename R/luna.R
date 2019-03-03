@@ -28,18 +28,59 @@ rluna.date    <- "1-Mar-2019"
 }
 
 
+
+####################################################
+##                                                ##
+## Work with sample lists                         ##
+##                                                ##
+####################################################
+
+
+lsl <- function( f , path = "" ) { 
+d <- read.table(f,header=F,fill=T,sep="\t",stringsAsFactors=F) 
+if ( dim(d)[2] < 2 ) stop("invalid sample list")
+cat( dim(d)[1],"observations in",f,"\n")
+if ( dim(d)[1] > length(unique(d[,1])) ) stop("duplicate IDs found")
+l <- list()
+for (i in 1:dim(d)[1]) {  
+l[[ d[i,1] ]]$EDF <- ifelse( path=="" , d[i,2] , paste(path,d[i,2],sep="/") )  
+a <- d[i,-c(1:2)] ; l[[ d[i,1] ]]$ANNOT <- a[ a != "" ]  }
+l
+}
+
+
+# IDs : names(sl)
+
+
 ####################################################
 ##                                                ##
 ## Attach an EDF                                  ##
 ##                                                ##
 ####################################################
 
-ledf <- function( x , y = "." )
+
+ledf <- function( x , y = "." , z = character(0) )
 {
- .Call("Rattach_edf", as.character(x) , as.character(y) , PACKAGE = "rluna" );
+ # EDF, ID, annotations
+ .Call("Rattach_edf", as.character(x) , as.character(y) , as.character(z) , PACKAGE = "rluna" );
+ lstat()
  invisible(1)
 } 
 
+## report on the in-memory EDF what is in memory
+lstat <- function() { 
+ invisible( .Call("Rstat" , PACKAGE = "rluna" ) );
+}
+
+## report on the in-memory EDF what is in memory
+ldesc <- function() { 
+ invisible( .Call("Rdesc" , PACKAGE = "rluna" ) );
+}
+
+llog <- function(x) { 
+ if ( length(x) == 1 ) .Call("Rlogmode" , as.integer(x) , PACKAGE = "rluna" );
+ invisible(1)
+}
 
 lepoch <- function( d , i = -1 ) 
 {
@@ -56,12 +97,11 @@ ldrop <- function()
 } 
 
 
-ldesc <- function()
+lrefresh <- function()
 {
- .Call( "Rdesc", PACKAGE = "rluna" );
- invisible(1)
+# load back in existing EDF
+stop("not implemented yet")
 }
-
 
 ####################################################
 ##                                                ##
@@ -71,7 +111,9 @@ ldesc <- function()
 
 leval <- function( x )
 {	
- .Call("Reval_cmd", as.character(x) , PACKAGE = "rluna" );
+ retval <- .Call("Reval_cmd", as.character(x) , PACKAGE = "rluna" )
+ lstat()
+ invisible(retval)
 } 
 
 
@@ -93,7 +135,7 @@ ldb <- function( x , y = "" )
 ##                                                ##
 ####################################################
 
-iterate <- function( func , epoch_size )
+literate <- function( func , epoch_size )
 {
 # hmm.. not sure about the new.env() and tmp
 tmp <- .Call( "Riterate" ,
@@ -111,39 +153,11 @@ tmp <- .Call( "Riterate" ,
 ##                                                ##
 ####################################################
 
-luna.sigs <- function( e , chs )
+# returns a matrix
+lsig <- function( e , chs )
 {
  .Call( Rextract_my_signals_by_epoch, PACKAGE = 'rluna' , as.integer(e) , as.character(chs) );
 } 
-
-
-
-####################################################
-##                                                ##
-## Basic queries                                  ##
-##                                                ##
-####################################################
-
-# stats: channels, frequencies,
-# intervals: length, # of epochs
-
-luna.head <- function() {
-
-} 
-
-
-####################################################
-##                                                ##
-## Visualization                                  ##
-##                                                ##
-####################################################
-
-#require(dygraphs)
-#d <- luna.sigs(22)
-#h <- luna.head()
-
-
-
 
 
 ####################################################
@@ -162,7 +176,7 @@ lstrat <- function( l , cmd = "" )
    }
    else
    {
-        names(l[[cmd]])
+        t <- names(l[[cmd]])
    }
 }
 
