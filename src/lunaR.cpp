@@ -21,7 +21,7 @@
 //    --------------------------------------------------------------------
 
 
-#include "luna.h"
+#include "lunaR.h"
 
 extern globals global;
 
