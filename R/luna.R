@@ -174,9 +174,9 @@ leval <- function( x )
 ##                                                ##
 ####################################################
 
-ldb <- function( x , y = "" )
+ldb <- function( dbfile , indiv_id = "" )
 {	
- .Call("Rdb2retval", as.character(x) , as.character(y) , PACKAGE = "luna" );
+ .Call("Rdb2retval", as.character(dbfile) , as.character(indiv_id) , PACKAGE = "luna" );
 } 
 
 

@@ -583,7 +583,7 @@ SEXP Reval_cmd( SEXP x )
 
 
 //
-// pull a retval structure from an existing output database
+// pull a retval structure from an existing output database, for **1** individual
 //
 
 SEXP Rdb2retval( SEXP x , SEXP y )
@@ -593,8 +593,19 @@ SEXP Rdb2retval( SEXP x , SEXP y )
 
   std::string idstr = CHAR( STRING_ELT( y , 0 ) );
 
-  retval_t ret = writer_t::dump_to_retval( dbstr , idstr );
+  std::vector<std::string> ids;
 
+  retval_t ret = writer_t::dump_to_retval( dbstr , idstr , &ids );
+  
+  // check if more than a single individual was found, 
+  // i.e. if no specific individual was requested
+
+  if ( ids.size() > 1 ) 
+    {
+      Rprintf( "multiple individuals found, returning IDs\n" );
+      return Rmake_string_vector( ids );
+    }
+      
   // convert retval_t to R list and return 
 
   return Rout_list( ret );
