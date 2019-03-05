@@ -1,3 +1,1 @@
 exportPattern("^[^\\.]")
-useDynLib( luna , Rextract_my_signals_by_epoch )
-useDynLib( luna , Repoch_data )

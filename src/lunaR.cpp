@@ -25,7 +25,10 @@
 
 extern globals global;
 
+extern logger_t logger;
+
 #include <iostream>
+
 #include <string>
 
 // a single, global instance
@@ -39,6 +42,21 @@ std::string Rversion()
   return vmaj + "-" + vmin;
 }
 
+SEXP Rmake_string_vector( const std::vector<std::string> & r )
+{
+  SEXP v;
+  PROTECT( v = Rf_allocVector( STRSXP, r.size()) );
+  for (int i=0;i<r.size(); i++)
+    SET_STRING_ELT(v, i, Rf_mkChar( r[i].c_str() ) );     
+  UNPROTECT(1);
+  return v;
+}
+
+
+void Rflush_log()
+{
+  Rprintf( logger.print_buffer().c_str() );
+}
 
 void R_init_luna(DllInfo *info)
 {
@@ -55,7 +73,7 @@ void R_init_luna(DllInfo *info)
   rdata = NULL;
   
   // indicate that we are running inside R
-  global.R();
+  global.R( 0 ); // 0 means no log mirroring
 
   std::string msg = "** luna " ;
   msg += globals::version ;
@@ -67,15 +85,11 @@ void R_init_luna(DllInfo *info)
 }
 
 
-
 SEXP Rlogmode( SEXP i )
 {
-  // will only be called with a single integer
-  //  int m = INTEGER(i)[0];
- 
-  // set 'm' mode
-
-  // all done
+  std::vector<int> m = Rluna_to_intvector(i);
+  if ( m.size() != 1 ) Helper::halt( "expecting a single integer 0 or 1 value" );
+  global.R( m[0] );
   return( R_NilValue );
 }
 
@@ -102,12 +116,13 @@ SEXP Rstat()
   
   ss << rdata->edf.id << " : "
      << rdata->edf.header.ns << " signals, "
-     << Helper::timestring( duration_tp ) ;
-  
+     << rdata->edf.timeline.annotations.names().size() << " annotations, of "
+     << Helper::timestring( duration_tp ) << " duration";
+    
   if ( rdata->edf.timeline.epoched() )
     {
       ss << ", " << rdata->edf.timeline.num_epochs() 
-	 << " unmasked epochs, " 
+	 << " unmasked " << rdata->edf.timeline.epoch_length() << "-sec epochs, and " 
 	 << rdata->edf.timeline.num_total_epochs() - rdata->edf.timeline.num_epochs()  << " masked";
     }
   
@@ -282,16 +297,6 @@ SEXP Rdesc()
 }
 
 
-SEXP Rtest( SEXP x )
-{
-  SEXP result;
-  PROTECT(result = NEW_INTEGER(1));
-  INTEGER(result)[0] = INTEGER(x)[0] * 2;
-  UNPROTECT(1);
-  return result;  
-}
-
-
 void R_error( const std::string & s )
 {
   Rf_error( s.c_str() ) ; 
@@ -311,7 +316,7 @@ void R_warning( const std::string & s )
 SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
 {
 
-  std::string edf_file = CHAR( STRING_ELT( x , 0 ) );
+  std::string edf_file = Helper::expand( CHAR( STRING_ELT( x , 0 ) ) );
 
   std::string edf_id   = CHAR( STRING_ELT( id , 0 ) );
 
@@ -346,6 +351,27 @@ void Rclear()
       delete rdata;
       rdata = NULL;
     }
+}
+
+void Rclear_vars()
+{
+  cmd_t::vars.clear();
+}
+
+void Rset_var( SEXP x , SEXP y)
+{
+  std::vector<std::string> tok0 = Rluna_to_strvector(x);
+  std::vector<std::string> tok1 = Rluna_to_strvector(y);
+  if ( tok0.size() != tok1.size() ) Helper::halt( "problem setting variables" );
+  for (int i=0;i<tok0.size();i++)
+    {
+      Rprintf( "setting [" );
+      Rprintf( tok0[i].c_str() );
+      Rprintf( "] to [" );
+      Rprintf( tok1[i].c_str() );
+      Rprintf( "]\n" );
+      cmd_t::parse_special( tok0[i] ,tok1[i] );
+    } 
 }
 
 
@@ -395,19 +421,7 @@ bool Rdata_t::add_annotations( const std::string & annotfile )
      edf.load_annotations( annotfile );
    }
 
-
   return true;
-
-  // old code, we can remove...
-  
-//   const std::string & annot_name = edf.flist[ annotfile ];
-  
-//   // Connect to the timeline
-//   annot_t * myannot = edf.timeline.annotations.add( annot_name );
-      
-//   loaded = myannot->load( annotfile );
-  
-//   return loaded; 
         
 }
 
@@ -440,6 +454,12 @@ void Rdata_t::update_size()
 
 SEXP Rfetch_annots()
 {
+
+  if ( rdata == NULL )
+    {
+      R_error( "no EDF attached" );
+      return( R_NilValue );
+    }
 
   // get names of all annotations
   std::vector<std::string> annot_labels = rdata->edf.timeline.annotations.names();
@@ -1014,7 +1034,6 @@ SEXP Rout_list( retval_t & r )
 
       // set all t_list names      
       Rf_setAttrib( t_list, R_NamesSymbol, t_names); 
-
       
       ++cmd_cnt;
       ++cc;
@@ -1030,13 +1049,7 @@ SEXP Rout_list( retval_t & r )
 }
   
 
-
-//
-// extract raw signal data
-//
-
-
-SEXP Repoch_data( SEXP d , SEXP i )
+SEXP Rmatrix( SEXP e , SEXP ch , SEXP ann )
 {
 
   if ( rdata == NULL )
@@ -1045,137 +1058,695 @@ SEXP Repoch_data( SEXP d , SEXP i )
       return( R_NilValue );
     }
 
-  double dur = Rf_asReal( d );
-  double inc = Rf_asReal( i );
+  //
+  // Signals: make signal_list_t and check sampling rates
+  //
 
-  int ne = rdata->edf.timeline.set_epoch( dur , inc ); 
+  std::string signal_label = Helper::stringize( Rluna_to_strvector( ch ) );
   
-  SEXP result = PROTECT(Rf_allocVector(INTSXP, 1));
-  INTEGER(result)[0] = ne;
-  UNPROTECT(1);
+  signal_list_t signals = rdata->edf.header.signal_list( signal_label );  
+  
+  int fs = -1;
+  
+  for (int s=0; s< signals.size(); s++) 
+    {      
+      if ( rdata->edf.header.is_data_channel( s ) )
+	{
+	  if ( fs < 0 ) fs = rdata->edf.header.sampling_freq( signals(s) );
+	  else if ( rdata->edf.header.sampling_freq( signals(s) ) != fs ) 
+	    Helper::halt( "requires uniform sampling rate across signals" ); 	  
+	}
+    }
+  
 
-  return result;
+  //
+  // Annotations
+  //
+
+  // 0 not found, 1 interval, 2 epoch
+  std::map<std::string,int> atype; 
   
+  std::vector<std::string> a = Rluna_to_strvector( ann );
+  
+  for (int i=0;i<a.size();i++)
+    {
+      if ( rdata->edf.timeline.annotations( a[i] ) != NULL ) // is this an interval annotation? 
+	atype[ a[i] ] = 1;
+      else if ( rdata->edf.timeline.epoch_annotation( a[i] ) ) // or an epoch-annotation?
+	atype[ a[i] ] = 2;
+      else
+	atype[ a[i] ] = 0;	  
+    }
+  
+
+  //
+  // Epochs
+  //  
+  
+  std::vector<int> epochs = Rluna_to_intvector( e );
+  
+  rdata->edf.timeline.ensure_epoched();
+  
+  int total_epochs = rdata->edf.timeline.num_epochs();
+  
+  // check epochs, given 1-based epoch count
+  for (int epoch=0;epoch<epochs.size();epoch++)
+    {      
+      if ( epochs[epoch] < 1 || epochs[epoch] > total_epochs )
+	Helper::halt( "invalid epoch number (expecting between 1 and "
+		      + Helper::int2str( total_epochs ) + ")" );
+    }
+
+  
+  //
+  // Generate and return data.frame
+  //
+  
+  return Rmatrix_internal( epochs, signals, atype );
+
 }
 
-SEXP Rextract_my_signals_by_epoch( SEXP e , SEXP chs )
-{
+SEXP Rmatrix_internal( const std::vector<int> & epochs , 
+		       const signal_list_t & signals , 
+		       const std::map<std::string,int> & atype )
+		       
 
+{
+  
   if ( rdata == NULL )
     {
       R_error( "no EDF attached" );
       return( R_NilValue );
     }
+
+  const int ne = epochs.size();
+  const int na = atype.size();
   
-  if ( ! rdata->edf.timeline.epoched() )
-    Helper::halt( "study is not epoched" );
+  int ns = 0;
+  for (int s = 0 ; s < signals.size() ; s++ )
+    if ( rdata->edf.header.is_data_channel( signals(s) ) ) ++ns;
 
-  int epoch = INTEGER(e)[0];
-
-  int total_epochs = rdata->edf.timeline.num_total_epochs();
+  // requires at least one signal, or else iterate doesn't work ...   :-(
+  if ( ns == 0 ) Helper::halt( "no valid signals specified" );
   
-  // 1-based epoch count
-  if ( epoch < 1 || epoch > total_epochs )
-    Helper::halt( "invalid epoch number (expecting between 1 and"
-		  + Helper::int2str( total_epochs ) + ")" );
-  
-
-  interval_t interval = rdata->edf.timeline.epoch( epoch );
-
-
   //
-  // Which channels?
+  // Point to first epoch
   //
   
-  int nchs = Rf_length( chs ) ;
-
-  signal_list_t signals;
-
-  if ( nchs == 0 )
+  if ( ! rdata->edf.timeline.epoched() ) 
     {
-      for (int s=0; s<rdata->edf.header.ns; s++) 
-	signals.add( s, rdata->edf.header.label[s] );
+      int n = rdata->edf.timeline.set_epoch( globals::default_epoch_len , globals::default_epoch_len );
+      logger << " set epochs to default " << globals::default_epoch_len << " seconds, " << n << " epochs\n";
+      rdata->edf.timeline.first_epoch();
     }
-  else
-    {
-      for (int s=0; s<nchs; s++) 
-	signals.add( s , CHAR( STRING_ELT( chs , s ) ) );
-    }
-
-  return Rextract_my_signals_internal( interval , signals );
   
-}
-
-
-SEXP Rextract_my_signals_internal( const interval_t & interval , const signal_list_t & signals )
-{
-
-
   //
-  // Get data 
+  // Standard matrix format
   //
 
-
-
-  const int ns = rdata->edf.header.ns;
+  // E SEC [HMS]
   
-  std::vector<int> Fs = rdata->edf.header.n_samples;
+  clocktime_t starttime( rdata->edf.header.starttime );
   
-  int n_data_signals = 0;
-  for (int s = 0 ; s < ns ; s++ )
-    if ( ! rdata->edf.header.is_annotation_channel( s ) )
-      ++n_data_signals;
+  //  bool invalid_hms = ! starttime.valid;
+  
 
-  int protect = 0 ;
-    
-  SEXP r;
-  PROTECT( r = Rf_allocVector( VECSXP, n_data_signals )); 
+  //
+  // Create data.frame
+  //
+
+  // E + SEC (+ HMS) + NS + NA 
+  
+  const int ncols = 2 + ns + na;
+  
+  SEXP df;     // data.frame	  
+  SEXP cls;    // class attribute
+  SEXP nam;    // col-names
+  SEXP rownam; // row-names
+  
+  int protect = 0;
+  
+  // df = a list w/ ncols elements
+  PROTECT( df = Rf_allocVector( VECSXP, ncols ));
   ++protect;
   
-  SEXP r_names;
-  PROTECT( r_names = Rf_allocVector( STRSXP, n_data_signals )); 
+  // set class attribute for df
+  PROTECT(cls = Rf_allocVector(STRSXP, 1)); // class attribute
   ++protect;
   
-  int slot = 0;
+  SET_STRING_ELT(cls, 0, Rf_mkChar( "data.frame" ));
+  Rf_classgets(df, cls);
   
-  for (int s = 0 ; s < ns ; s++ )
+  // col-names
+  PROTECT(nam = Rf_allocVector(STRSXP, ncols)); // names attribute (column names)
+  ++protect;
+  
+  //
+  // How many rows?
+  //
+
+  const int fs = rdata->edf.header.sampling_freq( signals(0) );
+  
+  const int nrows_per_epoch = rdata->edf.timeline.epoch_length() * fs;
+
+  const int nrows = ne * nrows_per_epoch;
+  
+  int col_cnt = 0;
+
+  //
+  // Epochs
+  //
+  
+  SEXP epoch_col;
+  PROTECT( epoch_col = Rf_allocVector( INTSXP , nrows ) );
+  ++protect;  
+	  
+  //
+  // Sec
+  //
+
+  SEXP sec_col;
+  PROTECT( sec_col = Rf_allocVector( REALSXP , nrows ) );
+  ++protect;
+
+  //
+  // Annots
+  //
+  
+  std::vector<SEXP> annot_col(na);
+  for (int a=0;a<na;a++) 
     {
-
-      if ( rdata->edf.header.is_annotation_channel( s ) )
-	continue;
-      
-      slice_t slice( rdata->edf , s , interval );
-
-      const std::vector<double> * d = slice.pdata();
-
-      const int np = d->size();
-
-      // channel name
-
-      SET_STRING_ELT( r_names , slot ,
-		      Rf_mkChar( rdata->edf.header.label[s].c_str() ) );
-      
-      // channel data
-      
-      SEXP sig;
-      PROTECT( sig = Rf_allocVector( REALSXP, np )); 
+      PROTECT( annot_col[a] = Rf_allocVector( INTSXP , nrows ) );
       ++protect;
-      
-      for (int i=0;i<np;i++)
-	REAL(sig)[i] = (*d)[i];
-
-      SET_VECTOR_ELT( r , slot , sig );
-      
-      ++slot;
     }
   
-  Rf_setAttrib( r , R_NamesSymbol, r_names); 
+  //
+  // Iterate over signals
+  //
 
-  // clean-up
+  for (int s=0; s<ns; s++) 
+    {
+      
+      // create a new vector for the signal data
+	  
+      SEXP sig_col;
+      PROTECT( sig_col = Rf_allocVector( REALSXP , nrows ) );
+      ++protect;
+
+      uint64_t row = 0;
+      
+      //
+      // Consider each epoch
+      //
+      
+      for (int e=0;e<ne;e++)
+	{
+
+	  //
+	  // Interval (convert to 0-base)
+	  //
+	  
+	  int epoch0 = epochs[e] - 1;
+	  
+	  interval_t interval = rdata->edf.timeline.epoch( epoch0 ); 
+	  
+	  //
+	  // Get data
+	  //
+	  
+	  slice_t slice( rdata->edf , signals(s) , interval );
+	  
+	  const std::vector<double> * data = slice.pdata();
+	  
+	  const std::vector<uint64_t> * tp = slice.ptimepoints();
+	  
+	  // check as expected
+	  if ( data->size() != nrows_per_epoch ) 
+	    Helper::halt( "internal error in matrix" + Helper::int2str( (int)data->size() ) + " " + Helper::int2str( nrows_per_epoch ) ) ;
+	  	  
+
+	  //
+	  // Populate signals
+	  //
+	  
+	  for (int r=0;r<nrows_per_epoch;r++)
+	    {
+	      
+	      // Only add E/SEC and annotations once
+	      if ( col_cnt == 0 ) 
+		{		    
+		  
+		  // epoch
+		  INTEGER(epoch_col)[ row ] = epochs[e];		  
+
+		  // elapsed time in seconds
+		  REAL(sec_col)[ row ] = (*tp)[r] * globals::tp_duration ;
+		  
+		  // Annotations (0/1 E,S 
+		  
+		  int a_col = 0;
+		  
+		  std::map<std::string,int>::const_iterator aa = atype.begin();
+		  while ( aa != atype.end() )
+		    {
+		      
+		      if ( aa->second == 0 )
+			INTEGER(annot_col[a_col])[row] = NA_INTEGER;
+		      else if ( aa->second == 1 )
+			{
+			  // get exact point      
+			  interval_t interval2 = interval_t( (*tp)[r] , (*tp)[r] + 1LLU );
+			  annot_t * annot = rdata->edf.timeline.annotations( aa->first );
+			  annot_map_t events = annot->extract( interval2 );
+			  bool has_annot = events.size() ;
+			  INTEGER(annot_col[a_col])[row] = (int)(has_annot ? 1 : 0 );
+			}
+		      else if ( aa->second == 2 )
+			INTEGER(annot_col[a_col])[row] = (int)( rdata->edf.timeline.epoch_annotation( aa->first , epoch0 ) ? 1 : 0 ) ;
+		      
+		      // next annotation
+		      ++a_col;
+		      ++aa;
+		      
+		    }
+		
+		}
+	      
+	      // Signal data
+	      
+	      REAL(sig_col)[ row ] = (*data)[r];
+	      
+	      // next row 
+	      
+	      ++row;
+	    }
+	  
+	  //
+	  // Next epoch
+	  //
+	}
+      
+
+      //
+      // Attach cols to df
+      //
+
+      if ( col_cnt == 0 ) 
+	{	  
+	  SET_VECTOR_ELT( df, 0 , epoch_col );
+	  UNPROTECT(1); --protect;
+	  
+	  SET_VECTOR_ELT( df, 1 , sec_col );
+	  UNPROTECT(1); --protect;
+
+	  // headers
+	  SET_STRING_ELT(nam, 0 , Rf_mkChar( "E" ) );
+	  SET_STRING_ELT(nam, 1 , Rf_mkChar( "SEC" ) );
+	  
+	  // annots
+	  int acol1 = 2 + ns;
+	  int acol0 = 0;
+	  std::map<std::string,int>::const_iterator aa = atype.begin();
+	  while ( aa != atype.end() )
+	    {
+	      SET_VECTOR_ELT( df , acol1 , annot_col[ acol0 ] );
+	      UNPROTECT(1); --protect;	      
+
+	      SET_STRING_ELT(nam, acol1 , Rf_mkChar( Helper::sanitize( aa->first ).c_str() ) );
+	      ++acol1; ++acol0;
+	      ++aa;
+	    }
+	  
+	}
+    
+
+      // header
+      std::string signal_name = rdata->edf.header.label[ signals(s) ] ;
+      SET_STRING_ELT(nam, col_cnt + 2 , Rf_mkChar( Helper::sanitize( signal_name).c_str() ));
+      UNPROTECT(1); --protect;
+
+      // data
+      SET_VECTOR_ELT( df, col_cnt + 2 , sig_col );
+      UNPROTECT(1); --protect;
+
+      
+      //
+      // Next signal
+      //
+
+      ++col_cnt;
+      
+    }
+
+
+   
+  
+  //
+  // Attach col-names to df
+  //
+  
+  Rf_namesgets(df, nam);
+    
+
+  //
+  // row-names
+  //
+  
+  PROTECT(rownam = Rf_allocVector(STRSXP, nrows)); // row.names attribute
+  ++protect;
+  for (int r = 0 ; r < nrows ; r++)
+    {
+      std::string rname = Helper::int2str( r+1 );
+      SET_STRING_ELT(rownam, r, Rf_mkChar( rname.c_str() ) );
+    }
+  Rf_setAttrib( df , R_RowNamesSymbol, rownam);
+  
+  
+  UNPROTECT( protect );
+	  
+  return df;
+
+}
+
+
+
+
+
+
+SEXP Rchannels() 
+{
+
+  if ( rdata == NULL )
+    {
+      R_error( "no EDF attached" );
+      return( R_NilValue );
+    }
+
+  return Rmake_string_vector( rdata->edf.header.label );
+  
+}  
+
+SEXP Rmask( SEXP ann ) 
+{
+
+  //
+  // Check we have an attached EDF
+  //
+
+  if ( rdata == NULL )
+    {
+      R_error( "no EDF attached" );
+      return( R_NilValue );
+    }
+
+
+  //
+  // Any annotations to deal with?
+  // 
+
+  std::vector<std::string> annots = Rluna_to_strvector( ann );
+
+  std::map<std::string,int> atype;
+  
+  for (int a=0;a<annots.size();a++)
+    {
+      if ( rdata->edf.timeline.annotations( annots[a] ) != NULL ) // is this an interval annotation? 
+	atype[ annots[a] ] = 1; 
+      else if ( rdata->edf.timeline.epoch_annotation( annots[a] ) ) // or an epoch-annotation?
+	atype[ annots[a] ] = 2; 
+    }
+  
+  const int na = atype.size();
+  
+
+  //
+  // Set up return matrix
+  //
+  
+  // number of rows = epochs
+  const int ne = rdata->edf.timeline.num_total_epochs();
+
+  if ( ne == 0 )
+    {
+      R_error( "no epochs defined" );
+      return( R_NilValue );
+    }
+  
+  SEXP df;     // data.frame	  
+  SEXP cls;    // class attribute
+  SEXP nam;    // col-names
+  SEXP rownam; // row-names
+  
+  // E E0 ELAPSED SEC HMS M + (annots)
+  
+  const int ncols = 6 + na ;
+
+  int protect = 0;
+
+  // df = a list w/ ncols elements
+  PROTECT( df = Rf_allocVector( VECSXP, ncols ));
+  ++protect;
+  
+  // set class attribute for df
+  PROTECT(cls = Rf_allocVector(STRSXP, 1)); 
+  ++protect;
+  SET_STRING_ELT(cls, 0, Rf_mkChar( "data.frame" ));
+  Rf_classgets(df, cls);
+  
+  // col-names  
+  PROTECT(nam = Rf_allocVector(STRSXP, ncols)); 
+  ++protect;
+    
+  SEXP col_e;
+  PROTECT( col_e = Rf_allocVector( INTSXP , ne ) );
+  ++protect;
+
+  SEXP col_e0;
+  PROTECT( col_e0 = Rf_allocVector( INTSXP , ne ) );
+  ++protect;
+  
+  SEXP col_sec0;
+  PROTECT( col_sec0 = Rf_allocVector( REALSXP , ne ) );
+  ++protect;
+
+  SEXP col_sec;
+  PROTECT( col_sec = Rf_allocVector( REALSXP , ne ) );
+  ++protect;
+  
+  SEXP col_hms;
+  PROTECT( col_hms = Rf_allocVector( STRSXP , ne ) );
+  ++protect;
+  
+  SEXP col_m;
+  PROTECT( col_m = Rf_allocVector( INTSXP , ne ) );
+  ++protect;
+
+
+  // annots
+
+  std::vector<SEXP> col_annots(na);
+  std::map<std::string,int>::const_iterator aa = atype.begin();
+  int acnt = 0;
+  while ( aa != atype.end() )
+    {
+      PROTECT( col_annots[acnt] = Rf_allocVector( INTSXP , ne ) );      
+      ++protect;
+      ++acnt;
+      ++aa;      
+    }
+  
+
+  rdata->edf.timeline.first_epoch();
+  
+  // elapsed (unmasked) epochs
+  int ee = 0;
+  int unmasked_ee = 0;
+  
+  clocktime_t starttime( rdata->edf.header.starttime );
+
+  bool hms = starttime.valid;
+  
+  while ( 1 ) 
+    {
+      int epoch = rdata->edf.timeline.next_epoch_ignoring_mask();
+      
+      if ( epoch == -1 ) break;
+      
+      const bool masked = rdata->edf.timeline.masked( epoch );
+
+      const int epoch0 = rdata->edf.timeline.display_epoch( epoch );
+      
+      const double sec = unmasked_ee * rdata->edf.timeline.epoch_length();
+      
+      interval_t interval = rdata->edf.timeline.epoch( epoch );
+      
+      const double sec0 = interval.start * globals::tp_duration;
+      
+      clocktime_t present = starttime;
+      present.advance( sec0 / 3600.0 );
+      
+      std::string clocktime = present.as_string();
+
+      if ( masked ) 
+	{
+	  INTEGER( col_e )[ ee ] = NA_INTEGER;
+	  REAL( col_sec )[ ee ] = NA_REAL;
+	}
+      else
+	{
+	  INTEGER( col_e )[ ee ] = unmasked_ee + 1 ; // make output 1-based
+	  REAL( col_sec )[ ee ] = sec;
+	}
+
+      INTEGER( col_e0 )[ ee ] = epoch0;
+      REAL( col_sec0 )[ ee ] = sec0;      
+      
+      if ( hms )
+	SET_STRING_ELT( col_hms ,ee , Rf_mkChar( clocktime.c_str() ) );
+      else
+	SET_STRING_ELT( col_hms ,ee , NA_STRING );
+
+      INTEGER( col_m )[ ee ] = masked;
+
+
+      //
+      // Annotations
+      //
+
+      int acnt = 0;
+      
+      std::map<std::string,int>::const_iterator aa = atype.begin();
+      while ( aa != atype.end() )
+	{
+	  
+	  if ( aa->second == 1 ) 
+	    {		  
+	      annot_t * annot = rdata->edf.timeline.annotations( aa->first );
+	      annot_map_t events = annot->extract( interval );
+	      bool has_annot = events.size() ;
+	      INTEGER( col_annots[acnt] )[ ee ] = ( has_annot ? 1 : 0 ) ;
+	    }
+	  else if ( aa->second == 2 ) 
+	    {
+	      INTEGER( col_annots[acnt] )[ ee ] = rdata->edf.timeline.epoch_annotation( aa->first , epoch ) ? 1 : 0 ;
+	    }
+	  ++acnt;
+	  ++aa;
+	}
+
+
+      
+
+      //
+      // Next epoch
+      //
+
+      if ( ! masked ) ++unmasked_ee;
+
+      ++ee;
+
+    }
+  
+  
+  //
+  // attach cols to df
+  //
+  
+  SET_VECTOR_ELT( df, 0 , col_e );
+  SET_VECTOR_ELT( df, 1 , col_sec );
+  SET_VECTOR_ELT( df, 2 , col_e0 );
+  SET_VECTOR_ELT( df, 3 , col_sec0 );
+  SET_VECTOR_ELT( df, 4 , col_hms );
+  SET_VECTOR_ELT( df, 5 , col_m );
+  for (int a=0;a<na;a++)
+    SET_VECTOR_ELT( df, 6+a, col_annots[a] );
+
+  //
+  // attach col-names to df
+  //
+  
+  SET_STRING_ELT(nam, 0, Rf_mkChar( "E" ));  
+  SET_STRING_ELT(nam, 1, Rf_mkChar( "SEC" ));  
+  SET_STRING_ELT(nam, 2, Rf_mkChar( "E0" ));  
+  SET_STRING_ELT(nam, 3, Rf_mkChar( "SEC0" ));
+  SET_STRING_ELT(nam, 4, Rf_mkChar( "HMS" ));
+  SET_STRING_ELT(nam, 5, Rf_mkChar( "M" ));
+
+  for (int a=0;a<na;a++)
+    SET_STRING_ELT(nam, 6+a, Rf_mkChar( Helper::sanitize( annots[a] ).c_str() ));
+
+  Rf_namesgets(df, nam);
+  
+  
+  //
+  // row-names
+  //
+  
+  PROTECT(rownam = Rf_allocVector(STRSXP, ne)); // row.names attribute
+  ++protect;
+  for (int r = 0 ; r < ne ; r++)
+    {
+      std::string rname = Helper::int2str( r+1 );
+      SET_STRING_ELT(rownam, r, Rf_mkChar( rname.c_str() ) );
+    }
+  Rf_setAttrib( df , R_RowNamesSymbol, rownam);
+  
+  // release resources
   UNPROTECT( protect );
   
-  return( r );
+  return( df );
+
+}  
+
+
+SEXP Rannots() 
+{
+
+  if ( rdata == NULL )
+    {
+      R_error( "no EDF attached" );
+      return( R_NilValue );
+    }
+
+  return Rmake_string_vector( rdata->edf.timeline.annotations.names() );
+
 }
+
+
+
+
+std::vector<std::string> Rluna_to_strvector( SEXP x )
+{
+  const int n = Rf_length( x );
+  std::vector<std::string> v(n);
+  for (int i=0;i<n;i++) v[i] = CHAR( STRING_ELT( x, i ) );
+  return v;
+}
+
+
+std::vector<int> Rluna_to_intvector( SEXP x )
+{
+  const int n = Rf_length( x );
+  std::vector<int> v(n);
+  if ( TYPEOF( x ) == INTSXP )
+    for (int i=0;i<n;i++) v[i] = INTEGER(x)[i];
+  return v;
+}
+
+
+std::vector<double> Rluna_to_dblvector( SEXP x )
+{
+  const int n = Rf_length( x );
+  std::vector<double> v(n);
+  if ( TYPEOF( x ) == REALSXP )
+    for (int i=0;i<n;i++) v[i] = REAL(x)[i];
+  return v;
+}
+
+
+
+
+
 
 
 
@@ -1183,9 +1754,13 @@ SEXP Rextract_my_signals_internal( const interval_t & interval , const signal_li
 // apply a function over epochs
 //
 
-SEXP Riterate( SEXP fn , SEXP e , SEXP rho )
+SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP rho )
 {
-
+  
+  //
+  // Requires an attached EDF
+  //
+  
   if ( rdata == NULL )
     {
       R_error( "no EDF attached" );
@@ -1201,168 +1776,106 @@ SEXP Riterate( SEXP fn , SEXP e , SEXP rho )
   
   if ( ! Rf_isEnvironment(rho)) 
     Helper::halt("'rho' should be an environment");
+
+  SEXP R_fcall;
+
+  PROTECT(R_fcall = Rf_lang2(fn, R_NilValue));                                                                                                                   
+  // EDF must be epoched
+
+  if ( ! rdata->edf.timeline.epoched() ) 
+    Helper::halt( "data not epoched" );
   
 
-//   // remember to check for user interupt on each iteration
-//   // i.e. call R_CheckUserInterrupt();
+  //
+  // Signals: make signal_list_t and check sampling rates
+  //
 
-//   void R_accumulate_func( Variant & v , void * p )
-// {      
-//   R_CheckUserInterrupt();
-//   std::vector<Variant> * d = (std::vector<Variant>*)p;
-//   d->push_back(v);
-// }
-
-// void R_iterate_func( Variant & v , void * p )
-// {
-//   R_CheckUserInterrupt();
-
-//   Rdata * d = (Rdata*)p;
+  std::string signal_label = Helper::stringize( Rluna_to_strvector( ch ) );
   
-//   // Call R function, with variant and with result object
+  signal_list_t signals = rdata->edf.header.signal_list( signal_label );  
   
-//   // Bind appropriate parameters
+  int fs = -1;
   
-//   SEXP var;
-  
-//   PROTECT( var = Rvariant( v , *(d->opt) ) );
-  
-//   SETCADR( d->fncall, var );
+  for (int s=0; s< signals.size(); s++) 
+    {      
+      if ( rdata->edf.header.is_data_channel( s ) )
+	{
+	  if ( fs < 0 ) fs = rdata->edf.header.sampling_freq( signals(s) );
+	  else if ( rdata->edf.header.sampling_freq( signals(s) ) != fs ) 
+	    Helper::halt( "requires uniform sampling rate across signals" ); 	  
+	}
+    }
   
 
-//   // Evalute function
+  //
+  // Annotations
+  //
 
-//   eval(d->fncall, d->rho);
-
+  // 0 not found, 1 interval, 2 epoch
+  std::map<std::string,int> atype; 
   
-//   UNPROTECT(1);    
+  std::vector<std::string> a = Rluna_to_strvector( ann );
   
-// }
-
+  for (int i=0;i<a.size();i++)
+    {
+      if ( rdata->edf.timeline.annotations( a[i] ) != NULL ) // is this an interval annotation? 
+	atype[ a[i] ] = 1;
+      else if ( rdata->edf.timeline.epoch_annotation( a[i] ) ) // or an epoch-annotation?
+	atype[ a[i] ] = 2;
+      else
+	atype[ a[i] ] = 0;	  
+    }
   
-//   //
-//   // Clean up
-//   //
 
-//   // UNPROTECT(1);
-//   // etc
+  //
+  // Iterate over epochs
+  //
 
+  rdata->edf.timeline.first_epoch();
+
+  int cnt = 0;
+  while ( 1 ) 
+    {
+      int epoch = rdata->edf.timeline.next_epoch();
+      
+      if ( epoch == -1 ) break;
+
+      ++cnt;
+
+      if ( cnt % 40 == 0 ) Rprintf( (". " + Helper::int2str(cnt)+" epochs\n").c_str() );       
+      else Rprintf( "." );
+      
+      // check for user interupt as this may be long-running...
+      R_CheckUserInterrupt();
+      
+      // Get data for this set
+      std::vector<int> epochs(1);
+      epochs[0] = epoch+1; // R expects 1-based inputs...
+      
+      SEXP edata;
+      
+      PROTECT( edata = Rmatrix_internal( epochs , signals , atype ) );
+      
+      // bind parameter 
+      
+      SETCADR( R_fcall, edata );
+      
+      // Evalute function
+
+      Rf_eval( R_fcall , rho);
+      
+      // all done
+      
+      UNPROTECT(1);    
+      
+    }
+
+  Rprintf( (" "+Helper::int2str(cnt)+ " epochs, done\n").c_str() );
+
+  UNPROTECT(1);    
 
   return( R_NilValue );
 }
-
-
-
-
-
-
-// struct Rdata {
-//   Rdisplay_options * opt;
-//   SEXP fncall;
-//   SEXP rho;
-// };
-
-// //
-// // R iterate functions()
-// //
-
-
-// void R_accumulate_func( Variant & v , void * p )
-// {      
-//   R_CheckUserInterrupt();
-//   std::vector<Variant> * d = (std::vector<Variant>*)p;
-//   d->push_back(v);
-// }
-
-// void R_iterate_func( Variant & v , void * p )
-// {
-//   R_CheckUserInterrupt();
-
-//   Rdata * d = (Rdata*)p;
-  
-//   // Call R function, with variant and with result object
-  
-//   // Bind appropriate parameters
-  
-//   SEXP var;
-  
-//   PROTECT( var = Rvariant( v , *(d->opt) ) );
-  
-//   SETCADR( d->fncall, var );
-  
-
-//   // Evalute function
-
-//   eval(d->fncall, d->rho);
-
-  
-//   UNPROTECT(1);    
-  
-// }
-
-
-// void R_group_iterate_func( VariantGroup & v , void * p )
-// {
-  
-//   R_CheckUserInterrupt();
-
-//   Rdata * d = (Rdata*)p;
-  
-//   // Call R function, with variant and with result object
-  
-//   // Bind appropriate parameters
-  
-//   SEXP var;
-  
-//   PROTECT( var = Rvariant_group( v , *(d->opt)) );
-  
-//   SETCADR( d->fncall, var );
-  
-//   // Evalute function
-  
-//   eval(d->fncall, d->rho);
-  
-//   UNPROTECT(1);    
-  
-// }
-
-
-// SEXP R_getListElement(SEXP list, char *str)
-// {
-//   SEXP elmt = R_NilValue, names = getAttrib(list, R_NamesSymbol);
-//   for (int i = 0; i < length(list); i++)
-//     if(strcmp(CHAR(STRING_ELT(names, i)), str) == 0) {
-//       elmt = VECTOR_ELT(list, i);
-//       break;
-//     }
-//   return elmt;
-// }
-
-// std::map<std::string,std::vector<std::string> > R_getListMap(SEXP list)
-// {
-//   std::map<std::string,std::vector<std::string> > m;
-//   SEXP names = getAttrib(list, R_NamesSymbol);
-//   for (int i = 0; i < length(list); i++)
-//     { 
-//       std::string key = CHAR(STRING_ELT(names, i));	
-//       SEXP elmt = VECTOR_ELT(list, i);
-//       for (int j = 0 ; j < length(elmt); j++ )
-// 	m[key].push_back( CHAR(STRING_ELT(names, i)) );	
-//     }
-//   return m;    
-// }
-
-// std::set<std::string> R_getListNames(SEXP list)
-// {
-//   SEXP names = getAttrib(list, R_NamesSymbol);
-//   std::set<std::string> n;
-//   for (int i = 0; i < length(list); i++)
-//     n.insert( CHAR(STRING_ELT(names, i)) );
-//   return n;
-// }
-
-
-
 
 
 
@@ -1418,108 +1931,8 @@ SEXP Riterate( SEXP fn , SEXP e , SEXP rho )
 //   d->fncall = R_fcall;
 //   d->rho    = rho;
 
-//   std::vector<Variant> vars;
-//   std::vector<VariantGroup> varGroups;
-  
-//   //
-//   // Construct mask
-//   //
-  
-//   Mask mask;
-  
-//   if ( length(rmask) > 0 ) 
-//     mask = R_make_mask(rmask);
-  
-
-//   if ( length(ret) > 0 && INTEGER(ret)[0] != 0 ) 
-//     mask.limit( INTEGER(ret)[0]);
-  
-  
-
-//   //
-//   // Set up individual-map
-//   //
-  
-//   gp->indmap.populate( gp->vardb , gp->phmap , mask );
-
-
-
-//   //
-//   // Iterate over all variants
-//   //
-  
-//   if ( return_vars ) 
-//     {
-//       if ( mask.any_grouping() )	  
-// 	gp->vardb.iterate( R_group_accumulate_func , &varGroups , mask );
-//       else
-// 	gp->vardb.iterate( R_accumulate_func , &vars , mask );
-      
-//     }
-//   else if ( mask.any_grouping() )
-//     {
-//       gp->vardb.iterate( R_group_iterate_func , d , mask );
-//     }
-//   else
-//     {
-//       gp->vardb.iterate( R_iterate_func , d , mask );
-//     }    
-//   //
-//   // Clean up...
-//   //
   
 //   UNPROTECT(1);        
 //   delete d;  
   
   
-
-
-
-  
-
-
-
-
-SEXP Rmake_string_vector( std::vector<std::string> & r )
-{
-  SEXP v;
-  PROTECT( v = Rf_allocVector( STRSXP, r.size()) );
-  for (int i=0;i<r.size(); i++)
-    SET_STRING_ELT(v, i, Rf_mkChar( r[i].c_str() ) );     
-  UNPROTECT(1);
-  return v;
-}
-
-
-std::vector<std::string> Rluna_to_strvector( SEXP x )
-{
-  const int n = Rf_length( x );
-  std::vector<std::string> v(n);
-  for (int i=0;i<n;i++) v[i] = CHAR( STRING_ELT( x, i ) );
-  return v;
-}
-
-
-std::vector<int> Rluna_to_intvector( SEXP x )
-{
-  const int n = Rf_length( x );
-  std::vector<int> v(n);
-  if ( TYPEOF( x ) == INTSXP )
-    for (int i=0;i<n;i++) v[i] = INTEGER(x)[i];
-  return v;
-}
-
-
-std::vector<double> Rluna_to_dblvector( SEXP x )
-{
-  const int n = Rf_length( x );
-  std::vector<double> v(n);
-  if ( TYPEOF( x ) == REALSXP )
-    for (int i=0;i<n;i++) v[i] = REAL(x)[i];
-  return v;
-}
-
-
-
-
-

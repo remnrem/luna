@@ -20,6 +20,8 @@ lunaR.date    <- "1-Mar-2019"
 {
   packageStartupMessage( paste( "** lunaR" , lunaR.version , lunaR.date ) )
   library.dynam("luna", package="luna", lib.loc = NULL)
+  luna.id <<- luna.edf <<- luna.annots <<- ""
+  luna.logmode <<- 0 
 }
 
 
@@ -36,20 +38,46 @@ lunaR.date    <- "1-Mar-2019"
 ####################################################
 
 
-lsl <- function( f , path = "" ) { 
-d <- read.table(f,header=F,fill=T,sep="\t",stringsAsFactors=F) 
+lsl <- function( file , path = "" ) { 
+d <- read.table(file,header=F,fill=T,sep="\t",stringsAsFactors=F) 
 if ( dim(d)[2] < 2 ) stop("invalid sample list")
-cat( dim(d)[1],"observations in",f,"\n")
+cat( dim(d)[1],"observations in",file,"\n")
 if ( dim(d)[1] > length(unique(d[,1])) ) stop("duplicate IDs found")
 l <- list()
 for (i in 1:dim(d)[1]) {  
-l[[ d[i,1] ]]$EDF <- ifelse( path=="" , d[i,2] , paste(path,d[i,2],sep="/") )  
-a <- d[i,-c(1:2)] ; l[[ d[i,1] ]]$ANNOT <- a[ a != "" ]  }
+ l[[ d[i,1] ]]$EDF <- ifelse( path=="" , d[i,2] , paste(path,d[i,2],sep="/") )  
+ a <- d[i,-c(1:2)] ; a <- a[ a != "" ]
+ if ( path != "" ) a <- sapply( a , function(x) paste( path,x,sep="/" ) )
+ l[[ d[i,1] ]]$ANNOT <- as.character(a)  
+ }
 l
 }
 
+lattach <- function(sl,idx="")  {
+  id <- idx
+  if ( is.numeric(idx) ) {
+  if ( idx < 1 | idx > length(sl) ) stop( paste("idx out of range, expecting 1 .." , length(sl) ) )
+  id = names(sl)[idx] 
+ } else { 
+  idx <- which( names(sl) == id )	   
+  if ( length( idx ) != 1 ) stop( paste("could not find index",idx))
+ }
+ledf( sl[[idx]]$EDF , id , sl[[idx]]$ANNOT )
+}
 
-# IDs : names(sl)
+
+lparam <- function( v = "" ) { 
+if ( v=="" ) { .Call( "Rclear_vars" , PACKAGE="luna" )
+} else if ( is.list(v) ) { 
+ v <- unlist(v)
+ for (i in 1:length(v)) .Call( "Rset_var" , as.character(names(v)[i]) , as.character(v[i]) , PACKAGE="luna")
+} else { # assume this is a file
+ d <- read.table( v , sep="\t" , header=F , stringsAsFactors = F)
+ if ( dim(d)[2] != 2 ) stop( paste( "expecting two tab-delimited columns in" , v ) )
+ n <- dim(d)[1]
+ for (i in 1:n) .Call( "Rset_var" , as.character(d[i,1]) , as.character(d[i,2]) , PACKAGE="luna")
+}
+} 
 
 
 ####################################################
@@ -59,11 +87,14 @@ l
 ####################################################
 
 
-ledf <- function( x , y = "." , z = character(0) )
+ledf <- function( edf , id = "." , annots = character(0) )
 {
+ ldrop()
  # EDF, ID, annotations
- .Call("Rattach_edf", as.character(x) , as.character(y) , as.character(z) , PACKAGE = "luna" );
+ .Call("Rattach_edf", as.character(edf) , as.character(id) , as.character(annots) , PACKAGE = "luna" );
+ lflush()
  lstat()
+ luna.edf <<- as.character(edf); luna.id <<- as.character(id); luna.annots <<- as.character(annots)
  invisible(1)
 } 
 
@@ -74,24 +105,43 @@ lstat <- function() {
 
 ## report on the in-memory EDF what is in memory
 ldesc <- function() { 
- invisible( .Call("Rdesc" , PACKAGE = "luna" ) );
+ .Call("Rdesc" , PACKAGE = "luna" ) ;
 }
 
 llog <- function(x) { 
- if ( length(x) == 1 ) .Call("Rlogmode" , as.integer(x) , PACKAGE = "luna" );
+ if ( length(x) != 1 ) stop( "expecting a single 0/1" )
+ if ( ! is.numeric(x) ) stop( "expecting a single 0/1" )
+ luna.logmode <<- as.logical(x)
+ .Call("Rlogmode" , as.integer(x) , PACKAGE = "luna" );
  invisible(1)
 }
 
-lepoch <- function( d , i = -1 ) 
+lflush <- function()
 {
- if ( i <= 0  ) .Call( "Repoch_data" , as.double(d), as.double(d) , PACKAGE = "luna" );
- if ( i > 0   ) .Call( "Repoch_data" , as.double(d), as.double(i) , PACKAGE = "luna" );
- invisible(1)
+ if ( luna.logmode ) .Call("Rflush_log" , PACKAGE="luna" )
+ invisible( luna.logmode )
 }
 
-
-ldrop <- function()
+lepoch <- function( dur = 30 , inc = -1 ) 
 {
+ if ( inc <= 0 ) inc = dur; 
+ k <- leval( paste( "EPOCH" , paste("dur",dur,sep="=") , paste("inc",inc,sep="=") ) )  
+ invisible( k$EPOCH$BL$NE )
+}
+
+letable <- function( annots = character(0) ) {
+ .Call("Rmask" , as.character(annots) , PACKAGE = "luna" );
+}
+
+lannots <- function() {
+ .Call("Rannots" , PACKAGE = "luna" );
+}
+
+lchs <- function() { 
+ .Call("Rchannels" , PACKAGE = "luna" );
+}
+
+ldrop <- function() {
  .Call( "Rclear" , PACKAGE = "luna" );
  invisible(1)
 } 
@@ -99,8 +149,8 @@ ldrop <- function()
 
 lrefresh <- function()
 {
-# load back in existing EDF
-stop("not implemented yet")
+if ( luna.edf == "" ) stop( "no EDF yet attached" )
+ledf( luna.edf , luna.id , luna.annots )
 }
 
 ####################################################
@@ -112,6 +162,7 @@ stop("not implemented yet")
 leval <- function( x )
 {	
  retval <- .Call("Reval_cmd", as.character(x) , PACKAGE = "luna" )
+ lflush()
  lstat()
  invisible(retval)
 } 
@@ -135,16 +186,11 @@ ldb <- function( x , y = "" )
 ##                                                ##
 ####################################################
 
-literate <- function( func , epoch_size )
+literate <- function( func , chs = lchs() , annots = lannots() )
 {
-# hmm.. not sure about the new.env() and tmp
-tmp <- .Call( "Riterate" ,
-       	       as.function(func) ,
-	       as.integer(epoch_size) ,
-	       new.env() ,
-	       PACKAGE = "luna" )
+ tmp <- .Call( "Riterate" , as.function(func) , as.character(chs) , as.character(annots) , new.env() , PACKAGE = "luna" )
+ invisible(tmp)
 }
-
 
 
 ####################################################
@@ -153,11 +199,13 @@ tmp <- .Call( "Riterate" ,
 ##                                                ##
 ####################################################
 
-# returns a matrix
-lsig <- function( e , chs )
+
+ldata <- function( e , chs , annots = character(0) ) 
 {
- .Call( Rextract_my_signals_by_epoch, PACKAGE = 'luna' , as.integer(e) , as.character(chs) );
-} 
+ .Call( "Rmatrix", as.integer(e) , as.character(chs) , as.character(annots) , PACKAGE = 'luna' )
+}
+
+
 
 
 ####################################################
@@ -190,25 +238,3 @@ lx <- function( l , cmd = "" , f = "" , ... )
    else 
       l[[cmd]]
 }
-
-
-
-lunar.test <- function(x)
-{
- .Call("Rtest", as.integer(x) , PACKAGE = "luna" );
-}
-
-
-# e.g. list -> data.frame
-# as.data.frame( list( X = unlist( lapply( tmp , "[[" , "NAME" ) ) ,
-#  	               Y = unlist( lapply( tmp , "[[" , "Y" ) ) ,
-# 		       Z = as.numeric( lapply( tmp , "[[" , "Z" ) ) ) )
-
-
-# extraction tools for lists
-# l is the list, m is the matching label
-#x1 <- function(l , m) {
-#as.vector( unlist( lapply( lapply( l , "[[" , m ) , function(x) ifelse(is.null#(x),NA,x) ) ) ) }
-# matrix:
-#x2 <- function(l,m="GT") {
-# matrix( unlist( lapply( lapply( l , "[[" , "CON" ) , "[[" , c("GENO",m) ) ) ,# nrow = length(l) , byrow = T ) }

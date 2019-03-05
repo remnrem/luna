@@ -39,6 +39,10 @@ extern "C" {
   
   void R_init_luna(DllInfo *info);
 
+  // flush log
+  
+  void Rflush_log();
+
   // attach an EDF (ID, annots)
   
   SEXP Rattach_edf( SEXP x , SEXP y , SEXP z );
@@ -51,13 +55,29 @@ extern "C" {
 
   SEXP Rstat();
 
+  // set Luna variables
+  
+  void Rset_var( SEXP x , SEXP y);
+
+  // clear all Luna variables (and return globals to default values)
+  
+  void Rclear_vars();
+
+  // return vector of channel names
+
+  SEXP Rchannels();
+
+  // return vector of annotations
+
+  SEXP Rannots();
+
+  // return dataframe describing epochs and mask (and annotations)
+
+  SEXP Rmask( SEXP ann );
+  
   // set log-mode (0/1)
 
   SEXP Rlogmode( SEXP i );
-
-  // epoch data 
-  
-  SEXP Repoch_data( SEXP e , SEXP i );
 
   // evaluate a command
 
@@ -71,17 +91,15 @@ extern "C" {
 
   SEXP Rout_list( retval_t & );
  
-  // extract raw signal data (by epoch)
+  // extract a matrix (dataframe) of raw data
 
-  SEXP Rextract_my_signals_by_epoch( SEXP e , SEXP chs );
-  
-  // extract raw signal data, internal function
+  SEXP Rmatrix( SEXP e , SEXP ch , SEXP ann );
 
-  SEXP Rextract_my_signals_internal( const interval_t & , const signal_list_t & );
+  SEXP Rmatrix_internal( const std::vector<int> &, const signal_list_t & , const std::map<std::string,int> & );
 
   // apply a function over epochs
 
-  SEXP Riterate( SEXP fn , SEXP e , SEXP rho );
+  SEXP Riterate( SEXP fn , SEXP chs , SEXP annots, SEXP rho );
 
   // clear/reset EDF store
 
@@ -96,6 +114,7 @@ extern "C" {
 
   void R_warning( const std::string & );
 
+  SEXP Rmake_string_vector( const std::vector<std::string> & r );
   
 }
 
@@ -109,22 +128,26 @@ std::vector<int>    Rluna_to_intvector( SEXP );
 std::vector<double> Rlunato_dblvector( SEXP );
 
 
+
 struct Rdata_t {
   
   edf_t edf;
+
   std::string id;
 
   // increase we need to expand beyond the interval of the EDF in annotation space  
   // this can be >= than the EDF total_size
+
   void update_size();
+
   uint64_t total_size;
   
   // annotations
+
   std::map<std::string,annot_t*> annots;
+  
   bool add_annotations( const std::string & filename );
-
-  //   std::map<std::string,std::vector<std::string> > annot_files;
-
+  
 };
 
 
@@ -149,7 +172,6 @@ void R_bail_function( const std::string & msg )
 
 std::string Rversion();
 
-SEXP Rtest( SEXP x );
 
 
 #endif
