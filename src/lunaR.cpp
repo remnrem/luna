@@ -114,11 +114,20 @@ SEXP Rstat()
 
   std::stringstream ss;
   
+  int n_data_channels = 0;
+  int n_annot_channels = 0;
+  for (int i=0;i<rdata->edf.header.ns;i++) 
+    {
+      if ( rdata->edf.header.is_data_channel( i ) ) ++n_data_channels;
+      else ++n_annot_channels;
+    }
+
   ss << rdata->edf.id << " : "
-     << rdata->edf.header.ns << " signals, "
-     << rdata->edf.timeline.annotations.names().size() << " annotations, of "
-     << Helper::timestring( duration_tp ) << " duration";
-    
+     << n_data_channels << " signals, ";
+  //  if ( n_annot_channels ) ss << n_annot_channels << " EDF annotations, ";
+  ss   << rdata->edf.timeline.annotations.names().size() << " annotations of "
+       << Helper::timestring( duration_tp ) << " duration";
+  
   if ( rdata->edf.timeline.epoched() )
     {
       ss << ", " << rdata->edf.timeline.num_epochs() 
@@ -1446,16 +1455,25 @@ SEXP Rmatrix_internal( const std::vector<int> & epochs ,
 
 SEXP Rchannels() 
 {
-
+  // data channels only
   if ( rdata == NULL )
     {
       R_error( "no EDF attached" );
       return( R_NilValue );
     }
-
-  return Rmake_string_vector( rdata->edf.header.label );
+  
+  // use signal 
+  signal_list_t signals = rdata->edf.header.signal_list( "*" );
+  std::vector<std::string> labels;
+  const int ns = signals.size();
+  for (int s=0;s<ns;s++) 
+    if ( rdata->edf.header.is_data_channel( signals(s) ) ) 
+      labels.push_back( signals.label(s) );
+  return Rmake_string_vector( labels );
   
 }  
+
+
 
 SEXP Rmask( SEXP ann ) 
 {

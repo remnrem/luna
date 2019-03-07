@@ -216,26 +216,26 @@ ldata <- function( e , chs , annots = character(0) )
 ####################################################
 
 
-lstrat <- function( l , cmd = "" )
+lstrat <- function( lst , cmd = "" )
 {
    if ( cmd == "" )
    {
-        n <- names(l)
-        for (i in n) cat( i , ":" , lstrat( l	, i ) ,	"\n" , sep=" " )
+        n <- names(lst)
+        for (i in n) cat( i , ":" , lstrat( lst	, i ) ,	"\n" , sep=" " )
    }
    else
    {
-        t <- names(l[[cmd]])
+        t <- names(lst[[cmd]])
    }
 }
 
 
-lx <- function( l , cmd = "" , f = "" , ... )
+lx <- function( lst , cmd = "" , f = "" , ... )
 {
-   if ( cmd == "" ) return(lstrat(l))
+   if ( cmd == "" ) return(lstrat(lst))
    f <- paste(sort( unlist( c( f , list(...) )  )  ), sep="" , collapse="_" )
    if (	f != ""	    )
-      l[[cmd]][[f]]
+      lst[[cmd]][[f]]
    else 
-      l[[cmd]]
+      lst[[cmd]]
 }
