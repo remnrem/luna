@@ -161,7 +161,8 @@ ledf( luna.edf , luna.id , luna.annots )
 
 leval <- function( x )
 {	
- retval <- .Call("Reval_cmd", as.character(x) , PACKAGE = "luna" )
+ xx <- paste0( x, collapse = " & " )  
+ retval <- .Call("Reval_cmd", as.character(xx) , PACKAGE = "luna" )
  lflush()
  lstat()
  invisible(retval)

@@ -1672,9 +1672,14 @@ SEXP Rmask( SEXP ann )
   SET_STRING_ELT(nam, 4, Rf_mkChar( "HMS" ));
   SET_STRING_ELT(nam, 5, Rf_mkChar( "M" ));
 
-  for (int a=0;a<na;a++)
-    SET_STRING_ELT(nam, 6+a, Rf_mkChar( Helper::sanitize( annots[a] ).c_str() ));
-
+  aa = atype.begin();
+  int a = 0;
+  while ( aa != atype.end() )
+    {
+      SET_STRING_ELT(nam, 6+a, Rf_mkChar( Helper::sanitize( aa->first ).c_str() ));
+      ++a;
+      ++aa;
+    }
   Rf_namesgets(df, nam);
   
   
