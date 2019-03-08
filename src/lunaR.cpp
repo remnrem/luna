@@ -564,6 +564,9 @@ SEXP Reval_cmd( SEXP x )
 
   writer.use_retval( &ret );
 
+  // set ID 
+  writer.id( rdata->edf.id , rdata->edf.filename);
+
   Rprintf( "evaluating...\n" );
   
   // set command string
@@ -600,30 +603,27 @@ SEXP Rdb2retval( SEXP x , SEXP y )
 
   std::string dbstr = CHAR( STRING_ELT( x , 0 ) );
 
-  std::string idstr = CHAR( STRING_ELT( y , 0 ) );
+  // this can be empty if requesting all individuals from the DB
+  std::vector<std::string> idstr = Rluna_to_strvector( y );
+  std::set<std::string> idset;
+  for (int i=0;i<idstr.size();i++) idset.insert( idstr[i] );
 
+  // this gets populated by the IDs actually read
   std::vector<std::string> ids;
 
-  retval_t ret = writer_t::dump_to_retval( dbstr , idstr , &ids );
-  
-  // check if more than a single individual was found, 
-  // i.e. if no specific individual was requested
+  retval_t ret = writer_t::dump_to_retval( dbstr , &idset , &ids );
 
-  if ( ids.size() > 1 ) 
-    {
-      Rprintf( "multiple individuals found, returning IDs\n" );
-      return Rmake_string_vector( ids );
-    }
+  std::string msg = "read data on " + Helper::int2str( (int)ids.size() ) + " individuals\n";
+  Rprintf( msg.c_str() );
       
   // convert retval_t to R list and return 
-
   return Rout_list( ret );
 
 }
 
 
 //
-// structure output in list format for R
+// structure retval_t in list format for R
 //
 
 SEXP Rout_list( retval_t & r )
@@ -680,9 +680,10 @@ SEXP Rout_list( retval_t & r )
       // factors/tables
       
       std::map<retval_factor_t,
-	       std::map<retval_var_t,
-			std::map<retval_strata_t,
-				 retval_value_t > > >::iterator tt = cc->second.begin();
+	std::map<retval_var_t,
+	std::map<retval_strata_t,
+	std::map<retval_indiv_t,
+	retval_value_t > > > >::iterator tt = cc->second.begin();
 
       //std::cout << " (found " << nt << " tables)\n" ;
 
@@ -699,7 +700,7 @@ SEXP Rout_list( retval_t & r )
 	  // for this particular cmd/fac combination, make a data-frame
 	  //
 	  
-	  //    cols = factors + variables
+	  //    cols = ID + factors + variables
 	  //    rows = levels
 	  //    items = values
 
@@ -713,7 +714,7 @@ SEXP Rout_list( retval_t & r )
 	  
 	  const int nv = tt->second.size();
 	  
-	  const int ncols = nf + nv;
+	  const int ncols = 1 + nf + nv;  // 1 for ID 
 
 	  //std::cout << " has " << ncols << " cols, " << nf << " fac, " << nv << " vars\n";
 
@@ -725,23 +726,51 @@ SEXP Rout_list( retval_t & r )
 	  // str > dbl > int
 	  std::set<std::string> int_factor, str_factor, dbl_factor;
 	  
-	  std::set<retval_strata_t> rows;
-		   
+	  //
+	  // to track rows, indiv/strata pairing
+	  //
+	  
+	  struct retval_indiv_strata_t { 
+	    retval_indiv_strata_t( const retval_indiv_t & indiv , const retval_strata_t & strata ) 
+	      : indiv(indiv) , strata(strata) { } 
+	    retval_indiv_t indiv;
+	    retval_strata_t strata;
+	    bool operator<( const retval_indiv_strata_t & rhs ) const 
+	    {
+	      // needs strata-first ordering to match the below
+	      // can change this potentially
+	      if ( strata < rhs.strata ) return true;
+	      if ( rhs.strata < strata ) return false;
+	      return indiv < rhs.indiv;
+	    }
+	  };
+	  
+	  std::set<retval_indiv_strata_t> rows;
+	  
 	  std::map<retval_var_t,
-		   std::map<retval_strata_t,
-			    retval_value_t > >::iterator vv = tt->second.begin();
+	    std::map<retval_strata_t,
+	    std::map<retval_indiv_t,
+	    retval_value_t > > >::iterator vv = tt->second.begin();
 
 	  while ( vv != tt->second.end() )
 	    {
 
-	      std::map<retval_strata_t, retval_value_t >::iterator ss = vv->second.begin();
+	      std::map<retval_strata_t, 
+		std::map<retval_indiv_t,retval_value_t > >::iterator ss = vv->second.begin();
 	      while ( ss != vv->second.end() )
 		{
-
+		  
 		  const retval_strata_t & s = ss->first;
 		  
-		  rows.insert( s );
-
+		  // get rows (+ indivs)
+		  std::map<retval_indiv_t,retval_value_t>::iterator ii = ss->second.begin();
+		  while ( ii != ss->second.end() )
+		    {
+		      rows.insert( retval_indiv_strata_t( ii->first , s )  );
+		      ++ii;
+		    }
+		      
+		  // get factor types 
 		  std::set<retval_factor_level_t>::iterator ll = s.factors.begin();
 		  while ( ll != s.factors.end() )
 		    {
@@ -750,7 +779,7 @@ SEXP Rout_list( retval_t & r )
 		      else if ( ll->is_int ) int_factor.insert( ll->factor );
 		      ++ll;
 		    }
-		  
+		      
 		  ++ss;
 		}
 	      ++vv; 
@@ -791,8 +820,40 @@ SEXP Rout_list( retval_t & r )
 	  ++protect;
 	  
 
-	  int col_cnt = 0;
+	  //
+	  // Add ID as column 1 
+	  //
 
+	  int col_cnt = 0;
+	  SEXP id_col;	      
+	  PROTECT( id_col = Rf_allocVector( STRSXP , nrows ) );
+	  ++protect;
+
+	  // populate w/ IDs
+	  // consider all indiv/factor/level rows
+	  int r_cnt = 0;
+	  std::set<retval_indiv_strata_t>::iterator rr =  rows.begin();
+	  while ( rr != rows.end() )
+	    {	      
+	      retval_indiv_t indiv = rr->indiv;
+	      SET_STRING_ELT( id_col,r_cnt,Rf_mkChar( rr->indiv.name.c_str() ) );
+	      ++r_cnt;
+	      ++rr;
+	    }
+	  
+	  // add this column to the df
+	  SET_VECTOR_ELT( df, col_cnt , id_col );
+	  
+	  // and add a name
+	  SET_STRING_ELT(nam, col_cnt , Rf_mkChar( "ID" ));
+	  
+	  // shift to next col.
+	  ++col_cnt;
+	  
+	  // and unprotect
+	  UNPROTECT(1); --protect;
+
+	  
 	  //
 	  // Add factors
 	  //
@@ -824,13 +885,15 @@ SEXP Rout_list( retval_t & r )
 	      ++protect;
 	      
 	      
-	      // consider all factor/level rows
+	      // consider all indiv/factor/level rows
 	      int r_cnt = 0;
-	      std::set<retval_strata_t>::iterator rr =  rows.begin();
+	      std::set<retval_indiv_strata_t>::iterator rr =  rows.begin();
 	      while ( rr != rows.end() )
 		{
 		  
-		  retval_factor_level_t lvl = rr->find( *ff );
+		  //retval_indiv_t indiv = rr->indiv;
+		  const retval_strata_t & strata = rr->strata;
+		  const retval_factor_level_t & lvl = strata.find( *ff );
 		  
 		  // get value from 'fac', but bear in mind, it may
 		  // be of different type (would be v. strange, but
@@ -863,7 +926,7 @@ SEXP Rout_list( retval_t & r )
 		      INTEGER(col)[r_cnt ] = i;
 
 		    }
-		  		  
+		  
 		  //std::cout << "found " << lvl.print() << "\n";
 		
 		  ++r_cnt;
@@ -887,6 +950,7 @@ SEXP Rout_list( retval_t & r )
 	      ++ff;
 	    }
 	
+
 	  //
 	  // Repeat, as for factors, but now adding actual variables 
 	  //
@@ -922,21 +986,21 @@ SEXP Rout_list( retval_t & r )
 
 	      int r_cnt = 0;
 
-	      std::set<retval_strata_t>::iterator rr =  rows.begin();
+	      std::set<retval_indiv_strata_t>::iterator rr =  rows.begin();
 	      while ( rr != rows.end() )
 		{
-
+		  
 		  // i.e. we are ensuring that we are iterating in the same order as we
 		  // previously did for each variable, so
 		  
 		  //
-		  // does this variable have a non-missing value for this row/level? 
+		  // does this variable have a non-missing value for this row/level, for this individual? 
 		  //
 		  
-		  std::map<retval_strata_t, retval_value_t>::const_iterator yy = vv->second.find( *rr );
+		  std::map<retval_strata_t, std::map<retval_indiv_t,retval_value_t> >::const_iterator yy = vv->second.find( rr->strata );
 
-		  // not present...
-		  if ( yy == vv->second.end() )
+	          // not present...
+	          if ( yy == vv->second.end() )
 		    {
 		      // set to NA
 		      if      ( var_is_string ) SET_STRING_ELT( col,r_cnt, NA_STRING );
@@ -945,33 +1009,50 @@ SEXP Rout_list( retval_t & r )
 		      else                      REAL(col)[ r_cnt ] = NA_REAL; // as we might have long long ints returned
 		      		      
 		    }
-		  else // ...is present
+		  else // ...is present as a strata... check for this individual
 		    {
-		      // because of how sqlite stores numeric values, a double may be cast as an int;
-		      // therefore, some values for a double variable may in fact be stored as value.i (i.e. if 1.0, etc)
-		      // therefore, we need to check for this special case, for data coming from db2retval at least
-		      // (this will all be fine if coming from a luna eval() 
 		      
-		      if      ( var_is_string ) 
-			SET_STRING_ELT( col, r_cnt, Rf_mkChar( yy->second.s.c_str() ) );
-		      else if ( var_is_double ) 
+		      std::map<retval_indiv_t,retval_value_t>::const_iterator zz = yy->second.find( rr->indiv );
+		      
+		      // not present...
+		      if ( zz == yy->second.end() ) 
 			{
-			  // special case
-			  if ( yy->second.is_int )
-			    REAL(col)[ r_cnt ] = yy->second.i ;
-			  else
-			    REAL(col)[ r_cnt ] = yy->second.d ;
+			  // set to NA
+			  if      ( var_is_string ) SET_STRING_ELT( col,r_cnt, NA_STRING );
+			  else if ( var_is_double ) REAL(col)[ r_cnt ] = NA_REAL;
+			  //  else                      INTEGER(col)[ r_cnt ] = NA_INTEGER;
+			  else                      REAL(col)[ r_cnt ] = NA_REAL; // as we might have long long ints returned
+			  
 			}
-		      else                      
-			//INTEGER(col)[ r_cnt ] = yy->second.i ; 
-		        REAL(col)[ r_cnt ] = yy->second.i ;  // as we might have long long ints returned...
-		      
+		      else
+			{
+
+			  // because of how sqlite stores numeric values, a double may be cast as an int;
+			  // therefore, some values for a double variable may in fact be stored as value.i (i.e. if 1.0, etc)
+			  // therefore, we need to check for this special case, for data coming from db2retval at least
+			  // (this will all be fine if coming from a luna eval() 
+			  
+			  if      ( var_is_string ) 
+			    SET_STRING_ELT( col, r_cnt, Rf_mkChar( zz->second.s.c_str() ) );
+			  else if ( var_is_double ) 
+			    {
+			      // special case
+			      if ( zz->second.is_int )
+				REAL(col)[ r_cnt ] = zz->second.i ;
+			      else
+				REAL(col)[ r_cnt ] = zz->second.d ;
+			    }
+			  else                      
+			    //INTEGER(col)[ r_cnt ] = zz->second.i ; 
+			    REAL(col)[ r_cnt ] = zz->second.i ;  // as we might have long long ints returned...
+			}
+
 		    }
-		  
+	    
 		  // next row/lvl
 		  ++r_cnt;
 		  ++rr;
-		}
+   	       }
 	      
 	      // add this column to the df
 	      SET_VECTOR_ELT( df, col_cnt , col );
@@ -988,31 +1069,10 @@ SEXP Rout_list( retval_t & r )
 	      ++col_cnt;
 	      
 	      ++vv;
-	    }
+   	    }
 
 
 
-	  
-	    //   PROTECT(ans1 = Rf_allocVector(INTSXP, 3)); // first column
-	    //   PROTECT(ans2 = Rf_allocVector(INTSXP, 3)); // second column
-	    //   for (int i=0; i<3; ++i) { // some data
-	    // 	INTEGER(ans1)[i] = i+1;
-	    // 	INTEGER(ans2)[i] = -(i+1);
-	    //   }
-
-	    //   // set data for this column
-	    
-	    //   //SET_VECTOR_ELT(ret, 1, ans2);
- 
-	    //   // set column names
-	    
-	  
-	    //   ++col;
-
-	    // }
-
-
-	  
 	  //
 	  // attach col-names to df
 	  //
