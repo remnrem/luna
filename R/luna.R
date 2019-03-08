@@ -175,9 +175,9 @@ leval <- function( x )
 ##                                                ##
 ####################################################
 
-ldb <- function( dbfile , indiv_id = "" )
+ldb <- function( dbfile , ids = character(0) )
 {	
- .Call("Rdb2retval", as.character(dbfile) , as.character(indiv_id) , PACKAGE = "luna" );
+ .Call("Rdb2retval", as.character(dbfile) , as.character(ids) , PACKAGE = "luna" );
 } 
 
 
@@ -236,6 +236,52 @@ lx <- function( lst , cmd = "" , f = "" , ... )
    f <- paste(sort( unlist( c( f , list(...) )  )  ), sep="" , collapse="_" )
    if (	f != ""	    )
       lst[[cmd]][[f]]
-   else 
-      lst[[cmd]]
+   else		
+      lst[[cmd]]	
 }
+
+lshape <- function( d , r , c )  
+{      	  
+	require(data.table)
+	rs <- paste0( r , collapse="+" )
+	cs <- paste0( c , collapse="+" )
+	f <- as.formula( paste( rs , "~" , cs ) )
+	vals <- names(d)[ ! names(d) %in% c(r,c) ]
+	setDT(d)
+	k <- as.data.frame( dcast( d , f , value.var = vals ) )
+	setDF(d)
+	k
+}
+
+
+
+####################################################
+##                                                ##
+## Visualization                                  ##
+##                                                ##
+####################################################
+
+k <- ldb("out.db")
+lheatmap( k$MTM$CH_E_F$E , k$MTM$CH_E_F$F , log(k$MTM$CH_E_F$MTM  ) )
+
+lheatmap <- function(x,y,z) { 
+# z <- outliers( z , 3 ) 
+ # assumes square  
+ nx <- length(unique(x))
+ ny <- length(unique(y))
+ nz <- length(z) 
+ if ( nz != nx * ny ) stop( "requires square data" )
+ d <- data.frame( x,y,z )
+ d <- d[ order(d$y,d$x) , ] 
+ m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )	 
+# hmcols<-colorRampPalette(c("darkred","red","yellow","green","cyan","blue","navy"))(256)
+ hmcols<-colorRampPalette(c("purple","red","orange","yellow","cyan","blue","navy","black","black"))(25)
+ image(t(m[ny:1,]),col=hmcols)
+ image(t(m[ny:1,]),col=rainbow(100))
+# image(t(m[ny:1,]),col=gray.colors(200))
+# scales
+}
+
+#lheatmap( k$MTM$CH_E_F$E , k$MTM$CH_E_F$F , k$MTM$CH_E_F$MTM   )
+
+

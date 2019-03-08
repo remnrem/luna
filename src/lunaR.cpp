@@ -434,108 +434,51 @@ bool Rdata_t::add_annotations( const std::string & annotfile )
         
 }
 
-void Rdata_t::update_size()
+void Rdata_t::update_size() // redundant
 {
-  // for all annotations
+//   // for all annotations
   
-  total_size = edf.timeline.last_time_point_tp + 1;
+//   total_size = edf.timeline.last_time_point_tp + 1;
 
-  std::map<std::string,annot_t*>::const_iterator ai = edf.timeline.annotations.annots.begin();
-  while ( ai != edf.timeline.annotations.annots.end() )
-    {
+//   std::map<std::string,annot_t*>::const_iterator ai = edf.timeline.annotations.annots.begin();
+//   while ( ai != edf.timeline.annotations.annots.end() )
+//     {
 
-      annot_t * annot = ai->second;
+//       annot_t * annot = ai->second;
 
-      uint64_t max_tp = annot->maximum_tp();
+//       uint64_t max_tp = annot->maximum_tp();
       
-      //      std::cout << "max t = " << ai->first << " --> " << max_tp << "\n";
+//       //      std::cout << "max t = " << ai->first << " --> " << max_tp << "\n";
       
-      if ( max_tp >= total_size )
-        {
-          total_size = max_tp + 1;
-          //std::cout << "adjusting total size to " << total_size << "\n";
-        }
-      ++ai;
-    }
+//       if ( max_tp >= total_size )
+//         {
+//           total_size = max_tp + 1;
+//           //std::cout << "adjusting total size to " << total_size << "\n";
+//         }
+//       ++ai;
+//     }
 
 }
 
 
-SEXP Rfetch_annots()
+SEXP Rfetch_annots() // redundant
 {
 
-  if ( rdata == NULL )
-    {
-      R_error( "no EDF attached" );
-      return( R_NilValue );
-    }
-
-  // get names of all annotations
-  std::vector<std::string> annot_labels = rdata->edf.timeline.annotations.names();
-  
-  // find an annotation based on its name
-  std::string label = "a1";
-  annot_t * a = rdata->edf.timeline.annotations.find( label );
-  if ( a != NULL ) { // ...
-  }
-  
-  
-//   // get all specific annots, given annot_t * a 
-
-//   // these two accumulate all annotations
-//   std::map<std::string,interval_evt_map_t> allannots;
-//   std::set<feature_t> features; // interval + labels
-
-  
-//   std::string aclass = a->name;
-
-//   // total_size is updated as annotations are loaded in, i.e.
-//   // in case some are larger than the EDF signal
-  
-//   allannots[ aclass ] = a->extract( interval_t( 0 , rdata->total_size ) );
-
-//   // for these annotation, get the specific list of events
-  
-//   interval_evt_map_t & tmp = allannots[ a->name ];
-
-//   interval_evt_map_t::const_iterator ii = tmp.begin();
-//   while ( ii != tmp.end() )
+//   if ( rdata == NULL )
 //     {
-	  
-//       feature_t feature;
-
-//       feature.feature = ii->first;
-//       feature.window = ii->first;
-
-//       // get event(s)
-      
-//       const std::vector<const event_t*> & events = ii->second;
-//       std::string label = "";
-//       for (int e=0;e<events.size();e++)
-// 	{
-// 	  if ( e!=0 ) label += ",";
-// 	  label += events[e]->label;
-// 	  feature.add_data( events[e]->metadata );
-// 	}
-      
-      
-//       if ( label != aclass )
-// 	feature.signal = label;
-      
-//       feature.label = aclass;
-      
-//       // display
-
-//       std::cout << "\n" << feature.as_string( "\t" ) << "\n";
-//       std::cout << feature.print_data( )  << "\n";
-    
-//       // store                                                                                                                         
-//       features.insert( feature );
-      
-//       // next interval                                                                                                                 
-//       ++ii;
+//       R_error( "no EDF attached" );
+//       return( R_NilValue );
 //     }
- 
+
+//   // get names of all annotations
+//   std::vector<std::string> annot_labels = rdata->edf.timeline.annotations.names();
+  
+//   // find an annotation based on its name
+//   std::string label = "a1";
+//   annot_t * a = rdata->edf.timeline.annotations.find( label );
+//   if ( a != NULL ) { // ...
+//   }
+  
   return( R_NilValue );
 
 }
@@ -605,8 +548,10 @@ SEXP Rdb2retval( SEXP x , SEXP y )
 
   // this can be empty if requesting all individuals from the DB
   std::vector<std::string> idstr = Rluna_to_strvector( y );
+  
   std::set<std::string> idset;
-  for (int i=0;i<idstr.size();i++) idset.insert( idstr[i] );
+  for (int i=0;i<idstr.size();i++) 
+    idset.insert( idstr[i] );
 
   // this gets populated by the IDs actually read
   std::vector<std::string> ids;
@@ -1756,8 +1701,8 @@ SEXP Rmask( SEXP ann )
   
   SET_STRING_ELT(nam, 0, Rf_mkChar( "E" ));  
   SET_STRING_ELT(nam, 1, Rf_mkChar( "SEC" ));  
-  SET_STRING_ELT(nam, 2, Rf_mkChar( "E0" ));  
-  SET_STRING_ELT(nam, 3, Rf_mkChar( "SEC0" ));
+  SET_STRING_ELT(nam, 2, Rf_mkChar( "E1" ));  
+  SET_STRING_ELT(nam, 3, Rf_mkChar( "SEC1" ));
   SET_STRING_ELT(nam, 4, Rf_mkChar( "HMS" ));
   SET_STRING_ELT(nam, 5, Rf_mkChar( "M" ));
 
