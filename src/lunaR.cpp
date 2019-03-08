@@ -125,7 +125,7 @@ SEXP Rstat()
   ss << rdata->edf.id << " : "
      << n_data_channels << " signals, ";
   //  if ( n_annot_channels ) ss << n_annot_channels << " EDF annotations, ";
-  ss   << rdata->edf.timeline.annotations.names().size() << " annotations of "
+  ss   << rdata->edf.timeline.annotations.names().size() << " annotations, "
        << Helper::timestring( duration_tp ) << " duration";
   
   if ( rdata->edf.timeline.epoched() )
