@@ -133,8 +133,10 @@ letable <- function( annots = character(0) ) {
  .Call("Rmask" , as.character(annots) , PACKAGE = "luna" );
 }
 
-lannots <- function() {
- .Call("Rannots" , PACKAGE = "luna" );
+lannots <- function( a = "" ) {
+if ( a == "" ) return( .Call("Rannots" , PACKAGE = "luna" ) );
+if ( length(a) != 1 ) stop( "lannots( annot ) only takes one annotation class" )
+.Call("Rannot" , as.character( a ) , PACKAGE = "luna" );
 }
 
 lchs <- function() { 
@@ -183,13 +185,16 @@ ldb <- function( dbfile , ids = character(0) )
 
 ####################################################
 ##                                                ##
-## Iterate epoch-wise, applying a function        ##
+## Iterate epoch-wise or annot-wise, applying     ## 
+## user-defined function                          ##
 ##                                                ##
 ####################################################
 
-literate <- function( func , chs = lchs() , annots = lannots() )
+literate <- function( func , chs = lchs() , annots = lannots() , by.annot = character(0) , w = 0 )
 {
- tmp <- .Call( "Riterate" , as.function(func) , as.character(chs) , as.character(annots) , new.env() , PACKAGE = "luna" )
+ tmp <- .Call( "Riterate" , as.function(func) , as.character(chs) , 
+     	       as.character(annots) , as.character(by.annot) , as.numeric(w) , 
+	       new.env() , PACKAGE = "luna" )
  invisible(tmp)
 }
 
@@ -203,9 +208,15 @@ literate <- function( func , chs = lchs() , annots = lannots() )
 
 ldata <- function( e , chs , annots = character(0) ) 
 {
- .Call( "Rmatrix", as.integer(e) , as.character(chs) , as.character(annots) , PACKAGE = 'luna' )
+ .Call( "Rmatrix_epochs", as.integer(e) , as.character(chs) , as.character(annots) , PACKAGE = 'luna' )
 }
 
+ldata.intervals <- function( i , chs , annots = character(0) ) 
+{
+   if ( ! is.list(i) ) stop( "expecting a list() for i" )
+   if ( length(i) != 0 ) .Call( "Rmatrix_intervals", as.numeric(unlist(i)) , as.character(chs) , as.character(annots) , PACKAGE = 'luna' )
+   else stop("no intervals found")
+}
 
 
 
@@ -240,19 +251,15 @@ lx <- function( lst , cmd = "" , f = "" , ... )
       lst[[cmd]]	
 }
 
-lshape <- function( d , r , c )  
-{      	  
-	require(data.table)
-	rs <- paste0( r , collapse="+" )
-	cs <- paste0( c , collapse="+" )
-	f <- as.formula( paste( rs , "~" , cs ) )
-	vals <- names(d)[ ! names(d) %in% c(r,c) ]
-	setDT(d)
-	k <- as.data.frame( dcast( d , f , value.var = vals ) )
-	setDF(d)
-	k
-}
-
+#lshape <- function( d , r , c )  
+#{      	  
+#   rs <- paste0( r , collapse="+" )
+#   cs <- paste0( c , collapse="+" )
+#   f <- as.formula( paste( rs , "~" , cs ) )
+#   vals <- names(d)[ ! names(d) %in% c(r,c) ]
+#   k <- as.data.frame( dcast( setDT(d) , f , value.var = vals ) )
+#   k
+#}
 
 
 ####################################################
@@ -261,11 +268,8 @@ lshape <- function( d , r , c )
 ##                                                ##
 ####################################################
 
-k <- ldb("out.db")
-lheatmap( k$MTM$CH_E_F$E , k$MTM$CH_E_F$F , log(k$MTM$CH_E_F$MTM  ) )
-
 lheatmap <- function(x,y,z) { 
-# z <- outliers( z , 3 ) 
+ z <- outliers( z , 3 ) 
  # assumes square  
  nx <- length(unique(x))
  ny <- length(unique(y))
@@ -274,14 +278,21 @@ lheatmap <- function(x,y,z) {
  d <- data.frame( x,y,z )
  d <- d[ order(d$y,d$x) , ] 
  m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )	 
-# hmcols<-colorRampPalette(c("darkred","red","yellow","green","cyan","blue","navy"))(256)
- hmcols<-colorRampPalette(c("purple","red","orange","yellow","cyan","blue","navy","black","black"))(25)
- image(t(m[ny:1,]),col=hmcols)
+# hmcols<-colorRampPalette(c("purple","red","orange","yellow","cyan","blue","navy","black","black"))(25)
+# image(t(m[ny:1,]),col=hmcols)
  image(t(m[ny:1,]),col=rainbow(100))
-# image(t(m[ny:1,]),col=gray.colors(200))
-# scales
 }
 
-#lheatmap( k$MTM$CH_E_F$E , k$MTM$CH_E_F$F , k$MTM$CH_E_F$MTM   )
+## Signal viewer (for use w/ ldata() or literate())
+lsigview <- function(x) { 
+# INT [E] SEC { SIGS }
+if ( names(x)[2] == "E" ) { sigs <- names(x)[-(1:3)] } else { sigs <- names(x)[-(1:2)] } 
+nsigs <- length(sigs)
+# labels
+int.label <- x$INT[1]
+e.label <- ifelse( names(x)[2] == "E" , x$E[1] , "." ) 
+t.label <- x$SEC
+# simple 0..N Y-scale, with each signal has unit 1 space
 
-
+readline()
+} 

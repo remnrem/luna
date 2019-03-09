@@ -71,6 +71,11 @@ extern "C" {
 
   SEXP Rannots();
 
+  // return all intervals for an annotation
+  
+  SEXP Rannot( SEXP ann );
+
+
   // return dataframe describing epochs and mask (and annotations)
 
   SEXP Rmask( SEXP ann );
@@ -93,13 +98,20 @@ extern "C" {
  
   // extract a matrix (dataframe) of raw data
 
-  SEXP Rmatrix( SEXP e , SEXP ch , SEXP ann );
+  SEXP Rmatrix_epochs( SEXP e , SEXP ch , SEXP ann  );
 
-  SEXP Rmatrix_internal( const std::vector<int> &, const signal_list_t & , const std::map<std::string,int> & );
+  SEXP Rmatrix_intervals( SEXP i , SEXP ch , SEXP ann );
+
+  SEXP Rmatrix_internal( const std::vector<interval_t> &, 
+			 const std::vector<int> * ,
+			 const signal_list_t & , 
+			 const std::map<std::string,int> & );
+
+
 
   // apply a function over epochs
 
-  SEXP Riterate( SEXP fn , SEXP chs , SEXP annots, SEXP rho );
+  SEXP Riterate( SEXP fn , SEXP chs , SEXP annots, SEXP byannot , SEXP w, SEXP rho );
 
   // clear/reset EDF store
 
@@ -125,7 +137,7 @@ extern "C" {
 
 std::vector<std::string> Rluna_to_strvector( SEXP );
 std::vector<int>    Rluna_to_intvector( SEXP );
-std::vector<double> Rlunato_dblvector( SEXP );
+std::vector<double> Rluna_to_dblvector( SEXP );
 
 
 
@@ -137,8 +149,6 @@ struct Rdata_t {
 
   // increase we need to expand beyond the interval of the EDF in annotation space  
   // this can be >= than the EDF total_size
-
-  void update_size();
 
   uint64_t total_size;
   
