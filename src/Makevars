@@ -1,4 +1,4 @@
-PKG_CPPFLAGS = -DNO_HPDFLIB -I$(LUNA_BASE)/
+PKG_CPPFLAGS = -DNO_HPDFLIB -I$(LUNA_BASE)/ -I$(FFTW)/include
 PKG_LIBS  = $(LUNA_BASE)/eval.o 
 PKG_LIBS += $(LUNA_BASE)/globals.o
 PKG_LIBS += $(LUNA_BASE)/libannot.a
