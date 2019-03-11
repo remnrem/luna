@@ -183,5 +183,24 @@ void R_bail_function( const std::string & msg )
 std::string Rversion();
 
 
+//
+// Assist struct
+//
+
+struct retval_indiv_strata_t { 
+retval_indiv_strata_t( const retval_indiv_t & indiv , const retval_strata_t & strata ) 
+: indiv(indiv) , strata(strata) { } 
+  retval_indiv_t indiv;
+  retval_strata_t strata;
+  bool operator<( const retval_indiv_strata_t & rhs ) const 
+  {
+    // needs strata-first ordering to match the below
+    // can change this potentially
+    if ( strata < rhs.strata ) return true;
+    if ( rhs.strata < strata ) return false;
+    return indiv < rhs.indiv;
+  }
+};
+
 
 #endif

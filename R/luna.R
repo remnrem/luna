@@ -190,11 +190,11 @@ ldb <- function( dbfile , ids = character(0) )
 ##                                                ##
 ####################################################
 
-literate <- function( func , chs = lchs() , annots = lannots() , by.annot = character(0) , w = 0 )
+literate <- function( func , env = new.env(), chs = character(0) , annots = character(0) , by.annot = character(0) , w = 0 )
 {
  tmp <- .Call( "Riterate" , as.function(func) , as.character(chs) , 
      	       as.character(annots) , as.character(by.annot) , as.numeric(w) , 
-	       new.env() , PACKAGE = "luna" )
+	       env , PACKAGE = "luna" )
  invisible(tmp)
 }
 

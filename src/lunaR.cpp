@@ -623,20 +623,6 @@ SEXP Rout_list( retval_t & r )
 	  // to track rows, indiv/strata pairing
 	  //
 	  
-	  struct retval_indiv_strata_t { 
-	    retval_indiv_strata_t( const retval_indiv_t & indiv , const retval_strata_t & strata ) 
-	      : indiv(indiv) , strata(strata) { } 
-	    retval_indiv_t indiv;
-	    retval_strata_t strata;
-	    bool operator<( const retval_indiv_strata_t & rhs ) const 
-	    {
-	      // needs strata-first ordering to match the below
-	      // can change this potentially
-	      if ( strata < rhs.strata ) return true;
-	      if ( rhs.strata < strata ) return false;
-	      return indiv < rhs.indiv;
-	    }
-	  };
 	  
 	  std::set<retval_indiv_strata_t> rows;
 	  
@@ -1290,10 +1276,18 @@ SEXP Rmatrix_internal( const std::vector<interval_t> & intervals ,
   PROTECT(nam = Rf_allocVector(STRSXP, ncols)); // names attribute (column names)
   ++protect;
   
+
   //
   // How many rows? Calculate this manually, by pulling the first signal... 
   //
   
+  //
+  // In general, we probably cannot assume we can calculate this based
+  // on interval sizes and sample rates, as the intervals might not
+  // fall cleanly on sample points i.e. the same interval could return
+  // a different number of sample points depending on how it is
+  // aligned with the sample points
+  // 
   
     
   int nrows = 0;
@@ -1315,20 +1309,17 @@ SEXP Rmatrix_internal( const std::vector<interval_t> & intervals ,
       nrows += tp->size();
 
     }      
-
-
-  // Old code, where we tried to guess signal size upfront...
-  // this did not work well when we hard arbitrary annotation lengths 
-  // i.e. lots of off-by-1s for the length of the signal
+  
+  // previous code: 
   // const int fs = rdata->edf.header.sampling_freq( signals(0) );
-  //  const int nrows_per_epoch = emode ? rdata->edf.timeline.epoch_length() * fs : 0 ;
-  //   if ( emode ) 
-  //     nrows = ni * nrows_per_epoch;
-  //   else
-  //     {
-  //       for (int i=0;i<intervals.size();i++)
-  // 	nrows += (int)(intervals[i].duration_sec() * fs) ; 
-  //     }
+  // const int nrows_per_epoch = emode ? rdata->edf.timeline.epoch_length() * fs : 0 ;
+  // if ( emode ) 
+  //  nrows = ni * nrows_per_epoch;
+  // else
+  // {
+  //  for (int i=0;i<intervals.size();i++)
+  //   nrows += (int)(intervals[i].duration_sec() * fs) ; 
+  //  }
 
   
   int col_cnt = 0;
@@ -2157,65 +2148,6 @@ SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP byannot , SEXP w, SEXP rho )
   return( R_NilValue );
 }
 
-
-
-// SEXP Riterate(SEXP fn, SEXP rmask, SEXP ret, SEXP rho)
-// {    
-  
-//   if ( ! R_project_attached ) { plog.warn( "no project attached" ); return( R_NilValue); } 
-  
-//   // 
-//   // Do we want to accumulate and return the list of variants?
-//   //
-  
-//   // ret = 0  implies we will iterate over a function, and not explicitly 
-//   //          return any values
-  
-//   // ret > 0  implies we will rturn up to 'ret' values (i.e. make sure we do 
-//   //          not explode memory in R
-  
-//   bool return_vars = false;
-  
-//   if ( length(ret)>0 && INTEGER(ret)[0] != 0 ) 
-//     return_vars = true;
-  
-//   if ( ! return_vars )
-//     {
-//       if ( ! isFunction(fn) ) 
-// 	Helper::halt("'fn' must be a function");
-//     }
-  
-//   if ( ! isEnvironment(rho)) 
-//     Helper::halt("'rho' should be an environment");
-  
-
-
-//   //
-//   // Set-up R function call
-//   //
-  
-//   SEXP R_fcall, ans;
-  
-//   PROTECT(R_fcall = lang2(fn, 
-// 			  R_NilValue)); 
-  
-//   // Object to pass to C/C++ function, that points
-//   // to the R function and an R object that can 
-//   // collect any results
-
-
-//   Rdisplay_options opt;
-  
-//   Rdata * d = new Rdata;
-//   d->opt    = &opt;
-//   d->fncall = R_fcall;
-//   d->rho    = rho;
-
-  
-//   UNPROTECT(1);        
-//   delete d;  
-  
-  
 
 
 SEXP Rannot( SEXP ann )
