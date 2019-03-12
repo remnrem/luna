@@ -129,6 +129,12 @@ lepoch <- function( dur = 30 , inc = -1 )
  invisible( k$EPOCH$BL$NE )
 }
 
+lattach.annot <- function( a )
+{
+na <- .Call("Radd_annot" , as.character(a) , PACKAGE = "luna" ); 	
+invisible(na)
+}
+
 letable <- function( annots = character(0) ) {
  .Call("Rmask" , as.character(annots) , PACKAGE = "luna" );
 }

@@ -353,6 +353,27 @@ SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
 }
 
 
+//
+// Add an annotation file after loading the EDF
+//
+
+void Radd_annot( SEXP a )
+{
+  
+  if ( rdata == NULL )
+    {
+      R_error( "no EDF attached" );
+      return;
+    }
+  
+  std::vector<std::string> afiles = Rluna_to_strvector( a );
+
+  for (int a=0;a<afiles.size();a++)
+    rdata->add_annotations( afiles[a] );
+  
+}
+
+
 void Rclear()
 {
   if ( rdata != NULL )
@@ -393,7 +414,7 @@ bool Rdata_t::add_annotations( const std::string & annotfile )
   
   // is 'annotfile' in fact a folder (i.e. ending in '/') ? 
   
-  if ( annotfile[ annotfile.size() - 1 ] == '/' )
+  if ( annotfile[ annotfile.size() - 1 ] == globals::folder_delimiter )
     {
 
       // this means we are specifying a folder, in which case search for all files that                                                                             

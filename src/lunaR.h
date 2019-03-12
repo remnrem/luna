@@ -47,6 +47,10 @@ extern "C" {
   
   SEXP Rattach_edf( SEXP x , SEXP y , SEXP z );
 
+  // add an annotation file (i.e. after attaching the EDF)
+  
+  void Radd_annot( SEXP a );
+
   // basic stats on the loaded file
 
   SEXP Rdesc();
