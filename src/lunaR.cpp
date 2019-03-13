@@ -357,7 +357,7 @@ SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
 // Add an annotation file after loading the EDF
 //
 
-void Radd_annot( SEXP a )
+void Radd_annot( SEXP ann )
 {
   
   if ( rdata == NULL )
@@ -366,8 +366,8 @@ void Radd_annot( SEXP a )
       return;
     }
   
-  std::vector<std::string> afiles = Rluna_to_strvector( a );
-
+  std::vector<std::string> afiles = Rluna_to_strvector( ann );
+  
   for (int a=0;a<afiles.size();a++)
     rdata->add_annotations( afiles[a] );
   
@@ -411,6 +411,8 @@ void Rset_var( SEXP x , SEXP y)
 
 bool Rdata_t::add_annotations( const std::string & annotfile )
 {
+  
+  if ( annotfile.size() == 0 ) return false;
   
   // is 'annotfile' in fact a folder (i.e. ending in '/') ? 
   

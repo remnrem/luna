@@ -129,10 +129,10 @@ lepoch <- function( dur = 30 , inc = -1 )
  invisible( k$EPOCH$BL$NE )
 }
 
-lattach.annot <- function( a )
+ladd.annot <- function( a )
 {
-na <- .Call("Radd_annot" , as.character(a) , PACKAGE = "luna" ); 	
-invisible(na)
+.Call("Radd_annot" , as.character(a) , PACKAGE = "luna" ); 	
+invisible(1)
 }
 
 letable <- function( annots = character(0) ) {
@@ -176,6 +176,12 @@ leval <- function( x )
  invisible(retval)
 } 
 
+lreval <- function( x )
+{	
+ lrefresh()
+ leval(x)
+} 
+
 
 ####################################################
 ##                                                ##
@@ -196,7 +202,7 @@ ldb <- function( dbfile , ids = character(0) )
 ##                                                ##
 ####################################################
 
-literate <- function( func , env = new.env(), chs = character(0) , annots = character(0) , by.annot = character(0) , w = 0 )
+literate <- function( func , chs = character(0) , annots = character(0) , by.annot = character(0) , w = 0 , env = new.env() )
 {
  tmp <- .Call( "Riterate" , as.function(func) , as.character(chs) , 
      	       as.character(annots) , as.character(by.annot) , as.numeric(w) , 
@@ -217,9 +223,10 @@ ldata <- function( e , chs , annots = character(0) )
  .Call( "Rmatrix_epochs", as.integer(e) , as.character(chs) , as.character(annots) , PACKAGE = 'luna' )
 }
 
-ldata.intervals <- function( i , chs , annots = character(0) ) 
+ldata.intervals <- function( i , chs , annots = character(0) , w = 0 ) 
 {
    if ( ! is.list(i) ) stop( "expecting a list() for i" )
+   if ( w > 0 ) i <- lapply( i , function(x) { c( max(0,x[1]-w),x[2]+w) } )   
    if ( length(i) != 0 ) .Call( "Rmatrix_intervals", as.numeric(unlist(i)) , as.character(chs) , as.character(annots) , PACKAGE = 'luna' )
    else stop("no intervals found")
 }
@@ -232,6 +239,7 @@ ldata.intervals <- function( i , chs , annots = character(0) )
 ##                                                ##
 ####################################################
 
+lsanitize <- function(s) { gsub( "[^[:alnum:]]" , "_" , s ) }
 
 lstrat <- function( lst , cmd = "" )
 {
@@ -268,26 +276,36 @@ lx <- function( lst , cmd = "" , f = "" , ... )
 #}
 
 
+loutliers <- function(x,m =mean(x,na.rm=T) , sdev = sd(x,na.rm=T) ,t=3)
+{
+ lwr <- m - t * sdev
+ upr <- m + t * sdev
+ x[ x < lwr ] <- NA
+ x[ x > upr ] <- NA
+ x
+}
+
 ####################################################
 ##                                                ##
 ## Visualization                                  ##
 ##                                                ##
 ####################################################
 
-lheatmap <- function(x,y,z) { 
- z <- outliers( z , 3 ) 
- # assumes square  
+
+lheatmap <- function(x,y,z) {
+ #z <- loutliers( z , 3 )
+# assumes square
  nx <- length(unique(x))
  ny <- length(unique(y))
- nz <- length(z) 
+ nz <- length(z)
  if ( nz != nx * ny ) stop( "requires square data" )
  d <- data.frame( x,y,z )
- d <- d[ order(d$y,d$x) , ] 
- m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )	 
-# hmcols<-colorRampPalette(c("purple","red","orange","yellow","cyan","blue","navy","black","black"))(25)
-# image(t(m[ny:1,]),col=hmcols)
- image(t(m[ny:1,]),col=rainbow(100))
+ d <- d[ order(d$y,d$x) , ]
+ m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )
+ hmcols<-colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(100)
+ image(t(m[1:ny,]),col=hmcols)
 }
+
 
 ## Signal viewer (for use w/ ldata() or literate())
 lsigview <- function(x) { 
@@ -302,3 +320,4 @@ t.label <- x$SEC
 
 readline()
 } 
+
