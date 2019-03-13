@@ -499,6 +499,9 @@ SEXP Reval_cmd( SEXP x )
   
   writer.clear();
   
+  // was a problem flag set?
+  if ( globals::problem ) Helper::halt( "problem flag set: likely no unmasked records left? run lrefresh()" );
+  
   // convert retval_t to R list and return 
 
   return Rout_list( ret );
