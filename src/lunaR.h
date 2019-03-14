@@ -62,7 +62,7 @@ extern "C" {
   // is problem flag set?
   
   SEXP Rproblem();
-  void Rproblem( SEXP x );
+  void Rsetproblem( SEXP x );
 
   // set Luna variables
   

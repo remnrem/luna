@@ -94,6 +94,22 @@ SEXP Rlogmode( SEXP i )
 }
 
 
+SEXP Rproblem()
+{
+  SEXP result;
+  PROTECT(result = NEW_INTEGER(1)); 
+  INTEGER(result)[0] = globals::problem;
+  UNPROTECT(1); 
+  return result;
+}
+
+void Rsetproblem( SEXP i )
+{
+  std::vector<int> m = Rluna_to_intvector(i);
+  if ( m.size() != 1 ) Helper::halt( "argument to lprob() should be 0 or 1" );
+  globals::problem = m[0];
+}
+
 
 SEXP Rstat()
 {

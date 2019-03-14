@@ -5,10 +5,14 @@
 ##                                                ##
 ####################################################
 
-lunaR.version <- "v0.2"
+luna.globals <- new.env()
 
-lunaR.date    <- "1-Mar-2019"
-
+luna.globals$version  <- "v0.9"
+luna.globals$date     <- "13-Mar-2019"
+luna.globals$id       <- ""
+luna.globals$edf      <- ""
+luna.globals$annots   <- ""
+luna.globals$logmode  <- 0
 
 ####################################################
 ##                                                ##
@@ -18,10 +22,9 @@ lunaR.date    <- "1-Mar-2019"
 
 .onLoad <- function(libname, pkgname) 
 {
-  packageStartupMessage( paste( "** lunaR" , lunaR.version , lunaR.date ) )
-  library.dynam("luna", package="luna", lib.loc = NULL)
-  luna.id <<- luna.edf <<- luna.annots <<- ""
-  luna.logmode <<- 0 
+  packageStartupMessage( paste( "** lunaR" , luna.globals$version , luna.globals$date ) )
+  library.dynam("luna", package="luna", lib.loc = NULL)  
+  luna.globals$logmode <- 0 
 }
 
 
@@ -94,7 +97,9 @@ ledf <- function( edf , id = "." , annots = character(0) )
  .Call("Rattach_edf", as.character(edf) , as.character(id) , as.character(annots) , PACKAGE = "luna" );
  lflush()
  lstat()
- luna.edf <<- as.character(edf); luna.id <<- as.character(id); luna.annots <<- as.character(annots)
+ luna.globals$edf <- as.character(edf) 
+ luna.globals$id <- as.character(id)
+ luna.globals$annots <- as.character(annots)
  invisible(1)
 } 
 
@@ -111,15 +116,15 @@ ldesc <- function() {
 llog <- function(x) { 
  if ( length(x) != 1 ) stop( "expecting a single 0/1" )
  if ( ! is.numeric(x) ) stop( "expecting a single 0/1" )
- luna.logmode <<- as.logical(x)
+ luna.globals$logmode <- as.logical(x)
  .Call("Rlogmode" , as.integer(x) , PACKAGE = "luna" );
  invisible(1)
 }
 
 lflush <- function()
 {
- if ( luna.logmode ) .Call("Rflush_log" , PACKAGE="luna" )
- invisible( luna.logmode )
+ if ( luna.globals$logmode ) .Call("Rflush_log" , PACKAGE="luna" )
+ invisible( luna.globals$logmode )
 }
 
 lepoch <- function( dur = 30 , inc = -1 ) 
@@ -157,9 +162,11 @@ ldrop <- function() {
 
 lrefresh <- function()
 {
-if ( luna.edf == "" ) stop( "no EDF yet attached" )
-ledf( luna.edf , luna.id , luna.annots )
+if ( luna.globals$edf == "" ) stop( "no EDF yet attached" )
+lreset() # clears any 'problem' flag set
+ledf( luna.globals$edf , luna.globals$id , luna.globals$annots )
 }
+
 
 ####################################################
 ##                                                ##
@@ -176,11 +183,15 @@ leval <- function( x )
  invisible(retval)
 } 
 
-lreval <- function( x )
-{	
- lrefresh()
- leval(x)
-} 
+lprob <- function() 
+{ 
+ .Call("Rproblem" , PACKAGE = "luna" )
+}
+
+lreset <- function( state = 0 ) 
+{ 
+ .Call("Rsetproblem" , as.integer(state) , PACKAGE = "luna" )
+}
 
 
 ####################################################
@@ -264,6 +275,18 @@ lx <- function( lst , cmd = "" , f = "" , ... )
    else		
       lst[[cmd]]	
 }
+
+lstgcols <- function(s) {
+ as.vector( sapply( s , function(x) {
+  ifelse( x == "NREM1" , rgb(0,190,250,255,max=255) ,
+   ifelse( x == "NREM2" , rgb(0,80,200,255,max=255) ,
+    ifelse( x == "NREM3" , rgb(0,0,80,255,max=255) ,
+     ifelse( x == "NREM4" , rgb(0,0,50,255,max=255) ,
+      ifelse( x == "REM"   , rgb(250,20,50,255,max=255) ,
+       ifelse( x == "wake"  , rgb(100,100,100,255,max=255) ,
+         rgb( 20,160,20,100,max=255) ) ) ) ) ) ) } ) )
+}
+
 
 #lshape <- function( d , r , c )  
 #{      	  
