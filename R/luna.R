@@ -344,3 +344,8 @@ t.label <- x$SEC
 readline()
 } 
 
+
+ldenoise <- function(x,lambda) { 
+ .Call( "R1d_denoise" , as.numeric(x) , as.numeric(lambda) , PACKAGE = "luna" )
+} 
+

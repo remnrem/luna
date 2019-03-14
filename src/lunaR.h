@@ -126,6 +126,11 @@ extern "C" {
 
   void Rclear();
 
+  //
+  // Misc wrappers
+  //
+  
+  SEXP R1d_denoise( SEXP x , SEXP l );
 
   //
   // Helper functions to report errors, etc
@@ -135,7 +140,10 @@ extern "C" {
 
   void R_warning( const std::string & );
 
-  SEXP Rmake_string_vector( const std::vector<std::string> & r );
+  // helper functions
+  SEXP Rmake_strvector( const std::vector<std::string> & r );
+  SEXP Rmake_dblvector( const std::vector<double> & r );
+  SEXP Rmake_intvector( const std::vector<int> & r );
   
 }
 
@@ -151,10 +159,11 @@ std::vector<double> Rluna_to_dblvector( SEXP );
 
 
 struct Rdata_t {
-  
+    
   edf_t edf;
 
   std::string id;
+
 
   // increase we need to expand beyond the interval of the EDF in annotation space  
   // this can be >= than the EDF total_size
