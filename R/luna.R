@@ -276,6 +276,12 @@ lx <- function( lst , cmd = "" , f = "" , ... )
       lst[[cmd]]	
 }
 
+
+lstages <- function() { 
+ leval( "STAGE" )$STAGE$E$STAGE
+}
+
+
 lstgcols <- function(s) {
  as.vector( sapply( s , function(x) {
   ifelse( x == "NREM1" , rgb(0,190,250,255,max=255) ,
@@ -288,15 +294,11 @@ lstgcols <- function(s) {
 }
 
 
-#lshape <- function( d , r , c )  
-#{      	  
-#   rs <- paste0( r , collapse="+" )
-#   cs <- paste0( c , collapse="+" )
-#   f <- as.formula( paste( rs , "~" , cs ) )
-#   vals <- names(d)[ ! names(d) %in% c(r,c) ]
-#   k <- as.data.frame( dcast( setDT(d) , f , value.var = vals ) )
-#   k
-#}
+####################################################
+##                                                ##
+## Statistical helper functions                   ##
+##                                                ##
+####################################################
 
 
 loutliers <- function(x,m =mean(x,na.rm=T) , sdev = sd(x,na.rm=T) ,t=3)
@@ -308,6 +310,12 @@ loutliers <- function(x,m =mean(x,na.rm=T) , sdev = sd(x,na.rm=T) ,t=3)
  x
 }
 
+
+ldenoise <- function(x,lambda) { 
+ .Call( "R1d_denoise" , as.numeric(x) , as.numeric(lambda) , PACKAGE = "luna" )
+} 
+
+
 ####################################################
 ##                                                ##
 ## Visualization                                  ##
@@ -316,8 +324,7 @@ loutliers <- function(x,m =mean(x,na.rm=T) , sdev = sd(x,na.rm=T) ,t=3)
 
 
 lheatmap <- function(x,y,z) {
- #z <- loutliers( z , 3 )
-# assumes square
+ # assumes a square matrix 
  nx <- length(unique(x))
  ny <- length(unique(y))
  nz <- length(z)
@@ -326,7 +333,7 @@ lheatmap <- function(x,y,z) {
  d <- d[ order(d$y,d$x) , ]
  m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )
  hmcols<-colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(100)
- image(t(m[1:ny,]),col=hmcols)
+ image(t(m[1:ny,]),col=hmcols,xaxt='n',yaxt='n')
 }
 
 
@@ -344,8 +351,4 @@ t.label <- x$SEC
 readline()
 } 
 
-
-ldenoise <- function(x,lambda) { 
- .Call( "R1d_denoise" , as.numeric(x) , as.numeric(lambda) , PACKAGE = "luna" )
-} 
 
