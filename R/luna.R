@@ -270,12 +270,15 @@ lx <- function( lst , cmd = "" , f = "" , ... )
 {
    if ( cmd == "" ) return(lstrat(lst))
    f <- paste(sort( unlist( c( f , list(...) )  )  ), sep="" , collapse="_" )
-   if (	f != ""	    )
+   if (	f != ""	) 
       lst[[cmd]][[f]]
+   else if ( length(lst[[cmd]])==1 )
+      lst[[cmd]][[1]]
    else		
       lst[[cmd]]	
 }
 
+lid <- function(d,id) { d[ d$ID %in% id , ] } 
 
 lstages <- function() { 
  leval( "STAGE" )$STAGE$E$STAGE
