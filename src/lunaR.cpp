@@ -110,9 +110,9 @@ SEXP Rproblem()
   return result;
 }
 
-void Rsetproblem( SEXP i )
+void Rsetproblem( SEXP pflag )
 {
-  std::vector<int> m = Rluna_to_intvector(i);
+  std::vector<int> m = Rluna_to_intvector(pflag);
 
   if ( m.size() != 1 ) 
     {
@@ -697,7 +697,7 @@ SEXP Rmatrix_epochs( SEXP e , SEXP ch , SEXP ann )
 
 
 
-SEXP Rmatrix_intervals( SEXP i , SEXP ch , SEXP ann  )
+SEXP Rmatrix_intervals( SEXP Rints , SEXP ch , SEXP ann  )
 {
 
   if ( rdata == NULL )
@@ -762,7 +762,7 @@ SEXP Rmatrix_intervals( SEXP i , SEXP ch , SEXP ann  )
   
   std::vector<interval_t> intervals;
   
-  std::vector<double> ints = Rluna_to_dblvector( i );
+  std::vector<double> ints = Rluna_to_dblvector( Rints );
   if ( ints.size() % 2 ) 
     {
       unprotect();
