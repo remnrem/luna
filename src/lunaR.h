@@ -97,6 +97,16 @@ extern "C" {
 
   SEXP Reval_cmd( SEXP x );
 
+
+  // set up to evaluate commands over a sample-list
+
+  void Reval_cmd_noreturns( SEXP x );
+
+  void Reval_init_returns();
+
+  SEXP Reval_get_returns();
+
+
   // get an individual from a destrat databasem import as a retval structure
 
   SEXP Rdb2retval( SEXP x , SEXP y );

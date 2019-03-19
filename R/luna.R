@@ -183,6 +183,26 @@ leval <- function( x )
  invisible(retval)
 } 
 
+lreturnless_eval <- function( x )
+{
+ # we apply this to whomever is attached
+ xx <- paste0( x, collapse = " & " )  
+ .Call("Reval_cmd_noreturns", as.character(xx) , PACKAGE = "luna" )
+ invisible(1)
+}
+
+leval.project <- function( sl , x )
+{
+ ids <- names(sl)
+ .Call("Reval_init_returns" , PACKAGE = "luna" )
+ for (id in ids) { 
+     lattach(sl,id)
+     lreturnless_eval( x )
+ }
+ ldrop()
+ .Call("Reval_get_returns",PACKAGE="luna")
+}
+
 lprob <- function() 
 { 
  .Call("Rproblem" , PACKAGE = "luna" )

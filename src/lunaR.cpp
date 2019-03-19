@@ -31,10 +31,10 @@ extern logger_t logger;
 
 #include <string>
 
-// a single, global instance
-
-Rdata_t * rdata;
-int lunaR_protects;
+// single, global instances
+Rdata_t *   rdata;
+retval_t *  accum_retval;
+int         lunaR_protects;
 
 // track protection status
 void protect() { ++lunaR_protects; }
@@ -75,6 +75,9 @@ void R_init_luna(DllInfo *info)
   // use this as a general store  
   rdata = NULL;
   
+  // and this for leval.project()
+  accum_retval = NULL;
+
   // indicate that we are running inside R
   global.R( 0 ); // 0 means no log mirroring
   
@@ -538,6 +541,139 @@ SEXP Reval_cmd( SEXP x )
   return retval;
   
 }
+
+
+//
+// evaluate commands in the context of iterating over a sample-list;
+// here we build up a single return structure internally, and return 
+// all at once.  
+//
+
+void Reval_init_returns()
+{
+  
+  if ( accum_retval != NULL ) 
+    {
+      delete accum_retval;
+      accum_retval = NULL;
+    }
+
+  accum_retval = new retval_t;
+
+  writer.use_retval( accum_retval );
+  
+}
+
+
+void Reval_cmd_noreturns( SEXP x )
+{
+
+  if ( rdata == NULL )
+    {
+      R_error( "no EDF attached" );
+      unprotect();
+      return;
+    }
+
+  std::string cmdstr = CHAR( STRING_ELT( x , 0 ) );
+
+  // the writer should already be set to point to accum_retval
+
+  writer.id( rdata->edf.id , rdata->edf.filename);
+
+  Rprintf( "evaluating...\n" );
+  
+  // set command string
+
+  cmd_t cmd( cmdstr );
+  
+  // eval on the current EDF
+
+  cmd.eval( rdata->edf );
+  
+  
+  // was a problem flag set?
+  if ( globals::problem ) 
+    {
+            
+      // need to clean up before returning
+
+      unprotect(); // not necessary but can't hurt...
+      
+      if ( accum_retval != NULL ) 
+	{
+	  delete accum_retval;
+	  accum_retval = NULL;
+	}
+
+      writer.use_retval( NULL );
+      
+      writer.clear();
+
+      Helper::halt( "problem flag set for this EDF... bailing" );
+    }
+  
+  //
+  // all done for this individual
+  //
+
+}
+
+
+SEXP Reval_get_returns()
+{
+
+  if ( accum_retval == NULL )
+    {
+      R_error( "internal error in leval.project(), no output accumulated" );
+      unprotect();
+      return(R_NilValue);
+    }
+  
+  
+  //
+  // Convert global retval_t accumulator to R object
+  //
+
+  SEXP retval;
+  PROTECT( retval = Rout_list( *accum_retval ) );
+  protect();
+  
+  //
+  // swtich 'off' this stream for the next command
+  // as it will get deleted on leaving this function
+  //
+
+  writer.use_retval( NULL );
+  
+  //
+  // and we need to completely clear the writer (i.e. so that old
+  // factor/level labels are not in place for the next run, etc)
+  //
+  
+  writer.clear();
+
+  //
+  // Clear temporary
+  //
+  
+  if ( accum_retval != NULL ) 
+    {
+      delete accum_retval;
+      accum_retval = NULL;
+    }
+
+  //
+  // Returns results
+  //
+  
+  unprotect();  
+
+  return retval;
+
+}
+
+
 
 
 //
