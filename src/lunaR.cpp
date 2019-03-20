@@ -408,6 +408,60 @@ SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
 
 
 //
+// Add an annotation from an R interval list 
+//
+
+void Radd_annot_fromR( SEXP name , SEXP a )
+{
+
+  if ( rdata == NULL )
+    {
+      R_error( "no EDF attached" );
+      return;
+    }
+
+  if ( Rf_length( name ) != 1 ) 
+    {
+      Rf_error( "expecting a single string for annotation label" );
+      return;
+    }
+
+  const std::string annot_label = CHAR( STRING_ELT( name , 0 ) );
+    
+  
+  if ( ! Rf_isReal( a ) ) 
+    {
+      R_error( "expecting a numeric vector" );
+      return;
+    }
+
+  const int n = Rf_length( a );
+  
+  if ( n % 2 != 0 ) 
+    {
+      R_error( "expecting an even number of elements" );
+      return;
+    }
+  
+  
+  // fine with annot_label already exists, this will append new intervals
+
+  annot_t * annot = rdata->edf.timeline.annotations.add( annot_label );
+  
+  if ( annot->description == "" ) 
+    annot->description = annot_label;
+  
+  for (int i=0;i<n;i+=2)
+    {
+      annot->add( annot_label , 
+		  interval_t( uint64_t( REAL(a)[i] * globals::tp_1sec ) , 
+			      uint64_t( REAL(a)[i+1] * globals::tp_1sec ) ) ); 
+    }
+  
+}
+
+
+//
 // Add an annotation file after loading the EDF
 //
 
@@ -441,23 +495,65 @@ void Rclear()
 }
 
 
-void Rclear_vars()
+SEXP Rshow_var( SEXP x )
 {
-  cmd_t::vars.clear();
-}
+  std::vector<std::string> tok0 = Rluna_to_strvector(x);
+  
+  if ( tok0.size() != 1 ) 
+    {
+      Rprintf( "expecting only a single variable name" );
+      return( R_NilValue );
+    }
+  
+  if ( cmd_t::vars.find( tok0[0] ) == cmd_t::vars.end() ) 
+    {
+      return( R_NilValue );
+    }
 
+  //
+  // get return value
+  //
+
+  std::vector<std::string> dummy(1);
+  dummy[0] =  cmd_t::vars[ tok0[0] ];
+  SEXP r = Rmake_strvector( dummy );
+
+  //
+  // All done
+  //
+
+  unprotect();
+  return r;
+
+}
 
 void Rset_var( SEXP x , SEXP y)
 {
-  std::vector<std::string> tok0 = Rluna_to_strvector(x);
-  std::vector<std::string> tok1 = Rluna_to_strvector(y);
 
+  std::vector<std::string> tok0 = Rluna_to_strvector(x);
+    
+  //
+  // Delete
+  //
+
+  if ( tok0.size() == 1 && Rf_isNull(y) )
+    {
+      std::map<std::string,std::string>::iterator ii = cmd_t::vars.find( tok0[0] );
+      if ( ii != cmd_t::vars.end() )
+	cmd_t::vars.erase( ii );
+      return;
+    }
+  
+  // otherwise, set 1 or more values 
+
+  std::vector<std::string> tok1 = Rluna_to_strvector(y);
+  
   if ( tok0.size() != tok1.size() ) 
     {
       unprotect();
       Helper::halt( "problem setting variables" );
     }
-  
+
   for (int i=0;i<tok0.size();i++)
     {
       Rprintf( "setting [" );
@@ -595,28 +691,41 @@ void Reval_cmd_noreturns( SEXP x )
   // was a problem flag set?
   if ( globals::problem ) 
     {
-            
-      // need to clean up before returning
-
-      unprotect(); // not necessary but can't hurt...
       
-      if ( accum_retval != NULL ) 
+      // we used to bail if there was a problem.... 
+      // but better to just give warning and move
+      // on to the next person;  is okay if there is
+      // missing data in the retval_t of course
+      
+      R_warning( "problem flag set and likely missing data for " + rdata->edf.id );
+      
+      globals::problem = false;
+      
+      if ( 0 ) 
 	{
-	  delete accum_retval;
-	  accum_retval = NULL;
+	  // need to clean up before returning
+	  
+	  if ( accum_retval != NULL ) 
+	    {
+	      delete accum_retval;
+	      accum_retval = NULL;
+	    }
+	  
+	  writer.use_retval( NULL );
+	  
+	  writer.clear();
+	  
+	  Helper::halt( "problem flag set for this EDF... bailing" );
 	}
 
-      writer.use_retval( NULL );
-      
-      writer.clear();
-
-      Helper::halt( "problem flag set for this EDF... bailing" );
     }
+  
   
   //
   // all done for this individual
   //
 
+  unprotect(); // not necessary but can't hurt...
 }
 
 
@@ -1642,7 +1751,9 @@ void Rflush_log()
 
 void R_error( const std::string & s )
 {
+  // this means we are bailing, so unprotect resources
   Rf_error( s.c_str() ) ; 
+  unprotect();
 } 
 
 

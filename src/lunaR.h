@@ -51,6 +51,10 @@ extern "C" {
   
   void Radd_annot( SEXP a );
 
+  // add an annotation from R to an existing EDF
+  
+  void Radd_annot_fromR( SEXP n , SEXP a );
+
   // basic stats on the loaded file
 
   SEXP Rdesc();
@@ -68,9 +72,9 @@ extern "C" {
   
   void Rset_var( SEXP x , SEXP y);
 
-  // clear all Luna variables (and return globals to default values)
-  
-  void Rclear_vars();
+  // get Luna variables
+
+  SEXP Rshow_var( SEXP x );
 
   // return vector of channel names
 

@@ -68,19 +68,31 @@ lattach <- function(sl,idx="")  {
 ledf( sl[[idx]]$EDF , id , sl[[idx]]$ANNOT )
 }
 
-
-lparam <- function( v = "" ) { 
-if ( v=="" ) { .Call( "Rclear_vars" , PACKAGE="luna" )
-} else if ( is.list(v) ) { 
- v <- unlist(v)
+lset <- function( var , val = NULL ) { 
+if ( ! is.null(val) ) { 
+ .Call( "Rset_var" , as.character(var) , as.character(val) , PACKAGE="luna" )
+} else if ( is.list(var) ) {
+ v <- unlist(var)
  for (i in 1:length(v)) .Call( "Rset_var" , as.character(names(v)[i]) , as.character(v[i]) , PACKAGE="luna")
 } else { # assume this is a file
- d <- read.table( v , sep="\t" , header=F , stringsAsFactors = F)
+ d <- read.table( var , sep="\t" , header=F , stringsAsFactors = F)
  if ( dim(d)[2] != 2 ) stop( paste( "expecting two tab-delimited columns in" , v ) )
  n <- dim(d)[1]
  for (i in 1:n) .Call( "Rset_var" , as.character(d[i,1]) , as.character(d[i,2]) , PACKAGE="luna")
 }
+ invisible(1)
 } 
+
+lvar <- function(v) {
+ .Call( "Rshow_var" , as.character(v) , PACKAGE="luna" )
+}
+
+lclear <- function(v) {
+ .Call( "Rset_var" , as.character(v) , NULL , PACKAGE="luna" )
+ invisible(1)
+}
+
+
 
 
 ####################################################
@@ -134,14 +146,30 @@ lepoch <- function( dur = 30 , inc = -1 )
  invisible( k$EPOCH$BL$NE )
 }
 
-ladd.annot <- function( a )
+letable <- function( annots = character(0) ) {
+ .Call("Rmask" , as.character(annots) , PACKAGE = "luna" );
+}
+
+ladd.annot.file <- function( a )
 {
 .Call("Radd_annot" , as.character(a) , PACKAGE = "luna" ); 	
 invisible(1)
 }
 
-letable <- function( annots = character(0) ) {
- .Call("Rmask" , as.character(annots) , PACKAGE = "luna" );
+ladd.annot <- function( annot , intervals )
+{
+ if ( ! is.list( intervals ) ) stop( "expecting a list of intervals" ) 
+ # check that each have two of each, convert to vector
+ t <- unlist( intervals ) 
+ if ( length(t) != 2 * length(intervals) ) stop( "bad interval list format: expecting two items per list element" ) 
+ if ( length(t) != 0 ) .Call("Radd_annot_fromR" , as.character(annot) , as.numeric(t) , PACKAGE = "luna" ); 	
+ lstat()
+ invisible(1)
+}
+
+le2i <- function( e , dur = 30 , inc = 30 )
+{
+  mapply( c , (e-1)*inc , (e-1)*inc+dur , SIMPLIFY = F )
 }
 
 lannots <- function( a = "" ) {
@@ -193,7 +221,10 @@ lreturnless_eval <- function( x )
 
 leval.project <- function( sl , x )
 {
+ if ( missing(sl) ) stop( "no sample list 'sl' specified" )
+ if ( missing(x) ) stop( "no Luna commands 'x' specified" )  
  ids <- names(sl)
+ if ( length(ids) == 0 ) stop( "no individuals in sample-list" )
  .Call("Reval_init_returns" , PACKAGE = "luna" )
  for (id in ids) { 
      lattach(sl,id)
@@ -298,10 +329,34 @@ lx <- function( lst , cmd = "" , f = "" , ... )
       lst[[cmd]]	
 }
 
+lx2 <- function( k , ... ) { do.call( rbind , lapply( k , lx , ... ) ) }
+
 lid <- function(d,id) { d[ d$ID %in% id , ] } 
 
 lstages <- function() { 
  leval( "STAGE" )$STAGE$E$STAGE
+}
+
+lcmd <- function(filename) {
+ lines <- readLines( filename , warn = F )
+ lines <- lines[ which( lines != "" ) ]
+ # delete '%' comments
+ for (i in 1:length(lines)) lines[i] <- gsub( "%.*","",lines[i] )
+ # append lines		    starting with a   space to the previous one
+ prv_line = ""
+ newlines <- character(0)
+ for (i in 1:length(lines))
+ {
+  if ( substr( lines[i] ,1,1 ) == " " ) {
+     if ( prv_line == "" ) stop( "badly formed command line continuation" )
+     prv_line =	   paste( prv_line	, lines[i] )
+  } else {
+    if ( prv_line != ""	) newlines <- c( newlines , prv_line )
+    prv_line = lines[i]
+  }
+  }
+  if ( prv_line	!= "" ) newlines <- c( newlines	, prv_line )
+ newlines
 }
 
 
