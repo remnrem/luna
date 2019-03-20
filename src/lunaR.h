@@ -136,9 +136,18 @@ extern "C" {
 
   SEXP Riterate( SEXP fn , SEXP chs , SEXP annots, SEXP byannot , SEXP w, SEXP rho );
 
-  // clear/reset EDF store
+  // clear/reset EDF store  ( ldrop() )
 
-  void Rclear();
+  void Rdrop();
+
+  // clear writer (should not be called by user)
+  
+  void Rclear_out();
+  
+
+  // clear/reset cmd_t::vars  ( lreset() )
+
+  void Rclear_vars();
 
   //
   // Misc wrappers

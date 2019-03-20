@@ -78,19 +78,29 @@ if ( ! is.null(val) ) {
  d <- read.table( var , sep="\t" , header=F , stringsAsFactors = F)
  if ( dim(d)[2] != 2 ) stop( paste( "expecting two tab-delimited columns in" , v ) )
  n <- dim(d)[1]
- for (i in 1:n) .Call( "Rset_var" , as.character(d[i,1]) , as.character(d[i,2]) , PACKAGE="luna")
+ for (i in 1:n)   .Call( "Rset_var" , as.character(d[i,1]) , as.character(d[i,2]) , PACKAGE="luna")
 }
  invisible(1)
 } 
 
-lvar <- function(v) {
- .Call( "Rshow_var" , as.character(v) , PACKAGE="luna" )
+lvar <- function(v) { 
+ .Call( "Rshow_var" , as.character(v) , PACKAGE="luna" )  
 }
 
 lclear <- function(v) {
  .Call( "Rset_var" , as.character(v) , NULL , PACKAGE="luna" )
  invisible(1)
 }
+
+lreset <- function() { 
+ ldrop()
+ .Call( "Rclear_vars" , PACKAGE = "luna" );
+ invisible(1)
+}
+
+
+
+
 
 
 
@@ -183,15 +193,14 @@ lchs <- function() {
 }
 
 ldrop <- function() {
- .Call( "Rclear" , PACKAGE = "luna" );
+ .Call( "Rdrop" , PACKAGE = "luna" );
  invisible(1)
 } 
-
 
 lrefresh <- function()
 {
 if ( luna.globals$edf == "" ) stop( "no EDF yet attached" )
-lreset() # clears any 'problem' flag set
+lprob_clear() # clears any 'problem' flag set
 ledf( luna.globals$edf , luna.globals$id , luna.globals$annots )
 }
 
@@ -239,7 +248,7 @@ lprob <- function()
  .Call("Rproblem" , PACKAGE = "luna" )
 }
 
-lreset <- function( state = 0 ) 
+lprob_clear <- function( state = 0 ) 
 { 
  .Call("Rsetproblem" , as.integer(state) , PACKAGE = "luna" )
 }
@@ -302,6 +311,8 @@ ldata.intervals <- function( i , chs , annots = character(0) , w = 0 )
 ####################################################
 
 lsanitize <- function(s) { gsub( "[^[:alnum:]]" , "_" , s ) }
+
+
 
 lstrat <- function( lst , cmd = "" )
 {
@@ -392,6 +403,22 @@ loutliers <- function(x,m =mean(x,na.rm=T) , sdev = sd(x,na.rm=T) ,t=3)
 ldenoise <- function(x,lambda) { 
  .Call( "R1d_denoise" , as.numeric(x) , as.numeric(lambda) , PACKAGE = "luna" )
 } 
+
+
+
+lbands <- function( l ) { 
+invisible(capture.output({ leval( paste( "COPY sig=",l, " tag=delta" , sep="" ) )
+leval( paste( "COPY sig=",l, " tag=theta" , sep="" ) )
+leval( paste( "COPY sig=",l, " tag=alpha" , sep="" ) )
+leval( paste( "COPY sig=",l, " tag=sigma" , sep="" ) )
+leval( paste( "COPY sig=",l, " tag=beta" , sep="" ) )
+leval( paste( "FILTER sig=",l,"_delta bandpass=0.5,4 tw=1 ripple=0.02" , sep="" ) )
+leval( paste( "FILTER sig=",l,"_theta bandpass=4,8   tw=1 ripple=0.02" , sep="" ) )
+leval( paste( "FILTER sig=",l,"_alpha bandpass=8,12  tw=1 ripple=0.02" , sep="" ) )
+leval( paste( "FILTER sig=",l,"_sigma bandpass=12,15 tw=1 ripple=0.02" , sep="" ) )
+leval( paste( "FILTER sig=",l,"_beta  bandpass=15,30 tw=1 ripple=0.02" , sep="" ) )
+})) }
+
 
 
 ####################################################

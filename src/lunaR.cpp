@@ -370,11 +370,20 @@ SEXP Rlogmode( SEXP i )
 SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
 {
 
+  
+  // clear any old data
+  if ( rdata != NULL ) 
+    {
+      delete rdata;
+      rdata = NULL;
+    }
+
+  unprotect();
+  
+  //
+  // Basic details about what to attach
+  //
   std::string edf_file = Helper::expand( CHAR( STRING_ELT( x , 0 ) ) );
-
-  std::string edf_id   = CHAR( STRING_ELT( id , 0 ) );
-
-  std::vector<std::string> annots = Rluna_to_strvector( ann );
 
   // check EDF exists
   if ( ! Helper::fileExists( edf_file ) )
@@ -382,15 +391,22 @@ SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
       unprotect();
       Helper::halt( "cannot find " + edf_file );
     }
+
+  std::string edf_id   = CHAR( STRING_ELT( id , 0 ) );
+
+  std::vector<std::string> annots = Rluna_to_strvector( ann );
   
-  // clear any old data
-  if ( rdata != NULL ) delete rdata;
-  
-  unprotect();
-  
+  const std::set<std::string> * inp_signals = NULL;
+
+  if ( cmd_t::signallist.size() > 0 ) inp_signals = &cmd_t::signallist;
+
+  //
+  // attach actual EDF
+  //
+
   rdata = new Rdata_t;
   
-  bool okay = rdata->edf.attach( edf_file , edf_id );
+  bool okay = rdata->edf.attach( edf_file , edf_id , inp_signals );
 
   if ( ! okay ) 
     {
@@ -485,13 +501,45 @@ void Radd_annot( SEXP ann )
 }
 
 
-void Rclear()
+
+void Rdrop()
 {
+  
   if ( rdata != NULL )
     {
       delete rdata;
       rdata = NULL;
     }
+  
+}
+
+void Rclear_out()
+{
+
+  if ( accum_retval != NULL )
+    {
+      delete accum_retval;
+      accum_retval = NULL;
+    }
+
+  writer.use_retval( NULL );
+  
+  writer.clear();
+}
+
+
+void Rclear_vars()
+{
+
+  // clear all user-defined variables, signal lists and aliases
+  cmd_t::clear_static_members();
+  
+  // also reset global variables that may have been changed since 
+  global.init_defs();
+
+  // but need to re-indicate that we are running inside R with no log as default
+  global.R( 0 ); // 0 means no log mirroring
+    
 }
 
 
@@ -561,7 +609,21 @@ void Rset_var( SEXP x , SEXP y)
       Rprintf( "] to [" );
       Rprintf( tok1[i].c_str() );
       Rprintf( "]\n" );
-      cmd_t::parse_special( tok0[i] ,tok1[i] );
+
+      // special treatment for `sig`.   This will just append 
+      // to an existing signallist;  as we don't always want to have 
+      // to lreset(), make this one case so that sig clears signlist prior 
+      // to setting if the signal list is "."
+      
+      if ( tok0[i] == "sig" && tok1[i] == "." ) 
+	{
+	  cmd_t::signallist.clear();
+	}
+      else
+	{
+	  cmd_t::parse_special( tok0[i] ,tok1[i] );
+	}
+      
     } 
 
   unprotect();
