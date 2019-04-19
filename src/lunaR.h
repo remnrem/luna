@@ -34,6 +34,7 @@ extern "C" {
 #include <Rdefines.h>
 #include <Rversion.h>
 #include <Rinternals.h>
+#include <R_ext/Rdynload.h>
 
   // initialize luna library
   
