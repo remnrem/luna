@@ -7,8 +7,8 @@
 
 luna.globals <- new.env()
 
-luna.globals$version  <- "v0.22"
-luna.globals$date     <- "31-Mar-2019"
+luna.globals$version  <- "v0.23"
+luna.globals$date     <- "06-Dec-2019"
 luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
@@ -268,12 +268,46 @@ ldb <- function( dbfile , ids = character(0) )
 
 ####################################################
 ##                                                ##
+## Load a text-table                              ##
+##                                                ##
+####################################################
+
+ltxttab <- function( root , f = "" , ids = dir( root ) , silent = F )  
+{
+
+  if ( f == "" ) return( ltxttab.dir( root , ids ) )
+
+  # root : folder root
+  files <- paste( root , "/" , ids , "/" , f , sep="" )  
+
+  cnt = 1
+  for (file in files) {
+    if ( ! silent ) cat("reading" , file , "\n" )
+    if ( cnt == 1 ) d <- read.table( file , header = T , stringsAsFactors = F ) 
+    else d <- rbind( d , read.table( file , header = T , stringsAsFactors = F ) )
+    cnt <- cnt + 1
+  }
+d
+} 
+
+ltxttab.dir <- function( root , ids = dir( root ) ) 
+{
+  folders <- paste( root , "/" , ids , "/" , sep="" )	
+  r <- character(0)
+  for (folder in folders) r <- c( r , dir( folder ) )  
+  table( r ) 
+}
+
+
+####################################################
+##                                                ##
 ## Iterate epoch-wise or annot-wise, applying     ## 
 ## user-defined function                          ##
 ##                                                ##
 ####################################################
 
-literate <- function( func , chs = character(0) , annots = character(0) , by.annot = character(0) , w = 0 , env = new.env() )
+literate <- function( func , chs = character(0) , annots = character(0) , 
+	              by.annot = character(0) , w = 0 , env = new.env() )
 {
  tmp <- .Call( "Riterate" , as.function(func) , as.character(chs) , 
      	       as.character(annots) , as.character(by.annot) , as.numeric(w) , 
@@ -311,7 +345,6 @@ ldata.intervals <- function( i , chs , annots = character(0) , w = 0 )
 ####################################################
 
 lsanitize <- function(s) { gsub( "[^[:alnum:]]" , "_" , s ) }
-
 
 
 lstrat <- function( lst , cmd = "" )
