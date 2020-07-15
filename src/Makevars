@@ -1,12 +1,13 @@
 PKG_CPPFLAGS = -DNO_HPDFLIB -I$(LUNA_BASE)/ -I$(FFTW)/include
-PKG_LIBS  = $(LUNA_BASE)/eval.o 
+PKG_LIBS  = $(LUNA_BASE)/eval.o
 PKG_LIBS += $(LUNA_BASE)/globals.o
 PKG_LIBS += $(LUNA_BASE)/cmddefs.o
-PKG_LIBS += $(LUNA_BASE)/libannot.a              
+PKG_LIBS += $(LUNA_BASE)/libannot.a
 PKG_LIBS += $(LUNA_BASE)/libtimeline.a
 PKG_LIBS += $(LUNA_BASE)/libedf.a
 PKG_LIBS += $(LUNA_BASE)/libartifacts.a
 PKG_LIBS += $(LUNA_BASE)/libdsp.a
+PKG_LIBS += $(LUNA_BASE)/libsuds.a
 PKG_LIBS += $(LUNA_BASE)/libmtm.a
 PKG_LIBS += $(LUNA_BASE)/libpdc.a
 PKG_LIBS += $(LUNA_BASE)/libspindles.a
