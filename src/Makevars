@@ -17,7 +17,6 @@ PKG_LIBS += $(LUNA_BASE)/libfftwrap.a
 PKG_LIBS += $(LUNA_BASE)/libica.a
 PKG_LIBS += $(LUNA_BASE)/libclocs.a
 PKG_LIBS += $(LUNA_BASE)/libedfz.a
-PKG_LIBS += $(LUNA_BASE)/liblwprep.a
 PKG_LIBS += $(LUNA_BASE)/libintervals.a
 PKG_LIBS += $(LUNA_BASE)/libmiscmath.a
 PKG_LIBS += $(LUNA_BASE)/libsstore.a
