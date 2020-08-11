@@ -7,3 +7,6 @@ Depends: R (>= 3.0.0)
 Description: lunaR is an R interface for the luna sleep signal library.
 License: GPL (>= 2)
 URL: http://zzz.bwh.harvard.edu/luna
+Imports:
+    plotrix,
+    geosphere

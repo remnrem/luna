@@ -25,6 +25,8 @@ luna.globals$logmode  <- 0
   packageStartupMessage( paste( "** lunaR" , luna.globals$version , luna.globals$date ) )
   library.dynam("luna", package="luna", lib.loc = NULL)  
   luna.globals$logmode <- 0 
+  require( plotrix )
+  require( geosphere )
 }
 
 
@@ -162,6 +164,7 @@ letable <- function( annots = character(0) ) {
 
 ladd.annot.file <- function( a )
 {
+if ( ! file.exists( a ) ) stop( paste( "cannot find" , a ) ) 
 .Call("Radd_annot" , as.character(a) , PACKAGE = "luna" ); 	
 invisible(1)
 }
@@ -461,7 +464,10 @@ leval( paste( "FILTER sig=",l,"_beta  bandpass=15,30 tw=1 ripple=0.02" , sep="" 
 ####################################################
 
 
-lheatmap <- function(x,y,z) {
+lheatmap <- function(x,y,z,
+            col = colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(100) ,
+	    mt = "" ,
+	    zlim = range(z) ) {
  # assumes a square matrix 
  nx <- length(unique(x))
  ny <- length(unique(y))
@@ -470,23 +476,232 @@ lheatmap <- function(x,y,z) {
  d <- data.frame( x,y,z )
  d <- d[ order(d$y,d$x) , ]
  m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )
- hmcols<-colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(100)
- image(t(m[1:ny,]),col=hmcols,xaxt='n',yaxt='n')
+ image(t(m[1:ny,]),col=col,xaxt='n',yaxt='n',main=mt,zlim=zlim)
 }
 
 
-## Signal viewer (for use w/ ldata() or literate())
-lsigview <- function(x) { 
-# INT [E] SEC { SIGS }
-if ( names(x)[2] == "E" ) { sigs <- names(x)[-(1:3)] } else { sigs <- names(x)[-(1:2)] } 
-nsigs <- length(sigs)
-# labels
-int.label <- x$INT[1]
-e.label <- ifelse( names(x)[2] == "E" , x$E[1] , "." ) 
-t.label <- x$SEC
-# simple 0..N Y-scale, with each signal has unit 1 space
 
-readline()
-} 
+
+
+
+## --------------------------------------------------------------------------------
+##
+## Standard 64-channel 2D coords
+##
+## --------------------------------------------------------------------------------
+
+ldefault.xy <- function() { 
+
+chlab <- c( "Fp1", "AF7", "AF3", "F1",  "F3",  "F5",  "F7",  "FT7", "FC5", "FC3", "FC1", "C1",
+ "C3",  "C5",  "T7",  "TP7", "CP5", "CP3", "CP1", "P1",  "P3",  "P5",  "P7",  "P9", 
+ "PO7", "PO3", "O1",  "Iz",  "Oz",  "POz", "Pz",  "CPz", "Fpz", "Fp2", "AF8", "AF4",
+ "AFz", "Fz",  "F2",  "F4",  "F6",  "F8",  "FT8", "FC6", "FC4", "FC2", "FCz", "Cz", 
+ "C2",  "C4",  "C6",  "T8",  "TP8", "CP6", "CP4", "CP2", "P2",  "P4",  "P6",  "P8", 
+ "P10", "PO8", "PO4", "O2" )
+ 
+chx <- c( -0.139058, -0.264503, -0.152969, -0.091616, -0.184692, -0.276864, -0.364058,
+ -0.427975, -0.328783, -0.215938, -0.110678, -0.112500, -0.225000, -0.337500,
+ -0.450000, -0.427975, -0.328783, -0.215938, -0.110678, -0.091616, -0.184692,
+ -0.276864, -0.364058, -0.430900, -0.264503, -0.152969, -0.139058,  0.000000,
+  0.000000,  0.000000,  0.000000,  0.000000,  0.000000,  0.139058,  0.264503,
+  0.152969,  0.000000,  0.000000,  0.091616,  0.184692,  0.276864,  0.364058,
+  0.427975,  0.328783,  0.215938,  0.110678,  0.000000,  0.000000,  0.112500,
+  0.225000,  0.337500,  0.450000,  0.427975,  0.328783,  0.215938,  0.110678,
+  0.091616,  0.184692,  0.276864,  0.364058,  0.430900,  0.264503,  0.152969,
+  0.139058 )
+
+chy <- c( 0.430423,  0.373607,  0.341595,  0.251562,  0.252734,  0.263932,  0.285114,
+  0.173607,  0.162185,  0.152059,  0.148380,  0.050000,  0.050000,  0.050000,
+  0.050000, -0.073607, -0.062185, -0.052059, -0.048380, -0.151562, -0.152734,
+ -0.163932, -0.185114, -0.271394, -0.273607, -0.241595, -0.330422, -0.450000,
+ -0.350000, -0.250000, -0.150000, -0.050000,  0.450000,  0.430423,  0.373607,
+  0.341595,  0.350000,  0.250000,  0.251562,  0.252734,  0.263932,  0.285114,
+  0.173607,  0.162185,  0.152059,  0.148380,  0.150000,  0.050000,  0.050000,
+  0.050000,  0.050000,  0.050000, -0.073607, -0.062185, -0.052059, -0.048380,
+ -0.151562, -0.152734, -0.163932, -0.185114, -0.271394, -0.273607, -0.241595,
+ -0.330422 )
+
+chxy <- data.frame( CH = toupper( chlab ) , X = chx , Y = chy )
+return(chxy)
+}
+
+
+## --------------------------------------------------------------------------------
+## 
+## Plot generic X/Y line plots (e.g. power spectra) with  
+##
+## --------------------------------------------------------------------------------
+
+ltopo.xy <- function( c , x , y ,
+	 	       f = rep(T, length(x) ) ,
+	       	       	 sz = 0.08 ,
+			 col = "black" , lwd = 0.5 ,
+			 xline = numeric() , 
+ 	       		 xlab="Frequency (Hz)" , ylab = "log(power)" , mt="" ) { 
+
+topo <- ldefault.xy()
+c <- toupper( c )
+f[ ! c %in% toupper( topo$CH ) ] <- F 
+c <- c[f]; x <- x[f]; y <- y[f] 
+rx <- range( x ); ry <- range( y ) 
+
+plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
+rect(0,0,1,1)
+#draw.circle( 0.5,0.5,0.5 ) 
+if (mt!="") text(0.025,0.05,mt,cex=0.8,pos=4)
+lgd.x <- 0.88 ; lgd.y <- 0.08
+lines( c(lgd.x,lgd.x+sz),c(lgd.y,lgd.y) ) ; lines( c(lgd.x,lgd.x) , c(lgd.y,lgd.y+sz) ) 
+text( lgd.x , lgd.y , signif(ry[1],2) , cex=0.5 , pos=2) ; text( lgd.x , lgd.y+sz , signif(ry[2],2) , cex=0.5 , pos=2) 
+text( lgd.x , lgd.y , signif(rx[1],2) , cex=0.5 , pos=1) ; text( lgd.x+sz , lgd.y , signif(rx[2],2) , cex=0.5 , pos=1) 
+text( lgd.x+sz/2,lgd.y-0.05 , xlab , cex=0.5 )  ; text( lgd.x-0.05,lgd.y+sz/2 , ylab , cex=0.5 ) 
+
+# plot each channel
+for ( ch in unique( c ) ) { 
+ px <- topo$X[ toupper( topo$CH ) == ch ] + 0.5
+ py <- topo$Y[ toupper( topo$CH ) == ch ] + 0.5
+ if ( length(px) == 1 ) { 
+ ch.label <- topo$CH[ toupper( topo$CH ) == ch ]
+ x0 <- px - sz/2 ; x1 <- x0 + sz 
+ y0 <- py - sz/2 ; y1 <- y0 + sz 
+ lines( c(x0,x1),c(y0,y0),col="gray"); lines( c(x0,x0),c(y0,y1),col="gray" )
+ xx <- x[ c == ch ] 
+ yy <- y[ c == ch ] 
+ xx <- ( xx - rx[1] ) / ( rx[2] - rx[1] )
+ yy <- ( yy - ry[1] ) / ( ry[2] - ry[1] )
+ for ( xl in xline ) lines( rep( x0+sz*(xl-rx[1])/(rx[2]-rx[1]) , 2 ) , c(y0,y1) , col="gray",lwd=0.5)
+ lines( x0 + xx * sz , y0 + yy * sz ,lwd=lwd , col=col)
+ text( x0+0.8*sz,y0+0.8*sz, ch.label , cex=0.5,col="blue")
+
+}
+}}
+
+
+## --------------------------------------------------------------------------------
+##
+## Topo heat map
+##
+## --------------------------------------------------------------------------------
+
+ltopo.heat <- function( c , z , sz = 1 , zlab="<Z-value>" , mt="" ,
+ lwr = -9 , upr = -9 ,
+ th = NA , th.z = z , 
+ col = colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(101) )
+{
+ topo <- ldefault.xy()
+ if ( length(col) != 101 ) stop( "mypal needs to be 101 length" )
+ c <- toupper( c ) ; f <- c %in% toupper( topo$CH ) ; c <- c[f] ; z <- z[f] 
+ rz <- range( z , na.rm=T)
+ if ( lwr != -9 ) rz[1] <- lwr ; if ( upr != -9 ) rz[2] <- upr
+ plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
+ #rect(0,0,1,1); 
+ if (mt!="") text(0.025,0.95,mt,cex=0.8,pos=4)
+ text( 0.75,0.05 , zlab , cex=1 )  
+ for ( ch in unique( c ) ) { 
+ px <- topo$X[ toupper( topo$CH ) == ch ] + 0.5
+ py <- topo$Y[ toupper( topo$CH ) == ch ] + 0.5
+ if ( length(px) == 1 ) {
+  if ( sum( c == ch ) > 1 ) stop("multiple values for a single channel" )  
+  ch.label <- topo$CH[ toupper( topo$CH ) == ch ]
+  this.z <-  z[ c == ch ] ; this.th.z <- th.z[ c == ch ] 
+  ring <- rep( "gray" , length(px) ); ring.lwd <- 1
+  if ( ! is.na(th) ) ring[ this.th.z >= th ] <- "black"
+  if ( ! is.na(th) ) ring.lwd[ this.th.z >= th ] <- 3  
+  points( px , py , pch = 21 , cex = sz , col = ring , lwd= ring.lwd, 
+  bg = col[ 1 + round( 100 * ( ( this.z - rz[1] ) / ( rz[2] - rz[1] ) ) ) ] ) 
+  x0 <- px - sz/2 ; y0 <- py - sz/2 
+  cat( ch , ch.label, this.z , "\n" ) 
+}}
+for ( ch in unique( c ) ) {
+ px <- topo$X[ toupper( topo$CH ) == ch ] + 0.5
+ py <- topo$Y[ toupper( topo$CH ) == ch ] + 0.5
+ if ( length(px) == 1 ) {
+ ch.label <- topo$CH[ toupper( topo$CH ) == ch ]
+ x0 <- px - sz/2 ; y0 <- py - sz/2
+ #text( px-0.005*sz,py+0.005*sz, ch.label , cex=0.6,col="blue")
+}}
+points(seq( 0.05 , 0.5 , length.out = 101 ) , rep( 0.05 , 101 )  , col = col , pch=20 )
+text( 0.05 , 0.01 , signif( rz[1] , 3 )  , cex=1 ) ; text( 0.5 , 0.01 , signif( rz[2] , 3 ) , cex=1 )
+}
+
+
+## --------------------------------------------------------------------------------
+##
+## Topo coherence plots (links between electrodes)
+##
+## --------------------------------------------------------------------------------
+
+# need diff. coords, so make xy.coh
+ldefault.coh.xy <- function( xy.coh )
+{
+ xy.coh$X <- 100 * xy.coh$X
+ xy.coh$Y <- ( 30 * xy.coh$Y ) + 10
+ return(xy.coh)
+}
+
+# helper function: draw ARC
+farc <- function(c1,c2,kol,w=4) { 
+ gc <- gcIntermediate( as.vector( xy.coh[ xy.coh$CH == c1 , c("X","Y") ] ) , 
+                       as.vector( xy.coh[ xy.coh$CH == c2 , c("X","Y") ] ) , 
+                       breakAt=TRUE, n=100 )
+ lines(gc,lwd=w+1,col="black")
+ lines(gc,lwd=w,col=kol)
+ #invisible(lapply(gc, lines, col=k, lwd=2))
+}
+
+# palette 
+rbpal <- rev( rainbow(150)[1:100] ) 
+fcol <- colorRampPalette( c( "blue" , "white" , "red" ) ) 
+rbpal <- fcol(100)
+
+
+# fhead1() topo
+
+fhead1 <- function( chs , z , flt = T , zr = range(z,na.rm=T) , cex = 4 , title = "" ) 
+{
+plot( xy.coh$X , xy.coh$Y , pch=21 , cex=cex*0.5 , bg="white" , 
+  axes=F,xaxt='n' , yaxt='n' , xlab="" , ylab = "" , ylim=c(-2,24) , xlim=c(-55,55) , main = title ) 
+draw.ellipse( 0, 9.5 , 52 , 12 ); lines( c(0,-8),c(23,21), lwd=1)  ; lines( c(0,8),c(23,21), lwd=1)  
+if ( ! any(flt) ) { return(0) } 
+chs <- chs[flt] ; z <- z[ flt ] 
+if ( length(chs) != length( z ) ) stop( "bad" )
+z <- ( z - zr[1] ) / ( zr[2] - zr[1] )
+z <- round( z * 100 )
+z[ z==0 ] <- 1
+z[ z> 100 ] <- 100
+for (j in 1:length(chs)) { 
+xx <- xy.coh$X[ xy$CH == chs[j] ] ; yy <- xy.coh$Y[ xy$CH == chs[j] ]
+points( xx , yy , pch=21 , cex=cex*1.1 , bg="white" , lwd=1.5 ) 
+points( xx , yy , pch=21 , cex=cex , bg= rbpal[z[j]] ) 
+}
+}
+
+
+# fhead2() topo  (coherence)
+
+fhead2 <- function( chs , z , flt = T , zr = range(z,na.rm=T) , cex = 2 , w  = 8 , title = "" , head=T) 
+{
+plot( xy.coh$X , xy.coh$Y , pch=21 , cex=cex , main = title , bg="white" ,  
+  axes=F,xaxt='n' , yaxt='n' , xlab="" , ylab = "" ,  ylim=c(-2,24) , xlim=c(-55,55) )
+if ( head ) { draw.ellipse( 0, 9.5 , 52 , 12 ); lines( c(0,-8),c(23,21), lwd=1)  ; lines( c(0,8),c(23,21), lwd=1) } 
+if ( ! any(flt) ) { return(0) } 
+chs <- chs[flt] ; z <- z[ flt ] 
+chs <- chs[ order( abs(z) ) ] ;  z <- z[ order( abs(z) ) ] 
+if ( length(chs) != length( z ) ) stop( "bad" )
+z <- ( z - zr[1] ) / ( zr[2] - zr[1] )
+z <- round( z * 100 )
+z[ z==0 ] <- 1
+z[ z> 100 ] <- 100
+for (j in 1:length(chs)) {
+t <-  unlist( strsplit( chs[j] , "_" )  )
+#cat("\n\n-----------------------------------\n")
+#cat("j=",j,"\n"); print(t);print(z[j])
+farc( t[2] , t[3] , rbpal[z[j]] , w = w )
+}
+points( xy.coh$X , xy.coh$Y , pch=21 , cex=cex , bg="white" ) 
+}
+
+#fhead2( fchs( coh$VAR ) , -log10( coh[,2] ) )
+#fhead2( fchs( coh$VAR ) , coh[,1] , zr = c(-.1,.1) )
+
 
 

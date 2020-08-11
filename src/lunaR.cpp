@@ -159,7 +159,7 @@ SEXP Rstat()
     }
 
   ss << rdata->edf.id << " : "
-     << n_data_channels << " signals, ";
+     << n_data_channels << " (of " << rdata->edf.header.ns_all <<  ") signals, ";
   //  if ( n_annot_channels ) ss << n_annot_channels << " EDF annotations, ";
   ss   << rdata->edf.timeline.annotations.names().size() << " annotations, "
        << Helper::timestring( duration_tp ) << " duration";
@@ -661,7 +661,11 @@ SEXP Reval_cmd( SEXP x )
   // set command string
 
   cmd_t cmd( cmdstr );
-  
+
+  // replace any variables (or @includes, conditionals,etc) into command
+
+  cmd.replace_wildcards( rdata->edf.id );
+
   // eval on the current EDF
 
   cmd.eval( rdata->edf );
@@ -745,6 +749,10 @@ void Reval_cmd_noreturns( SEXP x )
 
   cmd_t cmd( cmdstr );
   
+  // replace any variables (or @includes, conditionals,etc) into command
+
+  cmd.replace_wildcards( rdata->edf.id );
+
   // eval on the current EDF
 
   cmd.eval( rdata->edf );
