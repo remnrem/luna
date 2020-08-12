@@ -1,0 +1,35 @@
+name: lunaR CI
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install R
+      run: apt-get install r-base
+    - name: Install fftw
+      run:
+        wget http://www.fftw.org/fftw-3.3.8.tar.gz
+        tar -xzvf fftw-3.3.8.tar.gz
+        cd fftw-3.3.8
+        ./configure --prefix=/home/runner/work/remnrem/luna/fftw-3.3.8/
+        make
+        make install
+        cd ..
+    - name: Install luna-base
+      run: 
+        git clone http://github.com/remnrem/luna-base.git
+        cd luna-base
+        make FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/
+        cd ..
+    - name: make lunaR
+      run: LUNA_BASE=/home/runner/work/remnrem/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL luna
+      
