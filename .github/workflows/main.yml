@@ -16,7 +16,7 @@ jobs:
     - name: Install R
       run: sudo apt-get install -y r-base
     - name: Install fftw
-      run:
+      run: |
         wget http://www.fftw.org/fftw-3.3.8.tar.gz
         tar -xzvf fftw-3.3.8.tar.gz
         cd fftw-3.3.8
@@ -25,7 +25,7 @@ jobs:
         make install
         cd ..
     - name: Install luna-base
-      run: 
+      run: |
         git clone http://github.com/remnrem/luna-base.git
         cd luna-base
         make FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/
