@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install R
-      run: apt-get install r-base
+      run: sudo apt-get install -y r-base
     - name: Install fftw
       run:
         wget http://www.fftw.org/fftw-3.3.8.tar.gz
