@@ -31,5 +31,5 @@ jobs:
         make FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/
         cd ..
     - name: make lunaR
-      run: LUNA_BASE=/home/runner/work/remnrem/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL luna
+      run: LUNA_BASE=/home/runner/work/remnrem/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL /home/runner/work/remnrem/luna
       
