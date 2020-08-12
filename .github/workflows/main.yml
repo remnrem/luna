@@ -15,6 +15,10 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install R
       run: sudo apt-get install -y r-base
+    - name: make lunaR
+      run: |
+         cd ..
+         LUNA_BASE=/home/runner/work/remnrem/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL luna
     - name: Install fftw
       run: |
         wget http://www.fftw.org/fftw-3.3.8.tar.gz
@@ -30,6 +34,4 @@ jobs:
         cd luna-base
         make FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/
         cd ..
-    - name: make lunaR
-      run: LUNA_BASE=/home/runner/work/remnrem/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL /home/runner/work/remnrem/luna
       
