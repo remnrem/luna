@@ -18,7 +18,7 @@ jobs:
     - name: make lunaR
       run: |
          cd ..
-         LUNA_BASE=/home/runner/work/remnrem/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL luna
+         sudo LUNA_BASE=/home/runner/work/remnrem/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL luna
     - name: Install fftw
       run: |
         wget http://www.fftw.org/fftw-3.3.8.tar.gz
