@@ -651,8 +651,10 @@ SEXP Reval_cmd( SEXP x )
 
   retval_t ret;
 
+  writer.clear();
+  
   writer.use_retval( &ret );
-
+  
   // set ID 
   writer.id( rdata->edf.id , rdata->edf.filename);
 
@@ -677,7 +679,7 @@ SEXP Reval_cmd( SEXP x )
   
   // and we need to completely clear the writer (i.e. so that old
   // factor/level labels are not in place for the next run, etc)
-  
+
   writer.clear();
   
   // was a problem flag set?
@@ -722,8 +724,12 @@ void Reval_init_returns()
 
   accum_retval = new retval_t;
 
+  // ensure writer is clear
+  writer.clear();
+
   writer.use_retval( accum_retval );
-  
+
+
 }
 
 
@@ -1927,6 +1933,7 @@ bool Rdata_t::add_annotations( const std::string & annotfile )
 
 SEXP Rout_list( retval_t & r )
 {
+
   
   // list [ cmd ]
   //    list [ table ]  e.g..  F_CH
