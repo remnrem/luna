@@ -525,6 +525,7 @@ void Rclear_out()
   writer.use_retval( NULL );
   
   writer.clear();
+  writer.set_types();
 }
 
 
@@ -652,7 +653,8 @@ SEXP Reval_cmd( SEXP x )
   retval_t ret;
 
   writer.clear();
-  
+  writer.set_types(); // not sure this is needed now...
+
   writer.use_retval( &ret );
   
   // set ID 
@@ -681,6 +683,7 @@ SEXP Reval_cmd( SEXP x )
   // factor/level labels are not in place for the next run, etc)
 
   writer.clear();
+  writer.set_types();
   
   // was a problem flag set?
   if ( globals::problem ) 
@@ -726,7 +729,8 @@ void Reval_init_returns()
 
   // ensure writer is clear
   writer.clear();
-
+  writer.set_types();
+  
   writer.use_retval( accum_retval );
 
 
@@ -790,6 +794,7 @@ void Reval_cmd_noreturns( SEXP x )
 	  writer.use_retval( NULL );
 	  
 	  writer.clear();
+	  writer.set_types();
 	  
 	  Helper::halt( "problem flag set for this EDF... bailing" );
 	}
@@ -837,7 +842,8 @@ SEXP Reval_get_returns()
   //
   
   writer.clear();
-
+  writer.set_types();
+  
   //
   // Clear temporary
   //
