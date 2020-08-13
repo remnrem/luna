@@ -17,7 +17,8 @@ jobs:
       run: sudo apt-get install -y r-base
     - name: Install fftw
       run: |
-        wget http://www.fftw.org/fftw-3.3.8.tar.gz
+        cd $HOME
+	wget http://www.fftw.org/fftw-3.3.8.tar.gz
         tar -xzvf fftw-3.3.8.tar.gz
         cd fftw-3.3.8
         ./configure --prefix=/home/runner/work/remnrem/luna/fftw-3.3.8/
@@ -32,8 +33,8 @@ jobs:
         cd ..
     - name: make lunaR
       run: |
+      	 cd $GITHUB_WORKSPACE
          sudo R -e "install.packages('plotrix', repos='http://cran.rstudio.com/')"
-         sudo R -e "install.packages('geosphere', repos='http://cran.rstudio.com/')"
-         cd ..
-         sudo LUNA_BASE=/home/runner/work/remnrem/luna/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL luna
+         sudo R -e "install.packages('geosphere', repos='http://cran.rstudio.com/')"        
+         sudo LUNA_BASE=${HOME}/luna-base/ FFTW=${HOME}/fftw-3.3.8/ R CMD INSTALL ${GITHUB_WORKSPACE}
          
