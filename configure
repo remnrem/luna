@@ -18,7 +18,7 @@ cd luna-base
 
 rm -rf .git .github
 
-make ARCH=${LUNA_ARCH} ;
+make -j 2 ARCH=${LUNA_ARCH} FFTW=${FFTW};
 
 mkdir -p ../include
 
