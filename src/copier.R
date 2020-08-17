@@ -1,0 +1,6 @@
+x = list.files(pattern = ".h", path = "luna-base", recursive = TRUE)
+xx = file.path("include", x)
+x = file.path("luna-base", x)
+dirs = unique(dirname(xx))
+sapply(dirs, dir.create, recursive = TRUE, showWarnings = FALSE)
+file.rename(x, xx)

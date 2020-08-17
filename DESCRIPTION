@@ -1,12 +1,30 @@
 Package: luna
-Version: 0.24
-Title: luna R interface
-Author: Shaun Purcell
-Maintainer: Shaun Purcell <smpurcell@bwh.harvard.edu>
+Version: 0.24.1
+Title: Analysis of Sleep Signal Data
+Authors@R: 
+    c(
+    person(given = "Shaun",
+           family = "Purcell",
+           role = c("aut", "cre"),
+           email = "smpurcell@bwh.harvard.edu"),	   
+    person(given = "John",
+           family = "Muschelli",
+           role = c("ctb"),
+           email = "muschellij2@gmail.com",
+           comment = c(ORCID = "0000-0001-6469-1750"))
+    )
 Depends: R (>= 3.0.0)
-Description: lunaR is an R interface for the luna sleep signal library.
+Description: Interface for the 'Luna' sleep signal library 
+  <http://zzz.bwh.harvard.edu/luna/>.
+SystemRequirements: fftw3
 License: GPL (>= 2)
-URL: http://zzz.bwh.harvard.edu/luna
-Imports:
+Imports: 
+    git2r,
+    graphics, 
+    grDevices,
+    stats,
     plotrix,
-    geosphere
+    geosphere,
+    utils
+URL: https://github.com/remnrem/luna, http://zzz.bwh.harvard.edu/luna
+BugReports: https://github.com/remnrem/luna/issues

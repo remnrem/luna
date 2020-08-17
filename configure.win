@@ -1,0 +1,24 @@
+#!/bin/bash
+cd ./src
+# export LUNA_ARCH=`${R_HOME}/bin/Rscript.exe -e 'cat(ifelse(.Platform$OS.type == "windows", "WINDOWS", ""))'`
+# if [[ -z "${LUNA_ARCH}" ]]; then
+#   export LUNA_ARCH=`${R_HOME}/bin/Rscript.exe -e 'cat(ifelse(Sys.info()["sysname"] == "Darwin", "MAC", "LINUX"))'` ;
+# fi
+# echo "${LUNA_ARCH}"
+export LUNA_ARCH=WINDOWS
+echo "${LUNA_ARCH}"
+# ${R_HOME}/bin/Rscript.exe -e "library(git2r);clone('https://bitbucket.org/remnrem/luna-base', local_path='luna-base')"
+${R_HOME}/bin/Rscript.exe -e "library(git2r);clone('https://github.com/muschellij2/luna-base', local_path='luna-base')"
+# mkdir include/
+cd luna-base
+rm -rf .git
+
+make ARCH=${LUNA_ARCH} ;
+# mv * ../include
+mkdir -p ../include
+mv *.a *.o ../include
+mv eval.h luna.h ../include
+cd ../
+${R_HOME}/bin/Rscript.exe copier.R
+# cd ../
+rm -rf luna-base
