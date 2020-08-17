@@ -31,12 +31,13 @@ jobs:
         git clone http://github.com/remnrem/luna-base.git
         cd luna-base
         make FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/
+        echo $GITHUB_WORKSPACE
         cd ..
-
+        
     - name: make lunaR
       run: |
-      	cd $GITHUB_WORKSPACE
-        sudo R -e "install.packages('plotrix', repos='http://cran.rstudio.com/')"
-        sudo R -e "install.packages('geosphere', repos='http://cran.rstudio.com/')"        
+        sudo R -e "install.packages('git2r', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('plotrix', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('geosphere', repos='https://cloud.r-project.org')"        
         sudo LUNA_BASE=${HOME}/luna-base/ FFTW=${HOME}/fftw-3.3.8/ R CMD INSTALL ${GITHUB_WORKSPACE}
          
