@@ -417,6 +417,9 @@ SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
   // attach annotations
   for (int a=0;a<annots.size();a++)
     rdata->add_annotations( annots[a] );
+
+  // define channel types
+  cmd_t::define_channel_type_variables( rdata->edf );
   
   unprotect();
   return(R_NilValue);
