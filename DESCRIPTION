@@ -13,7 +13,7 @@ Authors@R:
            email = "muschellij2@gmail.com",
            comment = c(ORCID = "0000-0001-6469-1750"))
     )
-Depends: R (>= 3.0.0)
+Depends: R (>= 3.4.0)
 Description: Interface for the 'Luna' sleep signal library 
   <http://zzz.bwh.harvard.edu/luna/>.
 SystemRequirements: fftw3
