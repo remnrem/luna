@@ -14,24 +14,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install R
-      run: sudo apt-get install -y r-base
+      run: sudo apt-get install -y r-base libfftw3-dev
 
-    - name: Install fftw
-      run: |
-        cd $HOME
-        wget http://www.fftw.org/fftw-3.3.8.tar.gz
-        tar -xzvf fftw-3.3.8.tar.gz
-        cd fftw-3.3.8
-        ./configure --prefix=/home/runner/work/remnrem/luna/fftw-3.3.8/
-        make
-        make install
-                
     - name: Install luna-base
       run: |
         cd $HOME
         git clone http://github.com/remnrem/luna-base.git
         cd luna-base
-        make FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/
+        make
         echo $GITHUB_WORKSPACE
         cd ..
         
@@ -40,5 +30,5 @@ jobs:
         sudo R -e "install.packages('git2r', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('plotrix', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('geosphere', repos='https://cloud.r-project.org')"        
-        sudo LUNA_BASE=${HOME}/luna-base/ FFTW=/home/runner/work/remnrem/luna/fftw-3.3.8/ R CMD INSTALL ${GITHUB_WORKSPACE}
+        sudo LUNA_BASE=${HOME}/luna-base/ R CMD INSTALL ${GITHUB_WORKSPACE}
          
