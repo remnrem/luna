@@ -8,7 +8,7 @@
 luna.globals <- new.env()
 
 luna.globals$version  <- "v0.24.1"
-luna.globals$date     <- "17-Aug-2020"
+luna.globals$date     <- "28-Aug-2020"
 luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
@@ -490,7 +490,17 @@ lheatmap <- function(x,y,z,
 ##
 ## --------------------------------------------------------------------------------
 
-ldefault.xy <- function() { 
+
+lremap.chs <- function( chs ) {
+chs <- toupper( chs )
+chs[ chs == "T3" ] <- "T7"
+chs[ chs == "T4" ] <- "T8"
+chs[ chs == "T5" ] <- "P7"
+chs[ chs == "T6" ] <- "P8"
+chs
+}
+
+ldefault.xy <- function( chs = character(0) ) { 
 
 chlab <- c( "Fp1", "AF7", "AF3", "F1",  "F3",  "F5",  "F7",  "FT7", "FC5", "FC3", "FC1", "C1",
  "C3",  "C5",  "T7",  "TP7", "CP5", "CP3", "CP1", "P1",  "P3",  "P5",  "P7",  "P9", 
@@ -522,6 +532,9 @@ chy <- c( 0.430423,  0.373607,  0.341595,  0.251562,  0.252734,  0.263932,  0.28
  -0.330422 )
 
 chxy <- data.frame( CH = toupper( chlab ) , X = chx , Y = chy )
+
+if ( length( chs ) == 0 )  return(chxy)
+chxy <- chxy[ chxy$CH %in% toupper( chs ) , ] 
 return(chxy)
 }
 
@@ -540,7 +553,7 @@ ltopo.xy <- function( c , x , y ,
  	       		 xlab="Frequency (Hz)" , ylab = "log(power)" , mt="" ) { 
 
 topo <- ldefault.xy()
-c <- toupper( c )
+c <- lremap.chs( c )
 f[ ! c %in% toupper( topo$CH ) ] <- F 
 c <- c[f]; x <- x[f]; y <- y[f] 
 rx <- range( x ); ry <- range( y ) 
@@ -589,7 +602,7 @@ ltopo.heat <- function( c , z , sz = 1 , zlab="<Z-value>" , mt="" ,
 {
  topo <- ldefault.xy()
  if ( length(col) != 101 ) stop( "mypal needs to be 101 length" )
- c <- toupper( c ) ; f <- c %in% toupper( topo$CH ) ; c <- c[f] ; z <- z[f] 
+ c <- lremap.chs( c ) ; f <- c %in% toupper( topo$CH ) ; c <- c[f] ; z <- z[f] 
  rz <- range( z , na.rm=T)
  if ( lwr != -9 ) rz[1] <- lwr ; if ( upr != -9 ) rz[2] <- upr
  plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
@@ -597,8 +610,8 @@ ltopo.heat <- function( c , z , sz = 1 , zlab="<Z-value>" , mt="" ,
  if (mt!="") text(0.025,0.95,mt,cex=0.8,pos=4)
  text( 0.75,0.05 , zlab , cex=1 )  
  for ( ch in unique( c ) ) { 
- px <- topo$X[ toupper( topo$CH ) == ch ] + 0.5
- py <- topo$Y[ toupper( topo$CH ) == ch ] + 0.5
+ px <- topo$X[ topo$CH == ch ] + 0.5
+ py <- topo$Y[ topo$CH == ch ] + 0.5
  if ( length(px) == 1 ) {
   if ( sum( c == ch ) > 1 ) stop("multiple values for a single channel" )  
   ch.label <- topo$CH[ toupper( topo$CH ) == ch ]
@@ -676,32 +689,56 @@ points( xx , yy , pch=21 , cex=cex , bg= rbpal[z[j]] )
 }
 
 
-# fhead2() topo  (coherence)
+# ltopo: connectivity
 
-fhead2 <- function( chs , z , flt = T , zr = range(z,na.rm=T) , cex = 2 , w  = 8 , title = "" , head=T) 
+ltopo.conn <- function( chs1 , chs2 , z , flt = T , zr = range(z[flt],na.rm=T) , cex = 2 , w  = 8 , title = "" , head=T ) 
 {
+chs1 <- lremap.chs( chs1 )
+chs2 <- lremap.chs( chs2 ) 
+xy.coh <- ldefault.coh.xy( ldefault.xy( unique( c( chs1 , chs2 ) ) ) )
 plot( xy.coh$X , xy.coh$Y , pch=21 , cex=cex , main = title , bg="white" ,  
   axes=F,xaxt='n' , yaxt='n' , xlab="" , ylab = "" ,  ylim=c(-2,24) , xlim=c(-55,55) )
 if ( head ) { draw.ellipse( 0, 9.5 , 52 , 12 ); lines( c(0,-8),c(23,21), lwd=1)  ; lines( c(0,8),c(23,21), lwd=1) } 
 if ( ! any(flt) ) { return(0) } 
-chs <- chs[flt] ; z <- z[ flt ] 
-chs <- chs[ order( abs(z) ) ] ;  z <- z[ order( abs(z) ) ] 
-if ( length(chs) != length( z ) ) stop( "bad" )
+# filtering
+chs1 <- chs1[flt] ; chs2 <- chs2[flt] ; z <- z[ flt ]
+# average if multiple obs per ch-pair
+z <- tapply( z , paste( chs1 , chs2 ) , mean , na.rm=T )  
+chs <- unique( paste( chs1 , chs2  ) )
+chs <- unlist( strsplit( chs , " " ) ) 
+chs1 <- chs[ 1:length(chs) %% 2 == 1 ]
+chs2 <- chs[ 1:length(chs) %% 2 == 0 ] 
+# order by |Z|
+chs1 <- chs1[ order( abs(z) ) ] ; chs2 <- chs2[ order( abs(z) ) ] ; z <- z[ order( abs(z) ) ] 
+if ( length(chs1) != length( z ) ) stop( "bad" )
+# scale 1:100
 z <- ( z - zr[1] ) / ( zr[2] - zr[1] )
 z <- round( z * 100 )
 z[ z==0 ] <- 1
 z[ z> 100 ] <- 100
-for (j in 1:length(chs)) {
-t <-  unlist( strsplit( chs[j] , "_" )  )
+for (j in 1:length(chs1)) {
+t <-  c( chs1[j] , chs2[j] )
 #cat("\n\n-----------------------------------\n")
 #cat("j=",j,"\n"); print(t);print(z[j])
-farc( t[2] , t[3] , rbpal[z[j]] , w = w )
+farc( t[1] , t[2] , rbpal[z[j]] , w = w )
 }
 points( xy.coh$X , xy.coh$Y , pch=21 , cex=cex , bg="white" ) 
+cat("zr",zr,"\n")
 }
 
-#fhead2( fchs( coh$VAR ) , -log10( coh[,2] ) )
-#fhead2( fchs( coh$VAR ) , coh[,1] , zr = c(-.1,.1) )
 
+# ltopo.dconn : directed connectivity (i.e. A->B)
+# i.e. 'ch' specifies which channel to 'seed' on
 
-
+ltopo.dconn <- function( ch, chs1 , chs2 , z , flt = T , zr = range(z[flt],na.rm=T) , cex = 2 , w  = 8 , title = "" , head=T )
+{
+# filter first
+chs1 <- chs1[flt] ; chs2 <- chs2[flt] ; z <- z[flt] 
+# double entry whatever is left
+dchs1 <- c( chs1 , chs2 )
+dchs2 <- c( chs2 , chs1 )
+dz <- c( z , -z )
+inc <- dchs1 == ch
+# filtering done above, so set flt to 'T' here
+ltopo.conn( dchs1[inc] , dchs2[inc] , dz[inc] , flt = T , zr = zr , cex = cex , w = w , title = title , head = head )
+}
