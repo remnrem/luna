@@ -474,7 +474,8 @@ void Radd_annot_fromR( SEXP name , SEXP a )
     {
       annot->add( annot_label , 
 		  interval_t( uint64_t( REAL(a)[i] * globals::tp_1sec ) , 
-			      uint64_t( REAL(a)[i+1] * globals::tp_1sec ) ) ); 
+			      uint64_t( REAL(a)[i+1] * globals::tp_1sec ) ) , 
+		  "." );  // channel ID dummy
     }
   
 }
