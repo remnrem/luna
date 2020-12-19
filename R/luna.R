@@ -406,15 +406,15 @@ lcmd <- function(filename) {
  newlines
 }
 
-
+# nb. NREM4->N3 in color scheme
 lstgcols <- function(s) {
  as.vector( sapply( s , function(x) {
-  ifelse( x == "NREM1" , rgb(0,190,250,255,maxColorValue=255) ,
-   ifelse( x == "NREM2" , rgb(0,80,200,255,maxColorValue=255) ,
-    ifelse( x == "NREM3" , rgb(0,0,80,255,maxColorValue=255) ,
-     ifelse( x == "NREM4" , rgb(0,0,50,255,maxColorValue=255) ,
-      ifelse( x == "REM"   , rgb(250,20,50,255,maxColorValue=255) ,
-       ifelse( x == "wake"  , rgb(100,100,100,255,maxColorValue=255) ,
+  ifelse( x == "NREM1" | x == "N1" , rgb(0,190,250,255,maxColorValue=255) ,
+   ifelse( x == "NREM2" | x == "N2" , rgb(0,80,200,255,maxColorValue=255) ,
+    ifelse( x == "NREM3" | x == "N3" , rgb(0,0,80,255,maxColorValue=255) ,
+     ifelse( x == "NREM4" | x == "N3" , rgb(0,0,50,255,maxColorValue=255) ,
+      ifelse( x == "REM" | x == "R"  , rgb(250,20,50,255,maxColorValue=255) ,
+       ifelse( x == "wake" | x == "W" , rgb(100,100,100,255,maxColorValue=255) ,
          rgb( 20,160,20,100,maxColorValue=255) ) ) ) ) ) ) } ) )
 }
 
@@ -545,19 +545,36 @@ return(chxy)
 ##
 ## --------------------------------------------------------------------------------
 
-ltopo.xy <- function( c , x , y ,
-	 	       f = rep(T, length(x) ) ,
+ltopo.xy <- function( c , x , y , z = NA , rz = NA , 
+	 	       f = rep(T, length(x) ) , y.symm = F , 
 	       	       	 sz = 0.08 ,
 			 col = "black" , lwd = 0.5 ,
-			 xline = numeric() , 
+			 xline = numeric() ,
+			 yline = numeric() ,
+			 pch = NA , cex = 1 , 
  	       		 xlab="Frequency (Hz)" , ylab = "log(power)" , mt="" ) { 
-
 topo <- ldefault.xy()
 c <- lremap.chs( c )
 f[ ! c %in% toupper( topo$CH ) ] <- F 
+# z is color depth: scaled 1..100 as requires that col is a 100-element pallete
+if ( ! is.na( z[1] ) ) {
+if ( length(z) != length(x) ) stop( "is z is specified, must match other long data" )
+if ( is.na(pch) ) stop( "cannot specify z with line points" )
+if ( length(col) != 100 ) stop( "requires col is a 100-element palette if z is specified" )
+z <- z[f]
+if (is.na(rz[1])) rz <- range( z , na.rm=T) 
+zcol = col[ 1 + round( 99 * ( ( z - rz[1] ) / ( rz[2] - rz[1] ) ) ) ] 
+col = zcol
+} else if ( ! is.na( pch ) ) {
+# single color for point plots
+col = rep( col , length(x) )
+}
+# also pair down x/y/CH to filtered set
 c <- c[f]; x <- x[f]; y <- y[f] 
+# ranges (and symmetric Y?)
 rx <- range( x ); ry <- range( y ) 
-
+if ( y.symm ) ry <- c( - max(abs(ry)) , max(abs(ry) ) ) 
+# pltos
 plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
 rect(0,0,1,1)
 #draw.circle( 0.5,0.5,0.5 ) 
@@ -567,13 +584,13 @@ lines( c(lgd.x,lgd.x+sz),c(lgd.y,lgd.y) ) ; lines( c(lgd.x,lgd.x) , c(lgd.y,lgd.
 text( lgd.x , lgd.y , signif(ry[1],2) , cex=0.5 , pos=2) ; text( lgd.x , lgd.y+sz , signif(ry[2],2) , cex=0.5 , pos=2) 
 text( lgd.x , lgd.y , signif(rx[1],2) , cex=0.5 , pos=1) ; text( lgd.x+sz , lgd.y , signif(rx[2],2) , cex=0.5 , pos=1) 
 text( lgd.x+sz/2,lgd.y-0.05 , xlab , cex=0.5 )  ; text( lgd.x-0.05,lgd.y+sz/2 , ylab , cex=0.5 ) 
-
 # plot each channel
 for ( ch in unique( c ) ) { 
- px <- topo$X[ toupper( topo$CH ) == ch ] + 0.5
- py <- topo$Y[ toupper( topo$CH ) == ch ] + 0.5
+ ch.idx <- toupper( topo$CH ) == ch 
+ px <- topo$X[ ch.idx ] + 0.5
+ py <- topo$Y[ ch.idx ] + 0.5
  if ( length(px) == 1 ) { 
- ch.label <- topo$CH[ toupper( topo$CH ) == ch ]
+ ch.label <- topo$CH[ ch.idx ]
  x0 <- px - sz/2 ; x1 <- x0 + sz 
  y0 <- py - sz/2 ; y1 <- y0 + sz 
  lines( c(x0,x1),c(y0,y0),col="gray"); lines( c(x0,x0),c(y0,y1),col="gray" )
@@ -582,9 +599,10 @@ for ( ch in unique( c ) ) {
  xx <- ( xx - rx[1] ) / ( rx[2] - rx[1] )
  yy <- ( yy - ry[1] ) / ( ry[2] - ry[1] )
  for ( xl in xline ) lines( rep( x0+sz*(xl-rx[1])/(rx[2]-rx[1]) , 2 ) , c(y0,y1) , col="gray",lwd=0.5)
- lines( x0 + xx * sz , y0 + yy * sz ,lwd=lwd , col=col)
- text( x0+0.8*sz,y0+0.8*sz, ch.label , cex=0.5,col="blue")
-
+ for ( yl in yline ) lines( c(x0,x1) , rep( y0+sz*(yl-ry[1])/(ry[2]-ry[1]) , 2 ) , col="gray",lwd=0.5)
+ if ( ! is.na( pch ) ) points( x0 + xx * sz , y0 + yy * sz ,pch = pch , cex = cex , col=col[ c == ch ] )
+ else lines( x0 + xx * sz , y0 + yy * sz ,lwd=lwd , col=col) # just single color for lines
+ text( x0+0.8*sz,y0+0.9*sz, ch.label , cex=0.5,col=ifelse( col=="black" , "blue", "black" ) ) 
 }
 }}
 
