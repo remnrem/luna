@@ -7,8 +7,8 @@
 
 luna.globals <- new.env()
 
-luna.globals$version  <- "v0.25.0"
-luna.globals$date     <- "01-Dec-2020"
+luna.globals$version  <- "v0.25.1"
+luna.globals$date     <- "14-Jan-2021"
 luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
@@ -615,7 +615,7 @@ for ( ch in unique( c ) ) {
 
 ltopo.heat <- function( c , z , sz = 1 , zlab="<Z-value>" , mt="" ,
  lwr = -9 , upr = -9 ,
- th = NA , th.z = z , 
+ th = NA , th.z = z , show.leg = T , 
  col = colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(101) )
 {
  topo <- ldefault.xy()
@@ -650,8 +650,10 @@ for ( ch in unique( c ) ) {
  x0 <- px - sz/2 ; y0 <- py - sz/2
  #text( px-0.005*sz,py+0.005*sz, ch.label , cex=0.6,col="blue")
 }}
+if ( show.leg ) { 
 points(seq( 0.05 , 0.5 , length.out = 101 ) , rep( 0.05 , 101 )  , col = col , pch=20 )
 text( 0.05 , 0.01 , signif( rz[1] , 3 )  , cex=1 ) ; text( 0.5 , 0.01 , signif( rz[2] , 3 ) , cex=1 )
+}
 }
 
 
