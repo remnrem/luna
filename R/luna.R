@@ -7,12 +7,13 @@
 
 luna.globals <- new.env()
 
-luna.globals$version  <- "v0.25.1"
-luna.globals$date     <- "14-Jan-2021"
+luna.globals$version  <- "v0.25.2"
+luna.globals$date     <- "19-Feb-2021"
 luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
 luna.globals$logmode  <- 0
+
 
 ####################################################
 ##                                                ##
@@ -545,8 +546,8 @@ return(chxy)
 ##
 ## --------------------------------------------------------------------------------
 
-ltopo.xy <- function( c , x , y , z = NA , rz = NA , 
-	 	       f = rep(T, length(x) ) , y.symm = F , 
+ltopo.xy <- function( c , x , y , z = NA , zlim = NA , 
+	 	      f = rep(T, length(x) ) , y.symm = F , 
 	       	       	 sz = 0.08 ,
 			 col = "black" , lwd = 0.5 ,
 			 xline = numeric() ,
@@ -562,8 +563,8 @@ if ( length(z) != length(x) ) stop( "is z is specified, must match other long da
 if ( is.na(pch) ) stop( "cannot specify z with line points" )
 if ( length(col) != 100 ) stop( "requires col is a 100-element palette if z is specified" )
 z <- z[f]
-if (is.na(rz[1])) rz <- range( z , na.rm=T) 
-zcol = col[ 1 + round( 99 * ( ( z - rz[1] ) / ( rz[2] - rz[1] ) ) ) ] 
+if (is.na(zlim[1])) zlim <- range( z , na.rm=T) 
+zcol = col[ 1 + round( 99 * ( ( z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ] 
 col = zcol
 } else if ( ! is.na( pch ) ) {
 # single color for point plots
@@ -613,18 +614,40 @@ for ( ch in unique( c ) ) {
 ##
 ## --------------------------------------------------------------------------------
 
-ltopo.heat <- function( c , z , sz = 1 , zlab="<Z-value>" , mt="" ,
- lwr = -9 , upr = -9 ,
- th = NA , th.z = z , show.leg = T , 
- col = colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(101) )
+ltopo.heat <- function( c , z ,
+                        sz = 1 ,
+                        flt = rep(T,length(z)),
+                        zlab="<Z-value>" ,
+			mt="" ,
+                        zlim = NULL , 
+                        th = NA ,
+			th.z = z ,
+			show.leg = T ,
+			zeroed = F )
+
+{
+ ltopo.rb( c,z,flt,sz,zlab,mt,zlim,th,th.z,show.leg,zeroed,col=colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(101) )
+}
+
+ltopo.rb <- function( c , z ,
+        	      flt = rep(T,length(z)),
+                      sz = 1 ,
+		      zlab="",
+		      mt="" ,
+                      zlim = NULL , 
+                      th = NULL ,
+		      th.z = z ,
+		      show.leg = T ,
+		      zeroed = T , 
+                      col = colorRampPalette( c("blue","white","red" ))(101) )
 {
  topo <- ldefault.xy()
- if ( length(col) != 101 ) stop( "mypal needs to be 101 length" )
+ if ( length(col) != 101 ) stop( "col needs to be 101 length" )
+ c <- c[flt] ; z <- z[flt] ; th <- th[flt] 
  c <- lremap.chs( c ) ; f <- c %in% toupper( topo$CH ) ; c <- c[f] ; z <- z[f] 
- rz <- range( z , na.rm=T)
- if ( lwr != -9 ) rz[1] <- lwr ; if ( upr != -9 ) rz[2] <- upr
+ if ( is.null(zlim) ) zlim <- range( z , na.rm=T)
+ if ( zeroed ) zlim <- c(-1,1) * max(abs(zlim)) 
  plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
- #rect(0,0,1,1); 
  if (mt!="") text(0.025,0.95,mt,cex=0.8,pos=4)
  text( 0.75,0.05 , zlab , cex=1 )  
  for ( ch in unique( c ) ) { 
@@ -635,12 +658,12 @@ ltopo.heat <- function( c , z , sz = 1 , zlab="<Z-value>" , mt="" ,
   ch.label <- topo$CH[ toupper( topo$CH ) == ch ]
   this.z <-  z[ c == ch ] ; this.th.z <- th.z[ c == ch ] 
   ring <- rep( "gray" , length(px) ); ring.lwd <- 1
-  if ( ! is.na(th) ) ring[ this.th.z >= th ] <- "black"
-  if ( ! is.na(th) ) ring.lwd[ this.th.z >= th ] <- 3  
+  if ( ! is.null(th) ) ring[ this.th.z >= th ] <- "black"
+  if ( ! is.null(th) ) ring.lwd[ this.th.z >= th ] <- 3  
   points( px , py , pch = 21 , cex = sz , col = ring , lwd= ring.lwd, 
-  bg = col[ 1 + round( 100 * ( ( this.z - rz[1] ) / ( rz[2] - rz[1] ) ) ) ] ) 
+  bg = col[ 1 + round( 100 * ( ( this.z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ] ) 
   x0 <- px - sz/2 ; y0 <- py - sz/2 
-  cat( ch , ch.label, this.z , "\n" ) 
+#  cat( ch , ch.label, this.z , "\n" ) 
 }}
 for ( ch in unique( c ) ) {
  px <- topo$X[ toupper( topo$CH ) == ch ] + 0.5
@@ -651,8 +674,8 @@ for ( ch in unique( c ) ) {
  #text( px-0.005*sz,py+0.005*sz, ch.label , cex=0.6,col="blue")
 }}
 if ( show.leg ) { 
-points(seq( 0.05 , 0.5 , length.out = 101 ) , rep( 0.05 , 101 )  , col = col , pch=20 )
-text( 0.05 , 0.01 , signif( rz[1] , 3 )  , cex=1 ) ; text( 0.5 , 0.01 , signif( rz[2] , 3 ) , cex=1 )
+ points(seq( 0.05 , 0.5 , length.out = 101 ) , rep( 0.05 , 101 )  , col = col , pch=20 )
+ text( 0.05 , 0.01 , signif( zlim[1] , 3 )  , cex=1 ) ; text( 0.5 , 0.01 , signif( zlim[2] , 3 ) , cex=1 )
 }
 }
 
@@ -743,7 +766,7 @@ t <-  c( chs1[j] , chs2[j] )
 farc( t[1] , t[2] , rbpal[z[j]] , w = w )
 }
 points( xy.coh$X , xy.coh$Y , pch=21 , cex=cex , bg="white" ) 
-cat("zr",zr,"\n")
+#cat("zr",zr,"\n")
 }
 
 

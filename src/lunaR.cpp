@@ -1308,7 +1308,7 @@ SEXP Rmask( SEXP ann )
       const double sec0 = interval.start * globals::tp_duration;
       
       clocktime_t present = starttime;
-      present.advance( sec0 / 3600.0 );
+      present.advance_seconds( sec0 );
       
       std::string clocktime = present.as_string();
 
