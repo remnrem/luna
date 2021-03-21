@@ -8,12 +8,13 @@
 luna.globals <- new.env()
 
 luna.globals$version  <- "v0.25.2"
-luna.globals$date     <- "19-Feb-2021"
+luna.globals$date     <- "23-Feb-2021"
 luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
 luna.globals$logmode  <- 0
-
+luna.globals$xy       <- ldefault.xy()
+luna.globals$xy.coh   <- ldefault.coh.xy( luna.globals$xy )
 
 ####################################################
 ##                                                ##
@@ -28,6 +29,7 @@ luna.globals$logmode  <- 0
   luna.globals$logmode <- 0 
   require( plotrix )
   require( geosphere )
+  require( matlab )
 }
 
 
@@ -687,17 +689,17 @@ if ( show.leg ) {
 ## --------------------------------------------------------------------------------
 
 # need diff. coords, so make xy.coh
-ldefault.coh.xy <- function( xy.coh )
+ldefault.coh.xy <- function( xy )
 {
- xy.coh$X <- 100 * xy.coh$X
- xy.coh$Y <- ( 30 * xy.coh$Y ) + 10
- return(xy.coh)
+ xy$X <- 100 * xy$X
+ xy$Y <- ( 30 * xy$Y ) + 10
+ return(xy)
 }
 
 # helper function: draw ARC
 farc <- function(c1,c2,kol,w=4) { 
- gc <- gcIntermediate( as.vector( xy.coh[ xy.coh$CH == c1 , c("X","Y") ] ) , 
-                       as.vector( xy.coh[ xy.coh$CH == c2 , c("X","Y") ] ) , 
+ gc <- gcIntermediate( as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c1 , c("X","Y") ] ) , 
+                       as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c2 , c("X","Y") ] ) , 
                        breakAt=TRUE, n=100 )
  lines(gc,lwd=w+1,col="black")
  lines(gc,lwd=w,col=kol)
@@ -714,7 +716,7 @@ rbpal <- fcol(100)
 
 fhead1 <- function( chs , z , flt = T , zr = range(z,na.rm=T) , cex = 4 , title = "" ) 
 {
-plot( xy.coh$X , xy.coh$Y , pch=21 , cex=cex*0.5 , bg="white" , 
+plot( luna.globals$xy.coh$X , luna.globals$xy.coh$Y , pch=21 , cex=cex*0.5 , bg="white" , 
   axes=F,xaxt='n' , yaxt='n' , xlab="" , ylab = "" , ylim=c(-2,24) , xlim=c(-55,55) , main = title ) 
 draw.ellipse( 0, 9.5 , 52 , 12 ); lines( c(0,-8),c(23,21), lwd=1)  ; lines( c(0,8),c(23,21), lwd=1)  
 if ( ! any(flt) ) { return(0) } 
@@ -725,7 +727,7 @@ z <- round( z * 100 )
 z[ z==0 ] <- 1
 z[ z> 100 ] <- 100
 for (j in 1:length(chs)) { 
-xx <- xy.coh$X[ xy$CH == chs[j] ] ; yy <- xy.coh$Y[ xy$CH == chs[j] ]
+xx <- luna.globals$xy.coh$X[ xy$CH == chs[j] ] ; yy <- luna.globals$xy.coh$Y[ xy$CH == chs[j] ]
 points( xx , yy , pch=21 , cex=cex*1.1 , bg="white" , lwd=1.5 ) 
 points( xx , yy , pch=21 , cex=cex , bg= rbpal[z[j]] ) 
 }
@@ -738,8 +740,8 @@ ltopo.conn <- function( chs1 , chs2 , z , flt = T , zr = range(z[flt],na.rm=T) ,
 {
 chs1 <- lremap.chs( chs1 )
 chs2 <- lremap.chs( chs2 ) 
-xy.coh <- ldefault.coh.xy( ldefault.xy( unique( c( chs1 , chs2 ) ) ) )
-plot( xy.coh$X , xy.coh$Y , pch=21 , cex=cex , main = title , bg="white" ,  
+luna.globals$xy.coh <- ldefault.coh.xy( ldefault.xy( unique( c( chs1 , chs2 ) ) ) )
+plot( luna.globals$xy.coh$X , luna.globals$xy.coh$Y , pch=21 , cex=cex , main = title , bg="white" ,  
   axes=F,xaxt='n' , yaxt='n' , xlab="" , ylab = "" ,  ylim=c(-2,24) , xlim=c(-55,55) )
 if ( head ) { draw.ellipse( 0, 9.5 , 52 , 12 ); lines( c(0,-8),c(23,21), lwd=1)  ; lines( c(0,8),c(23,21), lwd=1) } 
 if ( ! any(flt) ) { return(0) } 
@@ -765,7 +767,7 @@ t <-  c( chs1[j] , chs2[j] )
 #cat("j=",j,"\n"); print(t);print(z[j])
 farc( t[1] , t[2] , rbpal[z[j]] , w = w )
 }
-points( xy.coh$X , xy.coh$Y , pch=21 , cex=cex , bg="white" ) 
+points( luna.globals$xy.coh$X , luna.globals$xy.coh$Y , pch=21 , cex=cex , bg="white" ) 
 #cat("zr",zr,"\n")
 }
 
@@ -785,3 +787,16 @@ inc <- dchs1 == ch
 # filtering done above, so set flt to 'T' here
 ltopo.conn( dchs1[inc] , dchs2[inc] , dz[inc] , flt = T , zr = zr , cex = cex , w = w , title = title , head = head )
 }
+
+
+##############################################################
+#
+# SUDS viewers
+#
+##############################################################
+
+
+
+
+
+
