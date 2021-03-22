@@ -13,8 +13,6 @@ luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
 luna.globals$logmode  <- 0
-luna.globals$xy       <- ldefault.xy()
-luna.globals$xy.coh   <- ldefault.coh.xy( luna.globals$xy )
 
 ####################################################
 ##                                                ##
@@ -27,6 +25,8 @@ luna.globals$xy.coh   <- ldefault.coh.xy( luna.globals$xy )
   packageStartupMessage( paste( "** lunaR" , luna.globals$version , luna.globals$date ) )
   library.dynam("luna", package="luna", lib.loc = NULL)  
   luna.globals$logmode <- 0 
+  luna.globals$xy       <- ldefault.xy()
+  luna.globals$xy.coh   <- ldefault.coh.xy( luna.globals$xy )
   require( plotrix )
   require( geosphere )
   require( matlab )
