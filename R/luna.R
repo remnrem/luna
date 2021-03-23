@@ -645,7 +645,7 @@ ltopo.rb <- function( c , z ,
 {
  topo <- ldefault.xy()
  if ( length(col) != 101 ) stop( "col needs to be 101 length" )
- c <- c[flt] ; z <- z[flt] ; th <- th[flt] 
+ c <- c[flt] ; z <- z[flt] ; th.z <- th.z[flt] 
  c <- lremap.chs( c ) ; f <- c %in% toupper( topo$CH ) ; c <- c[f] ; z <- z[f] 
  if ( is.null(zlim) ) zlim <- range( z , na.rm=T)
  if ( zeroed ) zlim <- c(-1,1) * max(abs(zlim)) 
@@ -706,6 +706,19 @@ farc <- function(c1,c2,kol,w=4) {
  #invisible(lapply(gc, lines, col=k, lwd=2))
 }
 
+
+farc.signed <- function (c1, c2, k1, k2, w = 4) 
+{
+ gc <- gcIntermediate( as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c1, c("X", "Y")]),
+                       as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c2, c("X", "Y")]), 
+                       breakAt = TRUE,
+		       n = 100)		       
+ segments( gc[,1] , gc[,2] , gc[,1],gc[,2], lwd=w , 
+           t_cols( colorRampPalette( c(k2,"white",k1) )(101) , 80 ) )
+}
+
+
+
 # palette 
 rbpal <- rev( rainbow(150)[1:100] ) 
 fcol <- colorRampPalette( c( "blue" , "white" , "red" ) ) 
@@ -733,60 +746,231 @@ points( xx , yy , pch=21 , cex=cex , bg= rbpal[z[j]] )
 }
 }
 
-
+#
 # ltopo: connectivity
+#
 
-ltopo.conn <- function( chs1 , chs2 , z , flt = T , zr = range(z[flt],na.rm=T) , cex = 2 , w  = 8 , title = "" , head=T ) 
+ltopo.conn <- function (chs1, chs2, z, flt = T, zr = range(z[flt], na.rm = T), 
+                        cex = 2, w = 8, title = "", head = T , signed = F ) 
 {
-chs1 <- lremap.chs( chs1 )
-chs2 <- lremap.chs( chs2 ) 
-luna.globals$xy.coh <- ldefault.coh.xy( ldefault.xy( unique( c( chs1 , chs2 ) ) ) )
-plot( luna.globals$xy.coh$X , luna.globals$xy.coh$Y , pch=21 , cex=cex , main = title , bg="white" ,  
-  axes=F,xaxt='n' , yaxt='n' , xlab="" , ylab = "" ,  ylim=c(-2,24) , xlim=c(-55,55) )
-if ( head ) { draw.ellipse( 0, 9.5 , 52 , 12 ); lines( c(0,-8),c(23,21), lwd=1)  ; lines( c(0,8),c(23,21), lwd=1) } 
-if ( ! any(flt) ) { return(0) } 
-# filtering
-chs1 <- chs1[flt] ; chs2 <- chs2[flt] ; z <- z[ flt ]
-# average if multiple obs per ch-pair
-z <- tapply( z , paste( chs1 , chs2 ) , mean , na.rm=T )  
-chs <- unique( paste( chs1 , chs2  ) )
-chs <- unlist( strsplit( chs , " " ) ) 
-chs1 <- chs[ 1:length(chs) %% 2 == 1 ]
-chs2 <- chs[ 1:length(chs) %% 2 == 0 ] 
-# order by |Z|
-chs1 <- chs1[ order( abs(z) ) ] ; chs2 <- chs2[ order( abs(z) ) ] ; z <- z[ order( abs(z) ) ] 
-if ( length(chs1) != length( z ) ) stop( "bad" )
-# scale 1:100
-z <- ( z - zr[1] ) / ( zr[2] - zr[1] )
-z <- round( z * 100 )
-z[ z==0 ] <- 1
-z[ z> 100 ] <- 100
-for (j in 1:length(chs1)) {
-t <-  c( chs1[j] , chs2[j] )
-#cat("\n\n-----------------------------------\n")
-#cat("j=",j,"\n"); print(t);print(z[j])
-farc( t[1] , t[2] , rbpal[z[j]] , w = w )
+    chs1 <- lremap.chs(chs1)
+    chs2 <- lremap.chs(chs2)
+    xy.coh <- ldefault.coh.xy(ldefault.xy(unique(c(chs1, chs2))))
+    plot(xy.coh$X, xy.coh$Y, pch = 21, cex = cex, main = title, lwd=0.5,
+        bg = NA, col="gray", axes = F, xaxt = "n", yaxt = "n", xlab = "", 
+        ylab = "", ylim = c(-2, 24), xlim = c(-55, 55))
+    if (head) {
+        draw.ellipse(0, 9.5, 52, 12,lwd=0.75,border="darkgray")
+        lines(c(0, -8), c(23, 21), lwd = 0.75,col="darkgray")
+        lines(c(0, 8), c(23, 21), lwd = 0.75,col="darkgray")
+    }
+    if ( ! any(flt) ) return(0) 
+    if ( signed ) zr <- c( -max(abs(zr)) , max(abs(zr)) ) 
+    chs1 <- chs1[flt] ; chs2 <- chs2[flt]
+    z <- z[flt] 
+    chs1 <- chs1[order(abs(z))]
+    chs2 <- chs2[order(abs(z))]
+    z <- z[order(abs(z))]
+    if (length(chs1) != length(z)) stop("bad inputs to ltopo.conn()")
+    negz <- z
+    if ( signed ) negz <- -1 * negz
+    z <- round( 100 * (z - zr[1])/(zr[2] - zr[1]) )
+    z[z == 0] <- 1 ; z[z > 100] <- 100
+    negz <- round( 100 * (negz - zr[1])/(zr[2] - zr[1] ) )
+    negz[negz == 0] <- 1 ; negz[negz > 100] <- 100
+    if ( signed ) {
+     for (j in 1:length(chs1)) {
+        t <- c(chs1[j], chs2[j])
+        farc.signed( t[1], t[2], rbpal[ z[j] ], rbpal[ negz[j] ] , w=w)
+      }
+     } else {
+     for (j in 1:length(chs1)) {
+        t <- c(chs1[j], chs2[j])
+        farc( t[1], t[2], rbpal[ z[j] ], w = w)
+     }
+    }
+    points(xy.coh$X, xy.coh$Y, pch = 21, cex = cex, lwd=0.5, bg = NA , col= "gray" )
+    if (head) {
+        draw.ellipse(0, 9.5, 52, 12,lwd=0.75,border="darkgray")
+        lines(c(0, -8), c(23, 21), lwd = 0.75,col="darkgray")
+        lines(c(0, 8), c(23, 21), lwd = 0.75,col="darkgray")
+    }
+    cat("zr", zr, "\n")
 }
-points( luna.globals$xy.coh$X , luna.globals$xy.coh$Y , pch=21 , cex=cex , bg="white" ) 
-#cat("zr",zr,"\n")
+
+intop    <- function(x , p ) { x > quantile(x,1-p) }
+
+inbottom <- function(x , p ) { x < quantile(x,p) }
+
+
+t_col <- function(color, percent = 50 , name = NULL) {
+  #      color = color name
+  #    percent = % transparency
+  #       name = an optional name for the color
+  rgb.val <- col2rgb(color)
+  t.col <- rgb(rgb.val[1], rgb.val[2], rgb.val[3],
+               max = 255,
+               alpha = (100 - percent) * 255 / 100,
+               names = name)
+ invisible(t.col)
 }
 
 
+t_cols <- function(x,percent=50) { sapply( x, t_col , percent ) }
+
+
+#
 # ltopo.dconn : directed connectivity (i.e. A->B)
 # i.e. 'ch' specifies which channel to 'seed' on
+# so always assuming a signed value here
+#
 
-ltopo.dconn <- function( ch, chs1 , chs2 , z , flt = T , zr = range(z[flt],na.rm=T) , cex = 2 , w  = 8 , title = "" , head=T )
+ltopo.dconn <- function( ch, chs1 , chs2 , z , flt = T , zr = NULL, cex = 2 , w = 8 , title = "" , head=T , signed=F)
 {
-# filter first
+if ( is.null(zr) ) zr = range(z[flt],na.rm=T)
+zr <- c(-1,1) * max(abs(zr))
+print(table(flt))
 chs1 <- chs1[flt] ; chs2 <- chs2[flt] ; z <- z[flt] 
 # double entry whatever is left
 dchs1 <- c( chs1 , chs2 )
 dchs2 <- c( chs2 , chs1 )
 dz <- c( z , -z )
 inc <- dchs1 == ch
+dchs1 <- dchs1[ inc ]
+dchs2 <- dchs2[ inc ]
+dz <- dz[ inc ]
+print( cbind( dchs1 , dchs2 , dz ) ) 
 # filtering done above, so set flt to 'T' here
-ltopo.conn( dchs1[inc] , dchs2[inc] , dz[inc] , flt = T , zr = zr , cex = cex , w = w , title = title , head = head )
+ltopo.conn( chs1 = dchs1 , chs2=dchs2 , z=dz , flt = T , zr = zr , cex = cex , w = w , title = title , head = head , signed=signed )
 }
+
+##
+## TOPO HEATMAP: each point is a lheatmap() object (X/Y/Z plot) 
+##
+
+ltopo.heat2 <- function( c , x , y , z , zlim = NULL , 
+                         f = rep(T, length(x) ) , 
+                         sz = 0.08 ,cex = 1 ,
+                         col = jet.colors(100) , lwd = 0.5 ,                         
+                         ylab="Frequency (Hz)" , xlab="Time",  zlab = "log(power)" , mt="" )
+
+{ 
+topo <- ldefault.xy()
+c <- lremap.chs( c )
+f[ ! c %in% toupper( topo$CH ) ] <- F 
+# z is color depth: scaled 1..100 as requires that col is a 100-element pallete
+if ( ! is.na( z[1] ) ) {
+ if ( length(z) != length(x) ) stop( "is z is specified, must match other long data" )
+ if ( length(col) != 100 ) stop( "requires col is a 100-element palette if z is specified" )
+ z <- z[f]
+ if (is.null(zlim)) zlim <- range( z , na.rm=T ) 
+ zcol = col[ 1 + round( 99 * ( ( z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ] 
+ col = zcol
+} 
+# also pair down x/y/z/CH to filtered set
+c <- c[f]; x <- x[f]; y <- y[f]; z <- z[f]
+rx <- range( x ); ry <- range( y ) 
+# plots
+plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
+rect(0,0,1,1)
+if (mt!="") text(0.025,0.05,mt,cex=0.8,pos=4)
+lgd.x <- 0.88 ; lgd.y <- 0.08
+lines( c(lgd.x,lgd.x+sz),c(lgd.y,lgd.y) ) ; lines( c(lgd.x,lgd.x) , c(lgd.y,lgd.y+sz) ) 
+text( lgd.x , lgd.y , signif(ry[1],2) , cex=0.5 , pos=2) ; text( lgd.x , lgd.y+sz , signif(ry[2],2) , cex=0.5 , pos=2) 
+text( lgd.x , lgd.y , signif(rx[1],2) , cex=0.5 , pos=1) ; text( lgd.x+sz , lgd.y , signif(rx[2],2) , cex=0.5 , pos=1) 
+text( lgd.x+sz/2,lgd.y-0.05 , xlab , cex=0.5 )  ; text( lgd.x-0.05,lgd.y+sz/2 , ylab , cex=0.5 ) 
+# plot each channel
+for ( ch in unique( c ) ) { 
+ ch.idx <- toupper( topo$CH ) == ch 
+ px <- topo$X[ ch.idx ] + 0.5
+ py <- topo$Y[ ch.idx ] + 0.5
+ if ( length(px) == 1 ) { 
+  ch.label <- topo$CH[ ch.idx ]
+  x0 <- px - sz/2 ; x1 <- x0 + sz 
+  y0 <- py - sz/2 ; y1 <- y0 + sz 
+  lines( c(x0,x1),c(y0,y0),col="gray"); lines( c(x0,x0),c(y0,y1),col="gray" )
+  xx <- x[ c == ch ] 
+  yy <- y[ c == ch ] 
+  zz <- z[ c == ch ]
+  xx <- ( xx - rx[1] ) / ( rx[2] - rx[1] )
+  yy <- ( yy - ry[1] ) / ( ry[2] - ry[1] )
+  points( x0 + xx * sz , y0 + yy * sz ,pch = "." , cex = cex , col=col[ c == ch ] )
+#lines( x0 + xx * sz , y0 + yy * sz ,lwd=lwd , col=col) # just single color for lines
+  text( x0+0.8*sz,y0+0.9*sz, ch.label , cex=0.5,col=ifelse( col=="black" , "blue", "black" ) ) 
+} }
+}
+
+# Helpr:: winsorize format
+lwin <- function(x,p=0.05) {
+ t <- quantile( x , c(p,1-p) , na.rm=T) 
+ x[x<t[1]] <- t[1]
+ x[x>t[2]] <- t[2]
+ x
+}
+
+#
+## TOPO-TOPO : each point is a ltopo.rb() plot
+#    c    high-level channel
+#    c2   within-plot channel
+#    z    plot value
+#
+
+ltopo.topo <- function( c , c2 , z , zlim = NULL , 
+                         f = rep(T, length(z) ) , 
+                         sz = 0.05 , sz2 = 0.05 , 
+			 ring.lwd = 1 , 
+                         same.cols = T , 
+                         col = rbpal , 
+                         zlab = "" , mt="" , zeroed = T )
+
+{ 
+# key inputs: c, c2 and z
+topo <- ldefault.xy()
+topo$CH <- toupper( topo$CH )
+c  <- lremap.chs( c )
+c2 <- lremap.chs( c2 )
+
+f[ ! c  %in% toupper( topo$CH ) ] <- F
+f[ ! c2 %in% toupper( topo$CH ) ] <- F 
+
+c <- c[f];
+c2 <- c2[f];
+z <- z[f]
+if ( is.null( zlim ) & same.cols ) zlim <- range( z , na.rm=T ) 
+zlim2 <- zlim 
+
+# plots
+plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
+rect(0,0,1,1)
+if (mt!="") text(0.025,0.05,mt,cex=0.8,pos=4)
+
+# loop over key channels (c)
+for ( ch in unique( c ) ) { 
+ ch.idx <- topo$CH == ch 
+ px <- topo$X[ ch.idx ] + 0.5
+ py <- topo$Y[ ch.idx ] + 0.5
+ ch.label <- topo$CH[ ch.idx ]
+
+ # plot loc. for this key channel: x0-x1 and y0-y1
+ x0 <- px - sz/2 ; x1 <- x0 + sz 
+ y0 <- py - sz/2 ; y1 <- y0 + sz 
+# lines( c(x0,x1),c(y0,y0),col="gray"); lines( c(x0,x0),c(y0,y1),col="gray" )
+ # get inner values
+ zz <- z[ c == ch ]
+ cc <- c2[ c == ch ]
+ px2 <- numeric(0) ; py2 <- numeric(0)
+ for (ch2 in cc ) {
+  ch.idx <- topo$CH == ch2
+  px2 <- c( px2 , x0 + sz * ( topo$X[ ch.idx ] + 0.5 ) )
+  py2 <- c( py2 , y0 + sz * ( topo$Y[ ch.idx ] + 0.5 ) )
+ }
+ if ( is.null( zlim ) ) zlim2 <- range( zz , na.rm=T ) else zlim2 <- zlim
+ if ( zeroed ) zlim2 <- c(-1,1) *  max(abs( zlim2 ) )
+ points( px2 , py2 , pch = 21 , cex = sz2 , col = ifelse( cc == ch , "black", "lightgray" )  , lwd= ring.lwd ,
+      bg = col[ 1 + round( 100 * ( ( zz - zlim2[1] ) / ( zlim2[2] - zlim2[1] ) ) ) ] )
+}
+}
+
 
 
 ##############################################################
@@ -794,9 +978,5 @@ ltopo.conn( dchs1[inc] , dchs2[inc] , dz[inc] , flt = T , zr = zr , cex = cex , 
 # SUDS viewers
 #
 ##############################################################
-
-
-
-
 
 
