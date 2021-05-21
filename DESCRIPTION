@@ -1,5 +1,5 @@
 Package: luna
-Version: 0.24.1
+Version: 0.25.5
 Title: Analysis of Sleep Signal Data
 Authors@R: 
     c(
@@ -25,6 +25,7 @@ Imports:
     stats,
     plotrix,
     geosphere,
-    utils
+    utils,
+    matlab
 URL: https://github.com/remnrem/luna, http://zzz.bwh.harvard.edu/luna
 BugReports: https://github.com/remnrem/luna/issues

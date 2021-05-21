@@ -7,8 +7,8 @@
 
 luna.globals <- new.env()
 
-luna.globals$version  <- "v0.25.2"
-luna.globals$date     <- "23-Feb-2021"
+luna.globals$version  <- "v0.25.5"
+luna.globals$date     <- "21-May-2021"
 luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
@@ -422,6 +422,21 @@ lstgcols <- function(s) {
 }
 
 
+lstgn <- function(x) {	
+ x[ x == "N1" ] <- 1
+ x[ x == "N2" ] <- 2
+ x[ x == "N3" ] <- 3
+ x[ x == "REM" ] <- 4
+ x[ x == "W" ] <- 5
+ x[ x == "?" ] <- 6
+ as.numeric( x )
+}
+
+lstgpal <- function() {
+ c("N1","N2","N3","REM","W") 
+}
+
+
 ####################################################
 ##                                                ##
 ## Statistical helper functions                   ##
@@ -619,16 +634,16 @@ for ( ch in unique( c ) ) {
 ltopo.heat <- function( c , z ,
                         sz = 1 ,
                         flt = rep(T,length(z)),
-                        zlab="<Z-value>" ,
+                        zlab="" , 
 			mt="" ,
                         zlim = NULL , 
                         th = NA ,
 			th.z = z ,
-			show.leg = T ,
-			zeroed = F )
+			show.leg = F ,
+			zeroed = F , head = F )
 
 {
- ltopo.rb( c,z,flt,sz,zlab,mt,zlim,th,th.z,show.leg,zeroed,col=colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(101) )
+ ltopo.rb( c,z,flt,sz,zlab,mt,zlim,th,th.z,show.leg,zeroed,head,col=colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(101) )
 }
 
 ltopo.rb <- function( c , z ,
@@ -639,17 +654,25 @@ ltopo.rb <- function( c , z ,
                       zlim = NULL , 
                       th = NULL ,
 		      th.z = z ,
-		      show.leg = T ,
-		      zeroed = T , 
-                      col = colorRampPalette( c("blue","white","red" ))(101) )
+		      show.leg = F ,
+		      zeroed = T ,
+		      head = F , 
+                      col = colorRampPalette( c("blue","white","red" ))(101) ,
+		      ring.lwd = 1 )
 {
  topo <- ldefault.xy()
  if ( length(col) != 101 ) stop( "col needs to be 101 length" )
  c <- c[flt] ; z <- z[flt] ; th.z <- th.z[flt] 
- c <- lremap.chs( c ) ; f <- c %in% toupper( topo$CH ) ; c <- c[f] ; z <- z[f] 
+ c <- lremap.chs( c ) ; f <- c %in% toupper( topo$CH ) ; c <- c[f] ; z <- z[f] ; th.z <- th.z[f]
+ c <- c[ order(abs(z)) ] ; th.z <- th.z[ order(abs(z)) ] ; z <- z[ order(abs(z)) ] 
  if ( is.null(zlim) ) zlim <- range( z , na.rm=T)
  if ( zeroed ) zlim <- c(-1,1) * max(abs(zlim)) 
  plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
+ if (head) {
+    draw.ellipse(0.5, 0.5, 0.5, 0.45,lwd=0.75,border="darkgray")
+    lines(c(0.5, 0.45), c(0.99, 0.95), lwd = 0.75,col="darkgray")
+    lines(c(0.5, 0.55), c(0.99, 0.95), lwd = 0.75,col="darkgray")
+ }
  if (mt!="") text(0.025,0.95,mt,cex=0.8,pos=4)
  text( 0.75,0.05 , zlab , cex=1 )  
  for ( ch in unique( c ) ) { 
@@ -659,9 +682,9 @@ ltopo.rb <- function( c , z ,
   if ( sum( c == ch ) > 1 ) stop("multiple values for a single channel" )  
   ch.label <- topo$CH[ toupper( topo$CH ) == ch ]
   this.z <-  z[ c == ch ] ; this.th.z <- th.z[ c == ch ] 
-  ring <- rep( "gray" , length(px) ); ring.lwd <- 1
+  ring <- rep( "gray" , length(px) ) ; ring.lwd = 1 
   if ( ! is.null(th) ) ring[ this.th.z >= th ] <- "black"
-  if ( ! is.null(th) ) ring.lwd[ this.th.z >= th ] <- 3  
+  if ( ! is.null(th) ) ring.lwd[ this.th.z >= th ] <- 2  
   points( px , py , pch = 21 , cex = sz , col = ring , lwd= ring.lwd, 
   bg = col[ 1 + round( 100 * ( ( this.z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ] ) 
   x0 <- px - sz/2 ; y0 <- py - sz/2 
