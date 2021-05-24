@@ -29,6 +29,7 @@ jobs:
       run: |
         sudo R -e "install.packages('git2r', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('plotrix', repos='https://cloud.r-project.org')"
-        sudo R -e "install.packages('geosphere', repos='https://cloud.r-project.org')"        
+        sudo R -e "install.packages('geosphere', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('matlab', repos='https://cloud.r-project.org')"
         sudo LUNA_BASE=${HOME}/luna-base/ R CMD INSTALL ${GITHUB_WORKSPACE}
          
