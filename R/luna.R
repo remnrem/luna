@@ -8,7 +8,7 @@
 luna.globals <- new.env()
 
 luna.globals$version  <- "v0.25.5"
-luna.globals$date     <- "21-May-2021"
+luna.globals$date     <- "24-May-2021"
 luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
