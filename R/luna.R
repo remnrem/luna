@@ -54,7 +54,8 @@ if ( dim(d)[1] > length(unique(d[,1])) ) stop("duplicate IDs found")
 l <- list()
 for (i in 1:dim(d)[1]) {  
  l[[ d[i,1] ]]$EDF <- ifelse( path=="" , d[i,2] , paste(path,d[i,2],sep="/") )  
- a <- d[i,-c(1:2)] ; a <- a[ a != "" ]
+ a <- d[i,-c(1:2)] ; a <- a[ a != "" ] ; a <- a[ a != "." ]  
+ a <- unlist( strsplit(  a , "," ) ) 
  if ( path != "" ) a <- sapply( a , function(x) paste( path,x,sep="/" ) )
  l[[ d[i,1] ]]$ANNOT <- as.character(a)  
  }
