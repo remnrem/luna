@@ -20,6 +20,7 @@ SystemRequirements: fftw3
 License: GPL (>= 2)
 Imports: 
     git2r,
+    data.table,
     graphics, 
     grDevices,
     stats,
