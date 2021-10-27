@@ -7,8 +7,8 @@
 
 luna.globals <- new.env()
 
-luna.globals$version  <- "v0.25.5"
-luna.globals$date     <- "24-May-2021"
+luna.globals$version  <- "v0.26"
+luna.globals$date     <- "27-Oct-2021"
 luna.globals$id       <- ""
 luna.globals$edf      <- ""
 luna.globals$annots   <- ""
@@ -418,7 +418,7 @@ lstgcols <- function(s) {
     ifelse( x == "NREM3" | x == "N3" , rgb(0,0,80,255,maxColorValue=255) ,
      ifelse( x == "NREM4" | x == "N3" , rgb(0,0,50,255,maxColorValue=255) ,
       ifelse( x == "REM" | x == "R"  , rgb(250,20,50,255,maxColorValue=255) ,
-       ifelse( x == "wake" | x == "W" , rgb(100,100,100,255,maxColorValue=255) ,
+       ifelse( x == "wake" | x == "W" , rgb(49,173,82,255,maxColorValue=255) ,
          rgb( 20,160,20,100,maxColorValue=255) ) ) ) ) ) ) } ) )
 }
 
@@ -1002,5 +1002,23 @@ for ( ch in unique( c ) ) {
 # SUDS viewers
 #
 ##############################################################
+
+
+
+
+##############################################################
+#
+# Misc helper functions
+#
+##############################################################
+
+
+
+##############################################################
+#
+# Loaders
+#
+##############################################################
+
 
 
