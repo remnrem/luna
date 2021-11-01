@@ -32,5 +32,9 @@ jobs:
         sudo R -e "install.packages('geosphere', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('geosphere', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('data.table', repos='https://cloud.r-project.org')"
-        sudo R -e "install.packages('matlab', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('shiny', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('DT', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('shinyFiles', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('xtable', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('shinydashboard', repos='https://cloud.r-project.org')"
         sudo LUNA_BASE=${HOME}/luna-base/ R CMD INSTALL ${GITHUB_WORKSPACE}

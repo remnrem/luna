@@ -27,10 +27,16 @@ luna.globals$logmode  <- 0
   luna.globals$logmode <- 0 
   luna.globals$xy       <- ldefault.xy()
   luna.globals$xy.coh   <- ldefault.coh.xy( luna.globals$xy )
+
+  luna.globals$turbo.colors <- make.turbo.colors()
+
   require( plotrix , quietly = T )
   require( geosphere , quietly = T )
-
-  source("pals.R")
+  require(shiny , quietly = T )
+  require(DT , quietly = T )
+  require(shinyFiles , quietly = T )
+  require(xtable , quietly = T )
+  require(shinydashboard , quietly = T )
 
 }
 
@@ -487,7 +493,7 @@ leval( paste( "FILTER sig=",l,"_beta  bandpass=15,30 tw=1 ripple=0.02" , sep="" 
 
 
 lheatmap <- function(x,y,z,
-            col = turbo.colors(100) , 
+            col = luna.globals$turbo.colors(100) , 
 	    mt = "" ,
 	    zlim = range(z) ) {
  # assumes a square matrix 
@@ -878,7 +884,7 @@ ltopo.conn( chs1 = dchs1 , chs2=dchs2 , z=dz , flt = T , zr = zr , cex = cex , w
 ltopo.heat2 <- function( c , x , y , z , zlim = NULL , 
                          f = rep(T, length(x) ) , 
                          sz = 0.08 ,cex = 1 ,
-                         col = turbo.colors(100) , lwd = 0.5 ,                         
+                         col = luna.globals$turbo.colors(100) , lwd = 0.5 ,                         
                          ylab="Frequency (Hz)" , xlab="Time",  zlab = "log(power)" , mt="" )
 
 { 

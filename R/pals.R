@@ -1,4 +1,6 @@
 
+make.turbo.colors <- function() {
+
 turbo.hex <- c(  "#30123B", "#321543", "#33184A", "#341B51", "#351E58", "#36215F", "#372466",
  "#38276D", "#392A73", "#3A2D79", "#3B2F80", "#3C3286", "#3D358B", "#3E3891",
  "#3F3B97", "#3F3E9C", "#4040A2", "#4143A7", "#4146AC", "#4249B1", "#424BB5",
@@ -38,3 +40,6 @@ turbo.hex <- c(  "#30123B", "#321543", "#33184A", "#341B51", "#351E58", "#36215F
  "#850702", "#810602", "#7E0502", "#7A0403" )
 
 turbo.colors <- colorRampPalette(colors = turbo.hex ,space="rgb", interpolate = "spline" )
+
+turbo.colors
+}
