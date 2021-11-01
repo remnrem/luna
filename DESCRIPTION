@@ -13,7 +13,7 @@ Authors@R:
            email = "muschellij2@gmail.com",
            comment = c(ORCID = "0000-0001-6469-1750"))
     )
-Depends: R (>= 3.5.0)
+Depends: R (>= 3.3.0)
 Description: Interface for the 'Luna' sleep signal library 
   <http://zzz.bwh.harvard.edu/luna/>.
 SystemRequirements: fftw3
@@ -27,6 +27,10 @@ Imports:
     plotrix,
     geosphere,
     utils,
-    matlab
+    shiny,
+    DT,
+    shinyFiles,
+    xtable,
+    shinydashboard
 URL: https://github.com/remnrem/luna, http://zzz.bwh.harvard.edu/luna
 BugReports: https://github.com/remnrem/luna/issues

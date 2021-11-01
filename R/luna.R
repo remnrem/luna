@@ -27,11 +27,12 @@ luna.globals$logmode  <- 0
   luna.globals$logmode <- 0 
   luna.globals$xy       <- ldefault.xy()
   luna.globals$xy.coh   <- ldefault.coh.xy( luna.globals$xy )
-  require( plotrix )
-  require( geosphere )
-  require( matlab )
-}
+  require( plotrix , quietly = T )
+  require( geosphere , quietly = T )
 
+  source("pals.R")
+
+}
 
 .onUnload <- function (libpath) {
   library.dynam.unload("luna", libpath)
@@ -47,19 +48,21 @@ luna.globals$logmode  <- 0
 
 
 lsl <- function( file , path = "" ) { 
-d <- read.table(file,header=F,fill=T,sep="\t",stringsAsFactors=F) 
-if ( dim(d)[2] < 2 ) stop("invalid sample list")
-cat( dim(d)[1],"observations in",file,"\n")
-if ( dim(d)[1] > length(unique(d[,1])) ) stop("duplicate IDs found")
-l <- list()
-for (i in 1:dim(d)[1]) {  
- l[[ d[i,1] ]]$EDF <- ifelse( path=="" , d[i,2] , paste(path,d[i,2],sep="/") )  
- a <- d[i,-c(1:2)] ; a <- a[ a != "" ] ; a <- a[ a != "." ]  
- a <- unlist( strsplit(  a , "," ) ) 
- if ( path != "" ) a <- sapply( a , function(x) paste( path,x,sep="/" ) )
- l[[ d[i,1] ]]$ANNOT <- as.character(a)  
- }
-l
+ d <- read.table(file,header=F,fill=T,sep="\t",stringsAsFactors=F) 
+ if ( dim(d)[2] < 2 ) stop("invalid sample list")
+ cat( dim(d)[1],"observations in",file,"\n")
+ if ( dim(d)[1] > length(unique(d[,1])) ) stop("duplicate IDs found")
+ l <- list()
+ for (i in 1:dim(d)[1]) {  
+  l[[ d[i,1] ]]$EDF <- ifelse( path=="" , d[i,2] , paste(path,d[i,2],sep="/") )  
+  a <- d[i,-c(1:2)] ; a <- a[ a != "" ] ; a <- a[ a != "." ]  
+   if ( length(a) != 0 ) {
+     a <- unlist( strsplit(  a , "," ) ) 
+     if ( path != "" ) a <- sapply( a , function(x) paste( path,x,sep="/" ) )
+     l[[ d[i,1] ]]$ANNOT <- as.character(a)  
+   } else l[[ d[i,1] ]]$ANNOT <- character(0)
+  }
+ l
 }
 
 lattach <- function(sl,idx="")  {
@@ -419,7 +422,7 @@ lstgcols <- function(s) {
      ifelse( x == "NREM4" | x == "N3" , rgb(0,0,50,255,maxColorValue=255) ,
       ifelse( x == "REM" | x == "R"  , rgb(250,20,50,255,maxColorValue=255) ,
        ifelse( x == "wake" | x == "W" , rgb(49,173,82,255,maxColorValue=255) ,
-         rgb( 20,160,20,100,maxColorValue=255) ) ) ) ) ) ) } ) )
+         rgb( 100,100,100,100,maxColorValue=255) ) ) ) ) ) ) } ) )
 }
 
 
@@ -484,7 +487,7 @@ leval( paste( "FILTER sig=",l,"_beta  bandpass=15,30 tw=1 ripple=0.02" , sep="" 
 
 
 lheatmap <- function(x,y,z,
-            col = colorRampPalette(rev(c("red","orange","yellow","cyan","blue")))(100) ,
+            col = turbo.colors(100) , 
 	    mt = "" ,
 	    zlim = range(z) ) {
  # assumes a square matrix 
@@ -875,7 +878,7 @@ ltopo.conn( chs1 = dchs1 , chs2=dchs2 , z=dz , flt = T , zr = zr , cex = cex , w
 ltopo.heat2 <- function( c , x , y , z , zlim = NULL , 
                          f = rep(T, length(x) ) , 
                          sz = 0.08 ,cex = 1 ,
-                         col = jet.colors(100) , lwd = 0.5 ,                         
+                         col = turbo.colors(100) , lwd = 0.5 ,                         
                          ylab="Frequency (Hz)" , xlab="Time",  zlab = "log(power)" , mt="" )
 
 { 
