@@ -33,8 +33,8 @@ ml.globals$pal10  <-  c( rgb(255,88,46,max=255) ,
     rgb(164,209,176,max=255) )
 
 # derived data/rows
-#ml.globals$pre_select_rowname <- NULL
-#ml.globals$derived_data <- NULL
+ml.globals$pre_select_rowname <- NULL
+ml.globals$derived_data <- NULL
 ml.globals$ID_col_index <- 1
 ml.globals$show_detailed_logs_butn <- reactiveVal(FALSE)
 
@@ -465,7 +465,7 @@ session$onSessionEnded(function(){
   ml.globals$pheno_panel_present <- TRUE
   
   if ( opt_nap ) {
-    ml.globals$sm_panel_present <<- TRUE
+    ml.globals$sm_panel_present <- TRUE
     if(opt_aws){
       req(aws.user,aws.runid)
       to_delete_dir = paste(getwd(),aws.user,aws.runid, sep= "/", collapse = NULL)
@@ -1176,7 +1176,7 @@ attach.nap.data <- function()
     if ( identical( derived.files, character(0) ) ) {
       if ( ml.globals$sm_panel_present ) {
         removeTab( "main_panel", "Metrics", session = getDefaultReactiveDomain() )
-        ml.globals$sm_panel_present <<- FALSE
+        ml.globals$sm_panel_present <- F
       }
     } 
     else {
@@ -1192,7 +1192,7 @@ attach.nap.data <- function()
                            br(),
                            verbatimTextOutput('selected.info'),
                            dataTableOutput("derived.view")), select = FALSE, session = getDefaultReactiveDomain())
-        ml.globals$sm_panel_present <<- TRUE
+        ml.globals$sm_panel_present <- T
       }
     }
     
@@ -1215,12 +1215,10 @@ attach.nap.data <- function()
       choices = d.derived_groups  ,
       label = paste(length(d.derived_groups) , " group(s)")
     )
-    #ml.globals$sm_allowChangeSelection <<-TRUE
+    #ml.globals$sm_allowChangeSelection <- T
   }
-  ml.globals$sm_allowChangeSelection <<-TRUE
+  ml.globals$sm_allowChangeSelection <- T
   
-#  cat( "DERIVED DATA\n")
-#  print( values$derived_data )
 
     #
     # MTM images                                                                                              
@@ -1911,7 +1909,7 @@ output$suds.view.stgdur <- renderPlot({
     # hypnogram image used to select from the above
     par(mar=c(0,0,0,0))
 
-    if ( staging_panel_present ) {
+    if ( ml.globals$staging_panel_present ) {
        # use manual staging, if available
        
       if ( values$has_manual_staging ) {  
@@ -2731,7 +2729,7 @@ output$derived.view <- DT::renderDataTable(DT::datatable({
     values$derived_data[[input$sel.derived.group]][[input$sel.derived.table]]$data
   col_names_dt <- colnames(derived_data)
   ID_col=colnames(derived_data)[ml.globals$ID_col_index]
-  pre_select_row_index <<-which(derived_data[ID_col] == values$ID)
+  pre_select_row_index <<- which(derived_data[ID_col] == values$ID)
   if("DISP_ID" %in% col_names_dt) derived_data <-subset(derived_data, select=-ID)
   ml.globals$derived_data
 },
