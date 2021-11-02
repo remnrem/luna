@@ -2727,10 +2727,10 @@ output$derived.view <- DT::renderDataTable(DT::datatable({
       input$sel.derived.table)
   ml.globals$derived_data <-
     values$derived_data[[input$sel.derived.group]][[input$sel.derived.table]]$data
-  col_names_dt <- colnames(derived_data)
-  ID_col=colnames(derived_data)[ml.globals$ID_col_index]
-  pre_select_row_index <<- which(derived_data[ID_col] == values$ID)
-  if("DISP_ID" %in% col_names_dt) derived_data <-subset(derived_data, select=-ID)
+  col_names_dt <- colnames(ml.globals$derived_data)
+  ID_col=colnames(ml.globals$derived_data)[ml.globals$ID_col_index]
+  pre_select_row_index <<- which(ml.globals$derived_data[ID_col] == values$ID)
+  if("DISP_ID" %in% col_names_dt) ml.globals$derived_data <-subset(ml.globals$derived_data, select=-ID)
   ml.globals$derived_data
 },
 rownames = F ,
