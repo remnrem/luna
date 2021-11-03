@@ -15,18 +15,10 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install R
       run: sudo apt-get install -y r-base libfftw3-dev
-
-    - name: Install luna-base
-      run: |
-        cd $HOME
-        git clone http://github.com/remnrem/luna-base.git
-        cd luna-base
-        make
-        echo $GITHUB_WORKSPACE
-        cd ..
         
     - name: make lunaR
       run: |
+        cd $HOME
         sudo R -e "install.packages('git2r', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('plotrix', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('geosphere', repos='https://cloud.r-project.org')"
@@ -37,4 +29,4 @@ jobs:
         sudo R -e "install.packages('shinyFiles', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('xtable', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('shinydashboard', repos='https://cloud.r-project.org')"
-        sudo LUNA_BASE=${HOME}/luna-base/ R CMD INSTALL ${GITHUB_WORKSPACE}
+        sudo R CMD INSTALL ${GITHUB_WORKSPACE}
