@@ -58,7 +58,8 @@ ml.globals$sm_allowChangeSelection <- TRUE
 moonlight <- function( sample.list = NULL , 
 	               proj.path = NULL ,
 		       nap.mode = FALSE ,
-		       environ.file = NULL )
+		       environ.file = NULL ,
+		       local = T )
 {
 
 
@@ -2814,11 +2815,15 @@ output$selected.info <- renderPrint({
 
 # --------------------------------------------------------------------------------
 #
-# Run the application 
+# Run the application (if local = T , assume in Docker container) 
 #
 # --------------------------------------------------------------------------------
 
-shiny::shinyApp( ui = ui, server = server )
+if ( !local ) {
+ shiny::shinyApp( ui = ui, server = server , options = list( host = '0.0.0.0' , port = 3838 , launch.browser = F ) )
+} else { 
+ shiny::shinyApp( ui = ui, server = server )
+} 
 
 }
 
