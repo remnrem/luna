@@ -29,6 +29,7 @@ luna.globals$logmode  <- 0
   luna.globals$xy.coh   <- ldefault.coh.xy( luna.globals$xy )
 
   luna.globals$turbo.colors <- make.turbo.colors()
+  luna.globals$rbpal <- colorRampPalette( c( "navy" , "blue" , "white" , "red" , "darkred" ) ) 
 
   require( plotrix , quietly = T )
   require( geosphere , quietly = T )
@@ -496,16 +497,25 @@ leval( paste( "FILTER sig=",l,"_beta  bandpass=15,30 tw=1 ripple=0.02" , sep="" 
 lheatmap <- function(x,y,z,
             col = luna.globals$turbo.colors(100) , 
 	    mt = "" ,
-	    zlim = range(z) ) {
+	    f = rep( T , length( z ) ) , 
+            zero = rep( F , length(z) ) , 
+            xlines = NULL , ylines = NULL ,
+            zlim = range(z) ) {
  # assumes a square matrix 
+ z[zero] <- 0
+ x <- x[f] ; y <- y[f] ; z <- z[f] 
  nx <- length(unique(x))
  ny <- length(unique(y))
  nz <- length(z)
+ if  ( nz == 0 ) stop( "no data to plot" )
  if ( nz != nx * ny ) stop( "requires square data" )
- d <- data.frame( x,y,z )
+ d <- data.frame( x,y,z ) 
  d <- d[ order(d$y,d$x) , ]
  m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )
  image(t(m[1:ny,]),col=col,xaxt='n',yaxt='n',main=mt,zlim=zlim)
+ xr <- range( x ) ; yr <- range( y )
+ if ( ! is.null( xlines ) ) abline( v = ( ( xlines - xr[1] ) / ( xr[2] - xr[1] ) ) )
+ if ( ! is.null( ylines ) ) abline( h = ( ( ylines - yr[1] ) / ( yr[2] - yr[1] ) ) )
 }
 
 
