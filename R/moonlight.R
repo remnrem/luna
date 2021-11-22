@@ -75,6 +75,17 @@ options( shiny.sanitize.errors = FALSE )
 
 SESSION_SLST = "s.lst"
 SESSION_PATH = "."
+	
+	
+#
+# Deployment options to configure a server-based instance
+#
+opt_aws <- F
+opt_eris <- F
+opt_local_storage <- F
+use_url_auth <- F
+use_access_code <- F
+
 
 #
 # If using environment variables to configure a server-based instance
@@ -97,15 +108,8 @@ if ( is.null( proj.path ) ) SESSION_PATH <- Sys.getenv( "SESSION_PATH" )
 # or, over-ride by moonlight() args
 if ( ! is.null( sample.list ) ) SESSION_SLST = sample.list
 if ( ! is.null( proj.path ) ) SESSION_PATH = proj.path
-
-
-#
-# Other deployment options
-#
-
 if ( ! is.null( nap.mode ) ) opt_nap <- nap.mode
-opt_aws <- F
-opt_eris <- F
+
 
 
 
@@ -157,7 +161,7 @@ nap.dir <- paste( SESSION_PATH, "nap/", sep="/", collapse = NULL)
 ## Variables for Auth based on Query String from URL
 ##
 
- if ( Sys.getenv( "USE_URL_AUTH" ) == "TRUE" ) use_url_auth <- T
+if ( Sys.getenv( "USE_URL_AUTH" ) == "TRUE" ) use_url_auth <- T
 
 if( use_url_auth ){
   require( lubridate , quietly = T )
@@ -167,8 +171,6 @@ if( use_url_auth ){
   enc_iv <- charToRaw( Sys.getenv( "ENCRYPT_IV" ) )
   token_exp_time <- Sys.getenv( "TOKEN_EXPIRY_MINUTES" ) 
 }
-
-
 
 
 ##
