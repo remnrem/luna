@@ -75,6 +75,17 @@ options( shiny.sanitize.errors = FALSE )
 
 SESSION_SLST = "s.lst"
 SESSION_PATH = "."
+	
+	
+#
+# Deployment options to configure a server-based instance
+#
+opt_aws <- F
+opt_eris <- F
+opt_local_storage <- F
+use_url_auth <- F
+use_access_code <- F
+
 
 #
 # If using environment variables to configure a server-based instance
@@ -83,14 +94,10 @@ SESSION_PATH = "."
 if ( ! is.null( environ.file ) )
 {
 
-# nb. can swap this to let 'environ.file' directly specify the file, if neeeded
-R_environ_vars_file_path <- "~/.Renviron"
-
-readRenviron( R_environ_vars_file_path )
+readRenviron( environ.file )
 
 if ( Sys.getenv( "USE_NAP" ) == "TRUE" ) opt_nap <- T
-if ( Sys.getenv( "USE_S3" ) == "TRUE" ) opt_aws <- T
-if ( Sys.getenv( "USE_AWS" ) == "TRUE" ) opt_aws <- T
+if ( Sys.getenv( "USE_AWS_S3" ) == "TRUE" ) opt_aws <- T
 
 # i.e. allow moonlight() args to over-ride environment variables:
 if ( is.null( sample.list ) ) SESSION_SLST <- Sys.getenv("SESSION_SLST")
@@ -101,15 +108,8 @@ if ( is.null( proj.path ) ) SESSION_PATH <- Sys.getenv( "SESSION_PATH" )
 # or, over-ride by moonlight() args
 if ( ! is.null( sample.list ) ) SESSION_SLST = sample.list
 if ( ! is.null( proj.path ) ) SESSION_PATH = proj.path
-
-
-#
-# Other deployment options
-#
-
 if ( ! is.null( nap.mode ) ) opt_nap <- nap.mode
-opt_aws <- F
-opt_eris <- F
+
 
 
 
@@ -119,7 +119,7 @@ opt_eris <- F
 #
 # --------------------------------------------------------------------------------
 
-if ( Sys.getenv( "ON_ERIS") == "TRUE" ) opt_eris <- T
+if ( Sys.getenv( "ON_ERIS" ) == "TRUE" ) opt_eris <- T
 
 # nb. ERIS
 
@@ -132,6 +132,12 @@ if (opt_eris) opt_nap <- T
 
 # ERIS implies not AWS
 if ( opt_eris & opt_aws ) stop( "Cannot proceed with AWS mode with ERIS deployment" )
+
+# Local storage (non-ERIS)- Multi-cohort, Multi-Samplelists and their NAP output paths
+if ( Sys.getenv( "LOCAL_STORAGE" ) == "TRUE" ) opt_local_storage <- T
+local_metadata_lst <- Sys.getenv( "LOCAL_METADATA_LST" )
+local_home_lst <- Sys.getenv( "LOCAL_HOME_LST" )
+local_base_output_dir <- Sys.getenv( "LOCAL_BASE_OUTPUT_DIR" )
 
 
 # FIX
@@ -151,6 +157,37 @@ nap.dir <- paste( SESSION_PATH, "nap/", sep="/", collapse = NULL)
 
 
 
+##
+## Variables for Auth based on Query String from URL
+##
+
+if ( Sys.getenv( "USE_URL_AUTH" ) == "TRUE" ) use_url_auth <- T
+
+if( use_url_auth ){
+  require( lubridate , quietly = T )
+  require( wkb , quietly = T )
+  require( digest , quietly = T )
+  enc_key <- charToRaw( Sys.getenv( "ENCRYPT_KEY" ) )
+  enc_iv <- charToRaw( Sys.getenv( "ENCRYPT_IV" ) )
+  token_exp_time <- Sys.getenv( "TOKEN_EXPIRY_MINUTES" ) 
+}
+
+
+##
+## Access Code variables to load the Samples only
+## after the correct access code is provided by application user
+##
+
+if( Sys.getenv( "USE_ACCESS_CODE" ) == "TRUE" ) use_access_code <- T
+
+if( use_access_code ){
+  access_code <- Sys.getenv( "ACCESS_CODE" )
+}
+
+
+
+
+
 # --------------------------------------------------------------------------------
 #
 # AWS deployment
@@ -159,16 +196,11 @@ nap.dir <- paste( SESSION_PATH, "nap/", sep="/", collapse = NULL)
 
 if ( opt_aws )
 {
- require(aws.s3 , quietly = T )
- require(lubridate , quietly = T )
- require(wkb , quietly = T )
- require(digest , quietly = T )
- s3BucketName <- "nap-nsrr"
- enc_key <- charToRaw(Sys.getenv('ENCRYPT_KEY'))
- enc_iv <- charToRaw(Sys.getenv('ENCRYPT_IV'))
- AWS_ACCESS_KEY_ID <- Sys.getenv("AWS_ACCESS_KEY_ID")
- AWS_SECRET_ACCESS_KEY <- Sys.getenv("AWS_SECRET_ACCESS_KEY")
- AWS_DEFAULT_REGION <- Sys.getenv("AWS_DEFAULT_REGION")
+ require( aws.s3 , quietly = T )
+ s3BucketName <- Sys.getenv( "AWS_S3_BUCKET_NAME" )
+ AWS_ACCESS_KEY_ID <- Sys.getenv( "AWS_ACCESS_KEY_ID" )
+ AWS_SECRET_ACCESS_KEY <- Sys.getenv( "AWS_SECRET_ACCESS_KEY" )
+ AWS_DEFAULT_REGION <- Sys.getenv( "AWS_DEFAULT_REGION" )
  aws.user <- ""
  aws.runid <- ""
 }
@@ -412,10 +444,14 @@ ui <- fluidPage(
 #
 # --------------------------------------------------------------------------------
 
-if ( opt_eris ) {
+if ( opt_eris && ! opt_local_storage ) {
   metadata_lst <- eris.metadata_lst
   home_lst <- eris.home_lst
   base_output_dir <- eris.base_output_dir
+} else {
+  if ( local_metadata_lst != "" ) metadata_lst <- local_metadata_lst
+  if ( local_home_lst != "" ) home_lst <- local_home_lst
+  if ( local_base_output_dir != "" ) base_output_dir <- local_base_output_dir
 }
 
 # --------------------------------------------------------------------------------
@@ -451,6 +487,8 @@ server <- function(input, output, session) {
 
 values <- reactiveValues()
 
+values$access_code_verified <- FALSE
+
 
 session$onSessionEnded(function(){
   opt_aws <<- Sys.getenv( "USE_S3" ) == "TRUE" || Sys.getenv( "USE_AWS" ) == "TRUE"
@@ -485,7 +523,77 @@ output$version_build_time <- renderText({
 })
 
 
-observeEvent(input$cohort,{
+verify_token <- reactive({
+    is_valid <- FALSE
+    is_valid <- tryCatch({
+      aes <- AES(enc_key, mode="CBC", enc_iv)
+      decrypted <- strsplit( aes$decrypt(hex2raw(values$query[["token"]])),'\003')[[1]][1]
+      if(!is.na(suppressWarnings(as.numeric(decrypted)))){
+        token_time<-as.numeric(decrypted)
+        curr_epoch= time_length(interval('1970-01-01 00:00:00 EDT', Sys.time()),"second")*1000
+        expiry_time <- as.integer(token_exp_time) * 60 * 1000        
+        if ((curr_epoch - token_time) >0 && (curr_epoch - token_time) < expiry_time){          
+          return(TRUE)
+        }
+      }
+    },error= function(e){
+      return(FALSE)
+    })
+    return(is_valid)
+  })
+
+
+
+popupModal <- function(failed = FALSE) {
+    modalDialog(
+      textInput("access_code", "Enter Access Code"),
+      if (failed)
+        div(tags$b("Invalid Access Code", style = "color: red;")),
+      
+      footer = tagList(
+        modalButton("Cancel"),
+        actionButton("enter", "Enter")
+      )
+    )
+  }
+
+observeEvent( input$enter, {
+    
+    if ( !is.null(input$access_code) ) {
+      if( input$access_code == access_code ){
+        removeModal()
+        values$access_code_verified <- TRUE
+        updateSelectInput( session, "cohort", choices = dl[[1]] )
+      } else
+        showModal( popupModal(failed = TRUE) )
+    } else {
+      showModal( popupModal(failed = TRUE) )
+    }
+  })
+
+if( opt_eris ){
+    output$cohort <-renderUI({
+      selectInput( "cohort", label= "Cohort", choices=list() )
+    })
+    output$samplesLocal <- renderUI({
+      selectInput( "samplesLocal",label="Sample List",choices = list() )
+    })
+    dl <-read.delim2( file=metadata_lst,sep = '\t',header = FALSE, quote="" )
+    if(use_access_code)
+      showModal( popupModal() )
+    else{
+      updateSelectInput( session, "cohort", choices = dl[[1]] )
+    }
+  }
+
+observeEvent( input$cohort, {
+  if( use_access_code )
+    req( values$access_code_verified )
+  if( use_url_auth ){
+    values$query <- parseQueryString( session$clientData$url_search )
+    req( verify_token() )
+  }
+
   list_lst=dl[dl$V1 ==input$cohort ,]
   char_lst <- as.vector(t(list_lst))
   sampleLists=vector()
@@ -548,8 +656,6 @@ attached.sl <- reactive({
 
   values$query <- parseQueryString( session$clientData$url_search )
 
-# TODO : when is this needed?
-  set_query_values()
   
   if ( fixed.sl != "" )
   {
@@ -1008,79 +1114,6 @@ attach.staging <- function() {
 
 }  
 
-
-# --------------------------------------------------------------------------------
-#
-# Inputs: server
-#
-# --------------------------------------------------------------------------------
-
-if ( 1 || opt_eris || opt_aws )
-{
-
-# helper input functions for AWS/ERIS deployment
-
-set_query_values <- reactive({
-  query<- parseQueryString(session$clientData$url_search)
-  s_lst_path <- values$query[["slst"]]
-  nap_path <-  values$query[["nap"]]
-  if( ! is.null(s_lst_path) ) {
-    fixed.sl <<- s_lst_path 
-  }
-  if ( ! is.null(nap_path) ) {
-    nap.dir <<- nap_path
-  }
-  
-  sl_pre_type <- values$query[["sl_prefix_type"]]
-
-  sl_prefix <- values$query[["sl_prefix"]]
-
-  if ( fixed.sl != "" && ! is.null(sl_pre_type) && ! is.null(sl_prefix) ) {
-    sl_df <- read.delim( fixed.sl, header=FALSE )
-    if ( sl_pre_type == "swap" ) {
-      sl_to_swap <- values$query[["sl_prefix_swap"]]
-      new_sl_df <- cbind(sl_df[1], lapply(sl_df[,2:ncol(sl_df)],function(x) gsub(sl_to_swap,sl_prefix,x)))
-      write.table(new_sl_df,fixed.sl,sep="\t",col.names = FALSE, row.names = FALSE,quote=FALSE)
-    }
-    if(sl_pre_type =="add"){
-      new_sl_df <- cbind(sl_df[1], lapply(sl_df[,2:ncol(sl_df)],function(x) paste(sl_prefix,x,sep="")))
-      write.table(new_sl_df,fixed.sl,sep="\t",col.names = FALSE, row.names = FALSE,quote=FALSE)
-    }
-  }
-})
-
-
-#
-# upload (or use fixed) sample-list
-#
-
-verify_token <- reactive({
-  is_valid <- FALSE
-  is_valid <- tryCatch({
-    aes <- AES(enc_key, mode="CBC", enc_iv)
-    decrypted <- strsplit(aes$decrypt(hex2raw(values$query[["token"]])),'\003')[[1]][1]
-    if( !is.na(suppressWarnings(as.numeric(decrypted)))){
-      token_time<-as.numeric(decrypted)
-      curr_epoch= time_length(interval('1970-01-01 00:00:00 EDT', Sys.time()),"second")*1000
-      if ((curr_epoch - token_time) >0 && (curr_epoch - token_time) < 86400000){
-        return(TRUE)
-      }
-    }
-  },error= function(e){
-    return(FALSE)
-  })
-  return(is_valid)
-})
-
-
-if ( opt_eris ) {
-  output$cohort <-renderUI( { selectInput("cohort", label= "Cohort", choices=list()) } )
-  output$samplesLocal <- renderUI( { selectInput("samplesLocal",label="Sample List",choices = list()) } )
-  dl <-read.delim2( file=metadata_lst, sep = '\t', header = FALSE, quote="" )
-  updateSelectInput(session, "cohort", choices = dl[[1]] )
-}
-
-}
 
 
 # --------------------------------------------------------------------------------
@@ -2826,5 +2859,6 @@ if ( !local ) {
 } 
 
 }
+
 
 
