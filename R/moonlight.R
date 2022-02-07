@@ -771,6 +771,7 @@ attached.edf <- reactive({
     get_nap=TRUE
     nap_files <-paste(proj_path, "nap", input$edfs, sep = "/", collapse = NULL)
     total_approx_len <- length(values$sl[input$edfs][[1]]) * length(s3_bucket)
+    total_index <- 0
     for (file_name in values$sl[input$edfs][[1]]){
         withProgress(message="Pulling NAP files",{
             file_index<-1
