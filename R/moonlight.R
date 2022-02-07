@@ -1444,12 +1444,17 @@ observeEvent( input$refresh_nap_log, {
 
  req( attached.edf())
  if (opt_aws) {
-    nap_files <- paste( aws.user, aws.runid, "nap", values$ID, sep = "/", collapse = NULL)
+    if(aws.cid ==''){
+      proj_path= paste(aws.user, aws.user, aws.runid, sep = "/", collapse = NULL)
+    } else{
+      proj_path= paste(aws.user, aws.cid, aws.runid, sep = "/", collapse = NULL)
+    }
+    nap_files <-paste(proj_path, "nap", values$ID, sep = "/", collapse = NULL)
     withProgress(message="Pulling latest NAP files",{
       file_index <- 1
       for (f in s3_bucket) {
-        if ( grepl( nap_files, f[["Key"]]) ) {
-          save_object( s3_bucket[[file_index]], file=f[["Key"]], show_progress = TRUE)
+        if ( grepl( nap_files, paste(aws.user,f[["Key"]],sep="/")) ) {
+          save_object(s3_bucket[[file_index]],file=paste(aws.user,f[["Key"]],sep="/"), show_progress = TRUE)
         }
         incProgress(1/length(s3_bucket))
         file_index <- file_index+1
