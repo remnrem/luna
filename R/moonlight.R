@@ -289,7 +289,7 @@ ui <- fluidPage(
                            tableOutput("stage.summary") ),
 
                  tabPanel( "SOAP", 
-                           plotOutput("soap.view.orig", width='100%', height="100px"),
+                           plotOutput("stage.view", width='100%', height="100px"),
 			   plotOutput("soap.view.hypno",  width='100%', height="100px"),
 			   plotOutput("soap.view.prob", width='100%', height="100px"),
 			   plotOutput("soap.view.stgdur", width='100%', height="250px"),
@@ -298,7 +298,7 @@ ui <- fluidPage(
                  ),
 
                  tabPanel( "SUDS", 
-		 	   plotOutput("suds.view.orig", width='100%', height="100px"),
+		 	   plotOutput("stage.view", width='100%', height="100px"),
 			   plotOutput("suds.view.hypno", width='100%', height="100px"),
                            plotOutput("suds.view.prob", width='100%', height="100px"),
 			   plotOutput("suds.view.stgdur", width='100%', height="250px"),

@@ -492,15 +492,15 @@ leval( paste( "FILTER sig=",l,"_beta  bandpass=15,30 tw=1 ripple=0.02" , sep="" 
 ## Visualization                                  ##
 ##                                                ##
 ####################################################
-
-
+ 
 lheatmap <- function(x,y,z,
             col = luna.globals$turbo.colors(100) , 
 	    mt = "" ,
 	    f = rep( T , length( z ) ) , 
             zero = rep( F , length(z) ) , 
             xlines = NULL , ylines = NULL ,
-            zlim = range(z) ) {
+            zlim = NULL , 
+	    win = NULL ) {
  # assumes a square matrix 
  z[zero] <- 0
  x <- x[f] ; y <- y[f] ; z <- z[f] 
@@ -511,14 +511,14 @@ lheatmap <- function(x,y,z,
  if ( nz != nx * ny ) stop( "requires square data" )
  d <- data.frame( x,y,z ) 
  d <- d[ order(d$y,d$x) , ]
+ if ( ! is.null( win ) ) { d$z <- lwin( d$z , win ) } 
+ if ( is.null( zlim ) ) zlim = range( d$z )
  m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )
  image(t(m[1:ny,]),col=col,xaxt='n',yaxt='n',main=mt,zlim=zlim)
  xr <- range( x ) ; yr <- range( y )
  if ( ! is.null( xlines ) ) abline( v = ( ( xlines - xr[1] ) / ( xr[2] - xr[1] ) ) )
  if ( ! is.null( ylines ) ) abline( h = ( ( ylines - yr[1] ) / ( yr[2] - yr[1] ) ) )
 }
-
-
 
 
 
@@ -590,7 +590,8 @@ ltopo.xy <- function( c , x , y , z = NA , zlim = NA ,
 			 col = "black" , lwd = 0.5 ,
 			 xline = numeric() ,
 			 yline = numeric() ,
-			 pch = NA , cex = 1 , 
+			 pch = NA , cex = 1 ,
+			 ylim = NULL , 
  	       		 xlab="Frequency (Hz)" , ylab = "log(power)" , mt="" ) { 
 topo <- ldefault.xy()
 c <- lremap.chs( c )
@@ -611,7 +612,8 @@ col = rep( col , length(x) )
 # also pair down x/y/CH to filtered set
 c <- c[f]; x <- x[f]; y <- y[f] 
 # ranges (and symmetric Y?)
-rx <- range( x ); ry <- range( y ) 
+rx <- range( x );
+if ( is.null(ylim) ) { ry <- range( y ) } else { ry <- ylim }
 if ( y.symm ) ry <- c( - max(abs(ry)) , max(abs(ry) ) ) 
 # pltos
 plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
@@ -1023,6 +1025,118 @@ for ( ch in unique( c ) ) {
 #
 ##############################################################
 
+lhypno <- function( ss , cycles = NULL ) { 
+  ss[ is.na( ss ) ] <- "?" 
+  e <- 1:length(ss)
+  e <- e/120
+  sn <- lstgn( ss ) 
+  plot( e  , sn , type = "l" , lwd = 2, col = "gray" , axes = F , ylim = c(-3, 3.5) , ylab = "" , yaxt='n' , xaxs="i" , xlab="Time (hrs)" )
+  points( e  , sn , col = lstgcols(ss) , type = "p" , cex = 1 , pch = 20 )
+  axis(1)#axis(1, at=seq(0,round(max(e)),2))
+  axis(2 , 2 , "?" , col.axis = "black" , las = 2)
+  axis(2 , 1 , "W" , col.axis = lstgcols("W") , las = 2)
+  axis(2 , 0 , "R" , col.axis = lstgcols("R") , las = 2)
+  axis(2 ,-1 , "N1" , col.axis = lstgcols("N1") , las = 2)
+  axis(2 ,-2 , "N2" , col.axis = lstgcols("N2") , las = 2)
+  axis(2 ,-3 , "N3" , col.axis = lstgcols("N3") , las = 2)
+  if ( ! is.null( cycles ) )
+  {
+   if ( length(cycles) != length(ss) ) stop( "ss and cycles must be same length" )
+   cc <- unique( cycles )
+   cc <- cc[ !is.na(cc) ] 
+   odd <- T
+   for (i in cc ) {
+     xc <- range( e[ cycles == i & ! is.na( cycles ) ] )
+     if ( odd ) rect( xc[1] , 3 , xc[2] , 3.3 , col="orange" )
+     else rect( xc[1] , 2.7 , xc[2] , 3 , col="purple" )
+     odd <- ! odd
+   }
+  }
+}
+
+lstgn <- function(x) {
+ x[ x == "N1" ] <- -1
+ x[ x == "N2" ] <- -2
+ x[ x == "N3" ] <- -3
+ x[ x == "R" ] <- 0
+ x[ x == "W" ] <- 1
+ x[ x == "?" ] <- 2
+ x[ is.na(x) ] <- 2 
+ as.numeric( x )
+}
+
+
+
+lstgn2 <- function(x) {
+ x[ x == "N1" ] <- 3
+ x[ x == "N2" ] <- 4
+ x[ x == "N3" ] <- 5
+ x[ x == "R" ] <- 6
+ x[ x == "W" ] <- 2
+ x[ x == "?" ] <- 1
+ x[ is.na(x) ] <- 1
+ as.numeric( x )
+}
+
+lstgmat <- function(m) {
+m <- apply( m , 2 , lstgn2 )
+pal <- lstgcols( c( "?" , "W" , "N1" , "N2" , "N3" , "R" ) )
+image( m , col = pal )
+}
+
+
+# expect output from SUDS
+# mode: 3:  W, NR, R
+#       5:  N1, N2, N3, W, R
+#       "N1" , etc.. only plot that one thing
+
+
+# helper for lpp
+lf100 <- function(x) {
+ t <- numeric()
+ if ( any( is.na( x ) ) ) return( rep(6,100) )
+ for (s in rev(order(x))) t <- c( t , rep(s,x[s]) )
+ t[1:100]
+}
+
+# expecting
+lpp <- function(m) {
+e <- m$E
+ne <- max(e)
+h <- m[,c("PP_N1","PP_N2","PP_N3","PP_R","PP_W")]
+xr <- c(1,ne)
+hh <- matrix( NA , nrow = max(e) , ncol = 100 )
+yy <- numeric(ne)
+h <- round(as.matrix(h),2) * 100
+h[h<0] <- 0
+h[h>100] <- 100
+hh <- t( apply( h, 1 , lf100 ) )
+stgpal <- c( lstgcols("N1") , lstgcols("N2") , lstgcols("N3") , lstgcols("R") , lstgcols("W") , "lightgray" )
+# build pallete, taking only observed values
+stgpal <- stgpal[ as.integer( names(table(hh)) ) ]
+image(hh,col=stgpal,xaxt='n',yaxt='n',axes=F)
+}
+
+lpp2 <- function(m) {
+par(mfcol=c(2,1),mar=c(0.2,0.2,0.2,0.2))
+e <- m$E
+ne <- max(e)
+h <- m[,c("PP_N1","PP_N2","PP_N3","PP_R","PP_W")]
+xr <- c(1,ne)
+hh <- matrix( NA , nrow = max(e) , ncol = 100 )
+yy <- numeric(ne)
+h <- round(as.matrix(h),2) * 100
+h[h<0] <- 0
+h[h>100] <- 100
+hh <- t( apply( h, 1 , lf100 ) )
+stgpal <- c( lstgcols("N1") , lstgcols("N2") , lstgcols("N3") , lstgcols("R") , lstgcols("W") , "lightgray" )
+# build pallete, taking only observed values
+stgpal <- stgpal[ as.integer( names(table(hh)) ) ]
+image(hh,col=stgpal,xaxt='n',yaxt='n',axes=F)
+# next plot
+plot( e , rep(1.5,length(e)) , col = lstgcols( m$PRED ) , pch="|" , ylim=c(0,2) , xlab="", ylab="" , axes=F , xaxs="i" )
+points( e , rep(0.5,length(e)) , col = lstgcols( m$PRIOR ) , pch="|"  )
+}
 
 
 
