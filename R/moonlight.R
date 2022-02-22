@@ -203,6 +203,7 @@ if ( opt_aws )
  AWS_DEFAULT_REGION <- Sys.getenv( "AWS_DEFAULT_REGION" )
  aws.user <- ""
  aws.runid <- ""
+ aws.cid <- ""
 }
 
 
@@ -233,7 +234,6 @@ ui <- fluidPage(
     dashboardHeader( title = "Luna | Moonlight | NAP" ),
     
     dashboardSidebar(
-      verbatimTextOutput("version_build_time"),
       uiOutput("cohort"),
       uiOutput("samplesLocal"),      
       selectizeInput("edfs", "Samples",options= list(maxOptions = 20000),list()),
@@ -385,7 +385,6 @@ ui <- fluidPage(
     dashboardHeader( title = "Luna | Moonlight" ),
     
     dashboardSidebar(
-      verbatimTextOutput("version_build_time"),
       uiOutput("samplesLocal"),      
       selectInput( "edfs", label = "Samples", choices = list() ) ,  
       fluidRow(column(width=5,actionButton("button_prv", "previous")),column(width=5,offset=2,actionButton("button_nxt", "next"))),
@@ -491,7 +490,7 @@ values$access_code_verified <- FALSE
 
 
 session$onSessionEnded(function(){
-  opt_aws <<- Sys.getenv( "USE_S3" ) == "TRUE" || Sys.getenv( "USE_AWS" ) == "TRUE"
+  opt_aws <<- Sys.getenv( "USE_AWS_S3" ) == "TRUE"
   if( SESSION_PATH !="" ){
     fixed.sl <<- paste( SESSION_PATH, SESSION_SLST , sep="/", collapse = NULL)
   } else {
@@ -507,19 +506,15 @@ session$onSessionEnded(function(){
     ml.globals$sm_panel_present <- TRUE
     if(opt_aws){
       req(aws.user,aws.runid)
-      to_delete_dir = paste(getwd(),aws.user,aws.runid, sep= "/", collapse = NULL)
+      to_delete_dir=''
+      if(aws.cid == ''){
+        to_delete_dir = paste(getwd(),aws.user,aws.user,aws.runid, sep= "/", collapse = NULL)
+      } else{
+        to_delete_dir=paste(getwd(),aws.user, aws.cid, aws.runid, sep= "/", collapse = NULL)
+      }
       unlink(to_delete_dir,recursive = TRUE)
     }
   }
-})
-
-
-#
-# Show version and last build/time 
-#
-
-output$version_build_time <- renderText({
-  print(paste("Build ",system("git log -1 | grep Date | cut -d':' -f2- | cut -d' ' -f5-8", intern = TRUE)))
 })
 
 
@@ -674,7 +669,7 @@ attached.sl <- reactive({
   # AWS run-mode
   else
   {
-    
+
     req(values$query[["user"]],values$query[["token"]])
     req(verify_token())
     opt_aws <<-TRUE
@@ -684,20 +679,30 @@ attached.sl <- reactive({
       aws.runid <<- values$query[["runid"]]
     }
     
-    keyV = paste( aws.user, aws.runid, "s.lst", sep = "/", collapse = NULL )
-
-    final_keyV = gsub( "//" , "/" , keyV )
     
-    index=1
-    pre_val = paste( aws.user, aws.runid, sep = "/", collapse = NULL )
+    if ( ! is.null(values$query[["cid"]]) ){
+      aws.cid <<- values$query[["cid"]]
+      pre_val = paste( aws.cid, aws.runid, sep = "/", collapse = NULL )
+    } else{
+      aws.cid <<- ''
+      pre_val = paste( aws.user, aws.runid, sep = "/", collapse = NULL )
+    }
 
     s3_bucket <<- get_bucket( s3BucketName, prefix=pre_val )
 
     is_sl_file_present <- FALSE
-
+    keyV = paste( pre_val, "s.lst", sep = "/", collapse = NULL )
+    final_keyV = gsub( "//" , "/" , keyV )
+    index=1
+    sl_key = ''
     for (i in s3_bucket) {
       if ( i["Key"] == final_keyV ) {
         is_sl_file_present <- TRUE
+        if ( aws.cid == ''){
+          sl_key <- paste(getwd(),aws.user,final_keyV,sep="/")
+        } else{
+           sl_key <- paste(getwd(),aws.user,i["Key"], sep="/", collapse=NULL)
+        }
         break
       }
       index= index+1
@@ -710,7 +715,7 @@ attached.sl <- reactive({
 
     req(is_sl_file_present)
 
-    aws_sl_file <- save_object(s3_bucket[[index]], file=s3_bucket[[index]][["Key"]] )
+    aws_sl_file <- save_object(s3_bucket[[index]], file=sl_key )
     awl_sl_file_size <- file.info(aws_sl_file)$size
 
     if( awl_sl_file_size==0 ) {
@@ -721,7 +726,7 @@ attached.sl <- reactive({
     req( awl_sl_file_size != 0 )
     sl <- lsl( aws_sl_file )
   }
-  
+
   # update sample-list selector
   updateSelectInput(session , "edfs" , choices = names(sl), selected = FALSE)
   values$sl <- sl
@@ -756,23 +761,40 @@ attached.edf <- reactive({
   req(input$edfs)
   
   if ( fixed.sl == "" && opt_aws) {
-    nap.dir <<- paste( getwd(), aws.user, aws.runid, "nap", sep = "/", collapse = NULL)
+    proj_path=''
+    if(aws.cid ==''){
+      proj_path= paste(aws.user, aws.user, aws.runid, sep = "/", collapse = NULL)
+    } else{
+      proj_path= paste(aws.user, aws.cid, aws.runid, sep = "/", collapse = NULL)
+    }
+    nap.dir <<- paste( getwd(), proj_path, "nap", sep = "/", collapse = NULL)
     get_nap=TRUE
-    nap_files <-paste(aws.user,aws.runid,"nap",input$edfs,sep = "/", collapse = NULL)
+    nap_files <-paste(proj_path, "nap", input$edfs, sep = "/", collapse = NULL)
+    total_approx_len <- length(values$sl[input$edfs][[1]]) * length(s3_bucket)
+    total_index <- 0
     for (file_name in values$sl[input$edfs][[1]]){
-      file_index<-1
-      for (f in s3_bucket){
-        file_path=paste(aws.user,aws.runid,file_name,sep = "/", collapse = NULL)
-        final_path=gsub("//","/",file_path)
-        if (f[["Key"]] == final_path){
-          save_object(s3_bucket[[file_index]],file=file_name, show_progress = TRUE)
-        }
-        if (grepl(nap_files,f[["Key"]]) && get_nap){
-          save_object(s3_bucket[[file_index]],file=f[["Key"]], show_progress = TRUE)
-        }
-        file_index<-file_index+1
-      }
+        withProgress(message="Pulling NAP files",{
+            file_index<-1
+            for (f in s3_bucket){
+                if(aws.cid ==''){
+                    file_path=paste(aws.user, aws.runid, file_name,sep = "/", collapse = NULL)
+                } else {
+                    file_path=paste(aws.cid,aws.runid,file_name,sep = "/", collapse = NULL)
+                }
+                final_path=gsub("//","/",file_path)
+                if (f[["Key"]] == final_path){
+                    save_object(s3_bucket[[file_index]],file=paste(proj_path,file_name,sep = "/", collapse = NULL), show_progress = TRUE)
+                }
+                if (grepl(nap_files,paste(aws.user,f[["Key"]],sep="/")) && get_nap){
+                    save_object(s3_bucket[[file_index]],file=paste(aws.user,f[["Key"]],sep="/"), show_progress = TRUE)
+                }
+                incProgress(1/total_approx_len)
+                file_index<-file_index+1
+                total_index <- total_index+1
+           }
+           })
       get_nap<-FALSE
+      total_index <- total_index+1
     }
   }
   
@@ -1421,15 +1443,20 @@ observeEvent(input$errLogsButton,{
 observeEvent( input$refresh_nap_log, {
 
  req( attached.edf())
- if (use_aws) {
-    nap_files <- paste( aws.user, aws.runid, "nap", values$ID, sep = "/", collapse = NULL)
+ if (opt_aws) {
+    if(aws.cid ==''){
+      proj_path= paste(aws.user, aws.user, aws.runid, sep = "/", collapse = NULL)
+    } else{
+      proj_path= paste(aws.user, aws.cid, aws.runid, sep = "/", collapse = NULL)
+    }
+    nap_files <-paste(proj_path, "nap", values$ID, sep = "/", collapse = NULL)
     withProgress(message="Pulling latest NAP files",{
       file_index <- 1
       for (f in s3_bucket) {
-        if ( grepl( nap_files, f[["Key"]]) ) {
-          save_object( s3_bucket[[file_index]], file=f[["Key"]], show_progress = TRUE)
+        if ( grepl( nap_files, paste(aws.user,f[["Key"]],sep="/")) ) {
+          save_object(s3_bucket[[file_index]],file=paste(aws.user,f[["Key"]],sep="/"), show_progress = TRUE)
         }
-        incProgress(file_index*(1/length(s3_bucket)))
+        incProgress(1/length(s3_bucket))
         file_index <- file_index+1
       }
     })
