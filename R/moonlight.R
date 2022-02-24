@@ -2,7 +2,7 @@
 # --------------------------------------------------------------------------------
 #
 # lunaR moonlight viewer 
-# v0.03, 28-Oct-2021
+# v0.04, 24-Feb-2022
 # http://zzz.bwh.harvard.edu/luna/
 #
 # --------------------------------------------------------------------------------
@@ -155,6 +155,7 @@ if ( SESSION_PATH != "" && ! opt_aws ){
 
 nap.dir <- paste( SESSION_PATH, "nap/", sep="/", collapse = NULL)
 
+cat( "nap.dir" , nap.dir , "\n" )
 
 
 ##
@@ -216,8 +217,8 @@ if ( opt_aws )
 
 if ( opt_nap )
 {
-
-ui <- fluidPage(
+  
+  ui <- fluidPage(
 
   tags$script('
     $(document).on("keydown", function (e) {
@@ -297,13 +298,13 @@ ui <- fluidPage(
 			   verbatimTextOutput("soap.summary")
                  ),
 
-                 tabPanel( "SUDS", 
+                 tabPanel( "POPS", 
 		 	   plotOutput("stage.view", width='100%', height="100px"),
-			   plotOutput("suds.view.hypno", width='100%', height="100px"),
-                           plotOutput("suds.view.prob", width='100%', height="100px"),
-			   plotOutput("suds.view.stgdur", width='100%', height="250px"),
+			   plotOutput("pops.view.hypno", width='100%', height="100px"),
+                           plotOutput("pops.view.prob", width='100%', height="100px"),
+			   plotOutput("pops.view.stgdur", width='100%', height="250px"),
 			   hr(), 
-                           verbatimTextOutput("suds.summary")
+                           verbatimTextOutput("pops.summary")
                  )
       		) ) ,
 
@@ -385,7 +386,7 @@ ui <- fluidPage(
     dashboardHeader( title = "Luna | Moonlight" ),
     
     dashboardSidebar(
-      uiOutput("samplesLocal"),      
+      uiOutput("samplesLocal"),
       selectInput( "edfs", label = "Samples", choices = list() ) ,  
       fluidRow(column(width=5,actionButton("button_prv", "previous")),column(width=5,offset=2,actionButton("button_nxt", "next"))),
       selectInput( "sel.ch", "Channels" , list(), multiple = TRUE, selectize = TRUE ),      
@@ -396,8 +397,7 @@ ui <- fluidPage(
       selectInput( "sel.inst", "Instances" , list(), multiple = TRUE ,  selectize = FALSE )
     ),
     
-    
-    dashboardBody( tabsetPanel(id = "main_panel",
+   dashboardBody( tabsetPanel(id = "main_panel",
       
       tabPanel( "Headers", br() , tableOutput("header.summary") , br(), dataTableOutput("header.channels") ),
       
@@ -602,8 +602,10 @@ observeEvent( input$cohort, {
 
 
 observeEvent(input$samplesLocal,{
+  cat("in OBS E input$samplesLocal \n" )
   req(input$samplesLocal)
   sl_path <-paste0(home_lst,input$samplesLocal,sep="")
+  cat( "sl_path = " , sl_path , "\n" )
   sl <- lsl(sl_path) 
   updateSelectInput(session , "edfs" , choices = names(sl))
   values$sl <- sl
@@ -649,8 +651,9 @@ load_phenotypes <- function(){
 
 attached.sl <- reactive({
 
+#  cat( "DBUG: in attached.sl()\n" )
+  
   values$query <- parseQueryString( session$clientData$url_search )
-
   
   if ( fixed.sl != "" )
   {
@@ -809,9 +812,10 @@ attached.edf <- reactive({
   # lunaR to attach EDF from sample-list
   # either: swap in harm.lst (made on-th-fly to ensure path) OR use standard SL
   #
-  
+
   if ( opt_nap && input$harmedf  )
   {
+
     harm.sl <- list()
     harm.sl[[ input$edfs ]]$EDF <- list.files( paste(nap.dir, values$ID , "data/" , sep = "/") ,
                                                full.names = T , pattern = "*harm.edf" )
@@ -893,7 +897,7 @@ attached.edf <- reactive({
   
 
   #
-  # Staging information present (including SOAP/SUDS)?
+  # Staging information present (including SOAP/POPS)?
   # 
 
   attach.staging()
@@ -1046,20 +1050,20 @@ attach.staging <- function() {
   
   values$has_manual_staging <- ! is.null( lstages() )
     
-  cat ( "values$has_manual_staging" , values$has_manual_staging , "\n" ) 
+#  cat ( "values$has_manual_staging" , values$has_manual_staging , "\n" ) 
   
   #
-  # has automated staging? (luna_suds_SUDS-)
+  # has automated staging? (luna_suds_POPS-)
   #
   
-  values$has_suds_staging <- ! is.null( values$data$luna_suds_SUDS )
+  values$has_pops_staging <- ! is.null( values$data$luna_suds_POPS )
   values$has_soap_staging <- ! is.null( values$data$luna_suds_SOAP )
   
   #
-  # if neither manual nor SUDS staging info available, remove Staging Panel completely
+  # if neither manual nor POPS staging info available, remove Staging Panel completely
   #
   
-  if ( ! ( values$has_manual_staging | values$has_soap_staging | values$has_suds_staging ) )
+  if ( ! ( values$has_manual_staging | values$has_soap_staging | values$has_pops_staging ) )
   {
     if ( ml.globals$staging_panel_present )
     {
@@ -1084,11 +1088,11 @@ attach.staging <- function() {
       } else {
         
         # here, in NAP-mode, we may have
-        #  Manual staging, SOAP and SUDS
-        #  No manual staging, and only SUDS
+        #  Manual staging, SOAP and POPS
+        #  No manual staging, and only POPS
         #  (unlikely, but possible?): only Staging, i.e. manual staging, but no EEG available
         
-        if ( values$has_manual_staging & values$has_soap_staging & values$has_suds_staging )
+        if ( values$has_manual_staging & values$has_soap_staging & values$has_pops_staging )
         {
           insertTab("main_panel",
                     tabPanel( "Staging",
@@ -1104,27 +1108,27 @@ attach.staging <- function() {
                                           plotOutput("soap.view.stgdur", width='100%', height="250px"),
                                           hr(), 
                                           verbatimTextOutput("soap.summary")),
-                                tabPanel( "SUDS", 
-                                          plotOutput("suds.view.orig", width='100%', height="100px"),
-                                          plotOutput("suds.view.hypno", width='100%', height="100px"),
-                                          plotOutput("suds.view.prob", width='100%', height="100px"),
-                                          plotOutput("suds.view.stgdur", width='100%', height="250px"),
+                                tabPanel( "POPS", 
+                                          plotOutput("pops.view.orig", width='100%', height="100px"),
+                                          plotOutput("pops.view.hypno", width='100%', height="100px"),
+                                          plotOutput("pops.view.prob", width='100%', height="100px"),
+                                          plotOutput("pops.view.stgdur", width='100%', height="250px"),
                                           hr(), 
-                                          verbatimTextOutput("suds.summary")) ) ) ,
+                                          verbatimTextOutput("pops.summary")) ) ) ,
                     "Headers",position = "after", select = FALSE, session = getDefaultReactiveDomain() )
         }
         
-        if ( values$has_suds_staging & ! values$has_manual_staging )
+        if ( values$has_pops_staging & ! values$has_manual_staging )
         {
           
           insertTab("main_panel",
-                    tabPanel( "SUDS", 
-                              plotOutput("suds.view.orig", width='100%', height="100px"),
-                              plotOutput("suds.view.hypno", width='100%', height="100px"),
-                              plotOutput("suds.view.prob", width='100%', height="100px"),
-                              plotOutput("suds.view.stgdur", width='100%', height="250px"),
+                    tabPanel( "POPS", 
+                              plotOutput("pops.view.orig", width='100%', height="100px"),
+                              plotOutput("pops.view.hypno", width='100%', height="100px"),
+                              plotOutput("pops.view.prob", width='100%', height="100px"),
+                              plotOutput("pops.view.stgdur", width='100%', height="250px"),
                               hr(), 
-                              verbatimTextOutput("suds.summary"))
+                              verbatimTextOutput("pops.summary"))
                     ,"Headers",position = "after", select = FALSE, session = getDefaultReactiveDomain())
         }
       }
@@ -1788,7 +1792,7 @@ output$annot.mapping2 <- renderTable({
 
 # --------------------------------------------------------------------------------
 #
-# Output panels: SUDS
+# Output panels: POPS
 #
 # --------------------------------------------------------------------------------
 
@@ -1912,8 +1916,8 @@ output$soap.view.stgdur <- renderPlot({
 
 # original hypnogram (also uses aligned observed epochs, i.e. if missing values prior to first Wake/Sleep epoch)
 
-output$suds.view.orig <- renderPlot({
-  req(attached.edf(),values$data$luna_suds_SUDS,values$has_manual_staging)
+output$pops.view.orig <- renderPlot({
+  req(attached.edf(),values$data$luna_suds_POPS,values$has_manual_staging)
   par(mar = c(2, 1, 1, 1))
   ss <- values$ss.aligned
   # hypnogram image
@@ -1921,32 +1925,32 @@ output$suds.view.orig <- renderPlot({
 })
 
 
-# SUDS hypnogram (w/ discordance)
+# POPS hypnogram (w/ discordance)
 
-output$suds.view.hypno <- renderPlot({
-  req(attached.edf(), values$data$luna_suds_SUDS)
+output$pops.view.hypno <- renderPlot({
+  req(attached.edf(), values$data$luna_suds_POPS)
   par(mar = c(2, 1, 1, 1))
-  sstg <- values$data$luna_suds_SUDS$luna_suds_SUDS_E$data$PRED 
-  epochs <- values$data$luna_suds_SUDS$luna_suds_SUDS_E$data$E 
-  disc3 <- values$data$luna_suds_SUDS$luna_suds_SUDS_E$data$DISC3
-  disc5 <- values$data$luna_suds_SUDS$luna_suds_SUDS_E$data$DISC
+  sstg <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$PRED 
+  epochs <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$E 
+  disc3 <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$FLAG == 2
+  disc5 <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$FLAG == 1
   fhypnogram( epochs , fstgn( sstg) , sstg , disc3, disc5 )
 })
 
-# SUDS posteriors
+# POPS posteriors
 
-output$suds.view.prob <- renderPlot({
-  req(attached.edf(),values$data$luna_suds_SUDS)
+output$pops.view.prob <- renderPlot({
+  req(attached.edf(),values$data$luna_suds_POPS)
   par(mar = c(1, 1, 1, 1))
-  epp <- values$data$luna_suds_SUDS$luna_suds_SUDS_E$data[,c("E","PP_N1","PP_N2","PP_N3","PP_R","PP_W") ] 
+  epp <- values$data$luna_suds_POPS$luna_suds_POPS_E$data[,c("E","PP_N1","PP_N2","PP_N3","PP_R","PP_W") ] 
   fphyp( epp )
 })
 
 
-output$suds.view.stgdur <- renderPlot({
-  req(attached.edf(),values$data$luna_suds_SUDS)
+output$pops.view.stgdur <- renderPlot({
+  req(attached.edf(),values$data$luna_suds_POPS)
   par(mar = c(3, 3, 0, 1))
-  dat <- values$data$luna_suds_SUDS$luna_suds_SUDS_SS$data[,c("SS","DUR_OBS","DUR_PRD")]
+  dat <- values$data$luna_suds_POPS$luna_suds_POPS_SS$data[,c("SS","DUR_OBS","DUR_PRD")]
   dat$DUR_OBS[ is.na( dat$DUR_OBS ) ] <- 0
   dat$DUR_PRD[ is.na( dat$DUR_PRD ) ] <- 0  
   fstgdur( dat )
@@ -1977,7 +1981,7 @@ output$suds.view.stgdur <- renderPlot({
           plot( values$ss$E , rep( 0.5 , length(values$ss$E) ) , 
                  col = lstgcols( values$ss$STAGE ) , axes = F , ylim = c(0, 1) , pch="|" , ylab = "" , xaxs='i' , yaxs='i' ) 
       } else if ( values$has_suds_staging ) {
-          suds_ss <- values$data$luna_suds_SUDS$luna_suds_SUDS_E$data$PRED
+          suds_ss <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$PRED
           plot( suds_ss , rep( 0.5 , length( suds_ss ) ) , 
                  col = lstgcols( suds_ss ) , axes = F , ylim = c(0, 1) , pch="|" , ylab = "" , xaxs='i' , yaxs='i' ) 
      } 
