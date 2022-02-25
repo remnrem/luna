@@ -290,7 +290,7 @@ if ( opt_nap )
                            tableOutput("stage.summary") ),
 
                  tabPanel( "SOAP", 
-                           plotOutput("stage.view", width='100%', height="100px"),
+                           plotOutput("soap.view.orig", width='100%', height="100px"),
 			   plotOutput("soap.view.hypno",  width='100%', height="100px"),
 			   plotOutput("soap.view.prob", width='100%', height="100px"),
 			   plotOutput("soap.view.stgdur", width='100%', height="250px"),
@@ -299,7 +299,7 @@ if ( opt_nap )
                  ),
 
                  tabPanel( "POPS", 
-		 	   plotOutput("stage.view", width='100%', height="100px"),
+		 	   plotOutput("pops.view.orig", width='100%', height="100px"),
 			   plotOutput("pops.view.hypno", width='100%', height="100px"),
                            plotOutput("pops.view.prob", width='100%', height="100px"),
 			   plotOutput("pops.view.stgdur", width='100%', height="250px"),
@@ -1049,16 +1049,18 @@ attach.staging <- function() {
   #
   
   values$has_manual_staging <- ! is.null( lstages() )
-    
-#  cat ( "values$has_manual_staging" , values$has_manual_staging , "\n" ) 
-  
+      
   #
   # has automated staging? (luna_suds_POPS-)
   #
   
   values$has_pops_staging <- ! is.null( values$data$luna_suds_POPS )
   values$has_soap_staging <- ! is.null( values$data$luna_suds_SOAP )
-  
+
+  cat ( "has manual staging =" , values$has_manual_staging , "\n" )
+  cat ( "has pops staging =" , values$has_pops_staging , "\n" )
+  cat ( "has soap staging =" , values$has_soap_staging , "\n" )	
+
   #
   # if neither manual nor POPS staging info available, remove Staging Panel completely
   #
@@ -1854,6 +1856,7 @@ image(hh,col=stgpal,xaxt='n',yaxt='n',axes=F)
 
 
 fstgdur <- function( d ) {
+d <- d[ order(d$SS) , ] 
 d2 <- t(as.matrix( d[ dim(d)[1]:1  ,c("DUR_OBS","DUR_PRD")] ))
 barplot( matrix(as.numeric(d2),ncol = ncol(d2)) ,
          beside=T, horiz=T , col=lstgcols( rev( rep(d$SS,each=2) ) ) ,
@@ -1950,9 +1953,10 @@ output$pops.view.prob <- renderPlot({
 output$pops.view.stgdur <- renderPlot({
   req(attached.edf(),values$data$luna_suds_POPS)
   par(mar = c(3, 3, 0, 1))
-  dat <- values$data$luna_suds_POPS$luna_suds_POPS_SS$data[,c("SS","DUR_OBS","DUR_PRD")]
-  dat$DUR_OBS[ is.na( dat$DUR_OBS ) ] <- 0
-  dat$DUR_PRD[ is.na( dat$DUR_PRD ) ] <- 0  
+  dat <- values$data$luna_suds_POPS$luna_suds_POPS_SS$data[,c("SS","OBS","PRF")]
+  dat$OBS[ is.na( dat$OBS ) ] <- 0
+  dat$PRF[ is.na( dat$PRF ) ] <- 0  
+  names(dat)[-1] <- c("DUR_OBS","DUR_PRD") 
   fstgdur( dat )
 })
 
@@ -1980,10 +1984,13 @@ output$pops.view.stgdur <- renderPlot({
       if ( values$has_manual_staging ) {  
           plot( values$ss$E , rep( 0.5 , length(values$ss$E) ) , 
                  col = lstgcols( values$ss$STAGE ) , axes = F , ylim = c(0, 1) , pch="|" , ylab = "" , xaxs='i' , yaxs='i' ) 
-      } else if ( values$has_suds_staging ) {
-          suds_ss <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$PRED
-          plot( suds_ss , rep( 0.5 , length( suds_ss ) ) , 
-                 col = lstgcols( suds_ss ) , axes = F , ylim = c(0, 1) , pch="|" , ylab = "" , xaxs='i' , yaxs='i' ) 
+      } else if ( values$has_pops_staging ) {
+          pops_ss <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$PRED
+	  pops_ep <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$E          
+
+          plot( pops_ep , rep( 0.5 , length( pops_ss ) ) , 
+                 col = lstgcols( pops_ss ) , axes = F , ylim = c(0, 1) , pch="|" , ylab = "" , xaxs='i' , yaxs='i' )
+
      } 
     } else {
       # just fill in blank
