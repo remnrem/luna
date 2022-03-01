@@ -817,15 +817,23 @@ attached.edf <- reactive({
   {
 
     harm.sl <- list()
+    harm.sl.edfz <- list()
+
     harm.sl[[ input$edfs ]]$EDF <- list.files( paste(nap.dir, values$ID , "data/" , sep = "/") ,
-                                               full.names = T , pattern = "*harm.edf" )
+                                               full.names = T , pattern = "*harm.edf$" )
+
+    harm.sl.edfz[[ input$edfs ]]$EDF <- list.files( paste(nap.dir, values$ID , "data/" , sep = "/") ,
+                                               full.names = T , pattern = "*harm.edfz$" )
 
     # this gets populated below w/ harm.lst anyway
     harm.sl[[ input$edfs ]]$ANNOT <-  character(0)
 
-    # attach only if there was an EDF to be attached
+    # attach only if there was an EDF (or EDFZ) to be attached
     if ( length( harm.sl[[ input$edfs ]]$EDF ) != 0 )
       lattach( harm.sl , input$edfs )
+    else if ( length( harm.sl.edfz[[ input$edfs ]]$EDF ) != 0 )
+      lattach( harm.sl.edfz , input$edfs )
+
   }
   else
   {
@@ -1876,8 +1884,18 @@ barplot( matrix(as.numeric(d2),ncol = ncol(d2)) ,
 output$soap.view.orig <- renderPlot({
   req(attached.edf(), values$data$luna_suds_SOAP)
   par(mar = c(2, 1, 1, 1))
+  cat("orig\n")
+print( values$ss )
+  print( values$ss.aligned )
+  cat("ALIGNED\n")
   ss <- values$ss.aligned 
-  # hypnogram image
+cat( "SOAP\n")
+print( values$data$luna_suds_SOAP$"luna_suds_SOAP_E" ) 
+cat( "POPS\n")
+print( values$data$luna_suds_POPS$"luna_suds_POPS_E" ) 
+
+
+# hypnogram image
   fhypnogram( ss$E , ss$STAGE_N , ss$STAGE ) 
 })
 
