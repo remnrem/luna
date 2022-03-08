@@ -1884,16 +1884,13 @@ barplot( matrix(as.numeric(d2),ncol = ncol(d2)) ,
 output$soap.view.orig <- renderPlot({
   req(attached.edf(), values$data$luna_suds_SOAP)
   par(mar = c(2, 1, 1, 1))
-  cat("orig\n")
-print( values$ss )
-  print( values$ss.aligned )
-  cat("ALIGNED\n")
-  ss <- values$ss.aligned 
-cat( "SOAP\n")
-print( values$data$luna_suds_SOAP$"luna_suds_SOAP_E" ) 
-cat( "POPS\n")
-print( values$data$luna_suds_POPS$"luna_suds_POPS_E" ) 
 
+#  print( values$ss.aligned )
+  ss <- values$ss.aligned 
+#cat( "SOAP\n")
+#print( values$data$luna_suds_SOAP$"luna_suds_SOAP_E" ) 
+#cat( "POPS\n")
+#print( values$data$luna_suds_POPS$"luna_suds_POPS_E" ) 
 
 # hypnogram image
   fhypnogram( ss$E , ss$STAGE_N , ss$STAGE ) 
@@ -2253,12 +2250,16 @@ output$pops.view.stgdur <- renderPlot({
               # Either show means or Hjorth paramters, depending if we have just S1 or S1+S2 in sigstats
               #
 
-              use_mean <- any( is.na( sigstats$S2[ sigstats$CH== ch] ) )
+	      cs1 <- sigstats$S1[ sigstats$CH== ch]
+	      cs2 <- sigstats$S2[ sigstats$CH== ch]
+	      cse <- sigstats$E[ sigstats$CH== ch]
+           
+	      use_mean <- any( is.na( cs2 ) )
               
-              min.S1 <- min( sigstats$S1[ sigstats$CH== ch] , na.rm=T)
-              max.S1 <- max( sigstats$S1[ sigstats$CH== ch] , na.rm=T)
-              min.S2 <- ifelse( use_mean , NA , min( sigstats$S2[ sigstats$CH== ch] , na.rm=T) )
-              max.S2 <- ifelse( use_mean , NA , max( sigstats$S2[ sigstats$CH== ch] , na.rm=T) )
+              min.S1 <- min( cs1 , na.rm=T)
+              max.S1 <- max( cs1 , na.rm=T)
+              min.S2 <- ifelse( use_mean , NA , min( cs2 , na.rm=T) )
+              max.S2 <- ifelse( use_mean , NA , max( cs2 , na.rm=T) )
               
               if ( use_mean ) {
                 
@@ -2267,7 +2268,7 @@ output$pops.view.stgdur <- renderPlot({
                 #
                 zoomed.epochs <- c( floor( ( secs[1]/30) + 1 ) , floor( ( secs[2]/30)+1 ) )
                 secx <- seq( secs[1] , secs[2] , length.out = zoomed.epochs[2] - zoomed.epochs[1]+1 )  # 30 second epochs 
-                ydat <- sigstats$S1[ sigstats$E >= zoomed.epochs[1] & sigstats$E <= zoomed.epochs[2] & sigstats$CH== ch ]  
+                ydat <- cs1[ cse >= zoomed.epochs[1] & cse <= zoomed.epochs[2] ]  
                 # scale to 0..1
                 ydat <- ( ydat - min.S1 ) / ifelse( max.S1 - min.S1 > 0 ,  max.S1 - min.S1 , 1 ) # normalize within range(?)
                 # scale to pixel co-ords (nb. dropped yspan)
@@ -2297,10 +2298,11 @@ output$pops.view.stgdur <- renderPlot({
                     if(secx+30 > secs[2]){
                       secx_end=secs[2]
                     }
-                    ydat <- sigstats$S1[ sigstats$E == e & sigstats$CH== ch ]  
+                    ydat <- cs1[ cse == e ] 
                     ydat <- ( ydat - min.S1 ) / ifelse( max.S1 - min.S1 > 0 ,  max.S1 - min.S1 , 1 )
-                    h2 <-  sigstats$S2[ sigstats$E == e &sigstats$CH== ch ] 
-                    if ( max.S2 - min.S2 > 0 ) h2 <- ( h2 - min.S2 ) / ( max.S2 - min.S2 )
+		#    cat( "minx = " , min.S1 , max.S1 , "\n" )
+		    h2 <-  cs2[ cse == e ]
+		    if ( max.S2 - min.S2 > 0 ) h2 <- ( h2 - min.S2 ) / ( max.S2 - min.S2 )
                     else h2 <- rep( 0 , length(h2) )
                     ycol <- floor( 100 * h2 ); ycol[ ycol < 1 ] <- 1 
                     rect( secx ,  yp + (yinc*cfac)/2 - yspan  * ydat , 
@@ -2449,7 +2451,6 @@ output$pops.view.stgdur <- renderPlot({
   
   # drive by annotation instance box
   observeEvent( input$sel.inst , {
-    print("C2\n")
     xx <- range( as.numeric( unlist( strsplit( input$sel.inst ," ") )  )  ) 
     xx <- c( floor( xx[1]/30 )+1 , ceiling( xx[2] /30 ) )
     values$epochs = xx
@@ -2679,7 +2680,7 @@ for (b in rev(ncol)) {
     # plot PSD
     ns <- length(input$sel.ch)
     par(mfrow = c(ceiling(ns / 2), 2), mar = c(4, 4, 2, 1))
-    for (ch in input$sel.ch) {
+    for (ch in input$sel.ch) {      
       frq <- k$PSD$CH_F$F[k$PSD$CH_F$CH == ch]
       pwr <- k$PSD$CH_F$PSD[k$PSD$CH_F$CH == ch]
       pwr <-
