@@ -727,6 +727,9 @@ attached.sl <- reactive({
     }
 
     req( awl_sl_file_size != 0 )
+    sl_df <- read.delim(sl_key,header=FALSE)
+    new_sl_df <- cbind(sl_df[1], lapply(sl_df[,2:ncol(sl_df)],function(x) paste(aws.user,pre_val,x,sep="/")))
+    write.table(new_sl_df,sl_key,sep="\t",col.names = FALSE, row.names = FALSE,quote=FALSE)
     sl <- lsl( aws_sl_file )
   }
 
@@ -763,7 +766,7 @@ attached.edf <- reactive({
   
   req(input$edfs)
   
-  if ( fixed.sl == "" && opt_aws) {
+  if ( fixed.sl == "" && opt_aws && !(is.character(values$ID) && values$ID == input$edfs)) {
     proj_path=''
     if(aws.cid ==''){
       proj_path= paste(aws.user, aws.user, aws.runid, sep = "/", collapse = NULL)
@@ -779,14 +782,9 @@ attached.edf <- reactive({
         withProgress(message="Pulling NAP files",{
             file_index<-1
             for (f in s3_bucket){
-                if(aws.cid ==''){
-                    file_path=paste(aws.user, aws.runid, file_name,sep = "/", collapse = NULL)
-                } else {
-                    file_path=paste(aws.cid,aws.runid,file_name,sep = "/", collapse = NULL)
-                }
-                final_path=gsub("//","/",file_path)
-                if (f[["Key"]] == final_path){
-                    save_object(s3_bucket[[file_index]],file=paste(proj_path,file_name,sep = "/", collapse = NULL), show_progress = TRUE)
+                full_file_path=paste(aws.user,f[["Key"]],sep="/", collapse = NULL)
+                if(full_file_path==file_name){
+                    save_object(s3_bucket[[file_index]],file=full_file_path, show_progress = TRUE)                
                 }
                 if (grepl(nap_files,paste(aws.user,f[["Key"]],sep="/")) && get_nap){
                     save_object(s3_bucket[[file_index]],file=paste(aws.user,f[["Key"]],sep="/"), show_progress = TRUE)
