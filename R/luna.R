@@ -20,16 +20,16 @@ luna.globals$logmode  <- 0
 ##                                                ##
 ####################################################
 
-.onLoad <- function(libname, pkgname) 
+.onLoad <- function(libname, pkgname)
 {
   packageStartupMessage( paste( "** lunaR" , luna.globals$version , luna.globals$date ) )
-  library.dynam("luna", package="luna", lib.loc = NULL)  
-  luna.globals$logmode <- 0 
+  library.dynam("luna", package="luna", lib.loc = NULL)
+  luna.globals$logmode <- 0
   luna.globals$xy       <- ldefault.xy()
   luna.globals$xy.coh   <- ldefault.coh.xy( luna.globals$xy )
 
   luna.globals$turbo.colors <- make.turbo.colors()
-  luna.globals$rbpal <- colorRampPalette( c( "navy" , "blue" , "white" , "red" , "darkred" ) ) 
+  luna.globals$rbpal <- colorRampPalette( c( "navy" , "blue" , "white" , "red" , "darkred" ) )
 
   require( plotrix , quietly = T )
   require( geosphere , quietly = T )
@@ -55,19 +55,51 @@ luna.globals$logmode  <- 0
 ####################################################
 
 
-lsl <- function( file , path = "" ) { 
- d <- read.table(file,header=F,fill=T,sep="\t",stringsAsFactors=F) 
+#' Imports a Luna \href{https://zzz.bwh.harvard.edu/luna/luna/args/#sample-lists}{sample-list}
+#' into R
+#'
+#'
+#' @param file a required argument, giving the name of the sample-list file
+#' @param path an optional argument, mirroring Luna's
+#'   \href{https://zzz.bwh.harvard.edu/luna/luna/args/#search-paths}{path} command-line option
+#'
+#'
+#' @return a named-list representing the sample-list
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#'> sl <- lsl("s.lst")
+#'3 observations in s.lst
+#'
+#'> names(sl)
+#'[1] "nsrr01" "nsrr02" "nsrr03"
+#'
+#'> str(sl)
+#'List of 3
+#'$ nsrr01:List of 2
+#'..$ EDF  : chr "edfs/learn-nsrr01.edf"
+#'..$ ANNOT: chr "edfs/learn-nsrr01-profusion.xml"
+#'$ nsrr02:List of 2
+#'..$ EDF  : chr "edfs/learn-nsrr02.edf"
+#'..$ ANNOT: chr "edfs/learn-nsrr02-profusion.xml"
+#'$ nsrr03:List of 2
+#'..$ EDF  : chr "edfs/learn-nsrr03.edf"
+#'..$ ANNOT: chr "edfs/learn-nsrr03-profusion.xml"
+#' }
+lsl <- function( file , path = "" ) {
+ d <- read.table(file,header=F,fill=T,sep="\t",stringsAsFactors=F)
  if ( dim(d)[2] < 2 ) stop("invalid sample list")
  cat( dim(d)[1],"observations in",file,"\n")
  if ( dim(d)[1] > length(unique(d[,1])) ) stop("duplicate IDs found")
  l <- list()
- for (i in 1:dim(d)[1]) {  
-  l[[ d[i,1] ]]$EDF <- ifelse( path=="" , d[i,2] , paste(path,d[i,2],sep="/") )  
-  a <- d[i,-c(1:2)] ; a <- a[ a != "" ] ; a <- a[ a != "." ]  
+ for (i in 1:dim(d)[1]) {
+  l[[ d[i,1] ]]$EDF <- ifelse( path=="" , d[i,2] , paste(path,d[i,2],sep="/") )
+  a <- d[i,-c(1:2)] ; a <- a[ a != "" ] ; a <- a[ a != "." ]
    if ( length(a) != 0 ) {
-     a <- unlist( strsplit(  a , "," ) ) 
+     a <- unlist( strsplit(  a , "," ) )
      if ( path != "" ) a <- sapply( a , function(x) paste( path,x,sep="/" ) )
-     l[[ d[i,1] ]]$ANNOT <- as.character(a)  
+     l[[ d[i,1] ]]$ANNOT <- as.character(a)
    } else l[[ d[i,1] ]]$ANNOT <- character(0)
   }
  l
@@ -77,16 +109,16 @@ lattach <- function(sl,idx="")  {
   id <- idx
   if ( is.numeric(idx) ) {
   if ( idx < 1 | idx > length(sl) ) stop( paste("idx out of range, expecting 1 .." , length(sl) ) )
-  id = names(sl)[idx] 
- } else { 
-  idx <- which( names(sl) == id )	   
+  id = names(sl)[idx]
+ } else {
+  idx <- which( names(sl) == id )
   if ( length( idx ) != 1 ) stop( paste("could not find index",idx))
  }
 ledf( sl[[idx]]$EDF , id , sl[[idx]]$ANNOT )
 }
 
-lset <- function( var , val = NULL ) { 
-if ( ! is.null(val) ) { 
+lset <- function( var , val = NULL ) {
+if ( ! is.null(val) ) {
  .Call( "Rset_var" , as.character(var) , as.character(val) , PACKAGE="luna" )
 } else if ( is.list(var) ) {
  v <- unlist(var)
@@ -98,10 +130,10 @@ if ( ! is.null(val) ) {
  for (i in 1:n)   .Call( "Rset_var" , as.character(d[i,1]) , as.character(d[i,2]) , PACKAGE="luna")
 }
  invisible(1)
-} 
+}
 
-lvar <- function(v) { 
- .Call( "Rshow_var" , as.character(v) , PACKAGE="luna" )  
+lvar <- function(v) {
+ .Call( "Rshow_var" , as.character(v) , PACKAGE="luna" )
 }
 
 lclear <- function(v) {
@@ -109,7 +141,7 @@ lclear <- function(v) {
  invisible(1)
 }
 
-lreset <- function() { 
+lreset <- function() {
  ldrop()
  .Call( "Rclear_vars" , PACKAGE = "luna" );
  invisible(1)
@@ -136,23 +168,23 @@ ledf <- function( edf , id = "." , annots = character(0) )
  .Call("Rattach_edf", as.character(edf) , as.character(id) , as.character(annots) , PACKAGE = "luna" );
  lflush()
  lstat()
- luna.globals$edf <- as.character(edf) 
+ luna.globals$edf <- as.character(edf)
  luna.globals$id <- as.character(id)
  luna.globals$annots <- as.character(annots)
  invisible(1)
-} 
+}
 
 ## report on the in-memory EDF what is in memory
-lstat <- function() { 
+lstat <- function() {
  invisible( .Call("Rstat" , PACKAGE = "luna" ) );
 }
 
 ## report on the in-memory EDF what is in memory
-ldesc <- function() { 
+ldesc <- function() {
  .Call("Rdesc" , PACKAGE = "luna" ) ;
 }
 
-llog <- function(x) { 
+llog <- function(x) {
  if ( length(x) != 1 ) stop( "expecting a single 0/1" )
  if ( ! is.numeric(x) ) stop( "expecting a single 0/1" )
  luna.globals$logmode <- as.logical(x)
@@ -166,10 +198,10 @@ lflush <- function()
  invisible( luna.globals$logmode )
 }
 
-lepoch <- function( dur = 30 , inc = -1 ) 
+lepoch <- function( dur = 30 , inc = -1 )
 {
- if ( inc <= 0 ) inc = dur; 
- k <- leval( paste( "EPOCH" , paste("dur",dur,sep="=") , paste("inc",inc,sep="=") ) )  
+ if ( inc <= 0 ) inc = dur;
+ k <- leval( paste( "EPOCH" , paste("dur",dur,sep="=") , paste("inc",inc,sep="=") ) )
  invisible( k$EPOCH$BL$NE )
 }
 
@@ -179,18 +211,18 @@ letable <- function( annots = character(0) ) {
 
 ladd.annot.file <- function( a )
 {
-if ( ! file.exists( a ) ) stop( paste( "cannot find" , a ) ) 
-.Call("Radd_annot" , as.character(a) , PACKAGE = "luna" ); 	
+if ( ! file.exists( a ) ) stop( paste( "cannot find" , a ) )
+.Call("Radd_annot" , as.character(a) , PACKAGE = "luna" );
 invisible(1)
 }
 
 ladd.annot <- function( annot , intervals )
 {
- if ( ! is.list( intervals ) ) stop( "expecting a list of intervals" ) 
+ if ( ! is.list( intervals ) ) stop( "expecting a list of intervals" )
  # check that each have two of each, convert to vector
- t <- unlist( intervals ) 
- if ( length(t) != 2 * length(intervals) ) stop( "bad interval list format: expecting two items per list element" ) 
- if ( length(t) != 0 ) .Call("Radd_annot_fromR" , as.character(annot) , as.numeric(t) , PACKAGE = "luna" ); 	
+ t <- unlist( intervals )
+ if ( length(t) != 2 * length(intervals) ) stop( "bad interval list format: expecting two items per list element" )
+ if ( length(t) != 0 ) .Call("Radd_annot_fromR" , as.character(annot) , as.numeric(t) , PACKAGE = "luna" );
  lstat()
  invisible(1)
 }
@@ -206,14 +238,14 @@ if ( length(a) != 1 ) stop( "lannots( annot ) only takes one annotation class" )
 .Call("Rannot" , as.character( a ) , PACKAGE = "luna" );
 }
 
-lchs <- function() { 
+lchs <- function() {
  .Call("Rchannels" , PACKAGE = "luna" );
 }
 
 ldrop <- function() {
  .Call( "Rdrop" , PACKAGE = "luna" );
  invisible(1)
-} 
+}
 
 lrefresh <- function()
 {
@@ -230,18 +262,18 @@ ledf( luna.globals$edf , luna.globals$id , luna.globals$annots )
 ####################################################
 
 leval <- function( x )
-{	
- xx <- paste0( x, collapse = " & " )  
+{
+ xx <- paste0( x, collapse = " & " )
  retval <- .Call("Reval_cmd", as.character(xx) , PACKAGE = "luna" )
  lflush()
  lstat()
  invisible(retval)
-} 
+}
 
 lreturnless_eval <- function( x )
 {
  # we apply this to whomever is attached
- xx <- paste0( x, collapse = " & " )  
+ xx <- paste0( x, collapse = " & " )
  .Call("Reval_cmd_noreturns", as.character(xx) , PACKAGE = "luna" )
  invisible(1)
 }
@@ -249,11 +281,11 @@ lreturnless_eval <- function( x )
 leval.project <- function( sl , x )
 {
  if ( missing(sl) ) stop( "no sample list 'sl' specified" )
- if ( missing(x) ) stop( "no Luna commands 'x' specified" )  
+ if ( missing(x) ) stop( "no Luna commands 'x' specified" )
  ids <- names(sl)
  if ( length(ids) == 0 ) stop( "no individuals in sample-list" )
  .Call("Reval_init_returns" , PACKAGE = "luna" )
- for (id in ids) { 
+ for (id in ids) {
      lattach(sl,id)
      lreturnless_eval( x )
  }
@@ -261,13 +293,13 @@ leval.project <- function( sl , x )
  .Call("Reval_get_returns",PACKAGE="luna")
 }
 
-lprob <- function() 
-{ 
+lprob <- function()
+{
  .Call("Rproblem" , PACKAGE = "luna" )
 }
 
-lprob_clear <- function( state = 0 ) 
-{ 
+lprob_clear <- function( state = 0 )
+{
  .Call("Rsetproblem" , as.integer(state) , PACKAGE = "luna" )
 }
 
@@ -279,9 +311,9 @@ lprob_clear <- function( state = 0 )
 ####################################################
 
 ldb <- function( dbfile , ids = character(0) )
-{	
+{
  .Call("Rdb2retval", as.character(dbfile) , as.character(ids) , PACKAGE = "luna" );
-} 
+}
 
 
 ####################################################
@@ -290,45 +322,45 @@ ldb <- function( dbfile , ids = character(0) )
 ##                                                ##
 ####################################################
 
-ltxttab <- function( root , f = "" , ids = dir( root ) , silent = F )  
+ltxttab <- function( root , f = "" , ids = dir( root ) , silent = F )
 {
 
   if ( f == "" ) return( ltxttab.dir( root , ids ) )
 
   # root : folder root
-  files <- paste( root , "/" , ids , "/" , f , sep="" )  
+  files <- paste( root , "/" , ids , "/" , f , sep="" )
 
   cnt = 1
   for (file in files) {
     if ( ! silent ) cat("reading" , file , "\n" )
-    if ( cnt == 1 ) d <- read.table( file , header = T , stringsAsFactors = F ) 
+    if ( cnt == 1 ) d <- read.table( file , header = T , stringsAsFactors = F )
     else d <- rbind( d , read.table( file , header = T , stringsAsFactors = F ) )
     cnt <- cnt + 1
   }
 d
-} 
+}
 
-ltxttab.dir <- function( root , ids = dir( root ) ) 
+ltxttab.dir <- function( root , ids = dir( root ) )
 {
-  folders <- paste( root , "/" , ids , "/" , sep="" )	
+  folders <- paste( root , "/" , ids , "/" , sep="" )
   r <- character(0)
-  for (folder in folders) r <- c( r , dir( folder ) )  
-  table( r ) 
+  for (folder in folders) r <- c( r , dir( folder ) )
+  table( r )
 }
 
 
 ####################################################
 ##                                                ##
-## Iterate epoch-wise or annot-wise, applying     ## 
+## Iterate epoch-wise or annot-wise, applying     ##
 ## user-defined function                          ##
 ##                                                ##
 ####################################################
 
-literate <- function( func , chs = character(0) , annots = character(0) , 
+literate <- function( func , chs = character(0) , annots = character(0) ,
 	              by.annot = character(0) , w = 0 , env = new.env() )
 {
- tmp <- .Call( "Riterate" , as.function(func) , as.character(chs) , 
-     	       as.character(annots) , as.character(by.annot) , as.numeric(w) , 
+ tmp <- .Call( "Riterate" , as.function(func) , as.character(chs) ,
+     	       as.character(annots) , as.character(by.annot) , as.numeric(w) ,
 	       env , PACKAGE = "luna" )
  invisible(tmp)
 }
@@ -341,15 +373,15 @@ literate <- function( func , chs = character(0) , annots = character(0) ,
 ####################################################
 
 
-ldata <- function( e , chs , annots = character(0) ) 
+ldata <- function( e , chs , annots = character(0) )
 {
  .Call( "Rmatrix_epochs", as.integer(e) , as.character(chs) , as.character(annots) , PACKAGE = 'luna' )
 }
 
-ldata.intervals <- function( i , chs , annots = character(0) , w = 0 ) 
+ldata.intervals <- function( i , chs , annots = character(0) , w = 0 )
 {
    if ( ! is.list(i) ) stop( "expecting a list() for i" )
-   if ( w > 0 ) i <- lapply( i , function(x) { c( max(0,x[1]-w),x[2]+w) } )   
+   if ( w > 0 ) i <- lapply( i , function(x) { c( max(0,x[1]-w),x[2]+w) } )
    if ( length(i) != 0 ) .Call( "Rmatrix_intervals", as.numeric(unlist(i)) , as.character(chs) , as.character(annots) , PACKAGE = 'luna' )
    else stop("no intervals found")
 }
@@ -383,19 +415,19 @@ lx <- function( lst , cmd = "" , f = "" , ... )
 {
    if ( cmd == "" ) return(lstrat(lst))
    f <- paste(sort( unlist( c( f , list(...) )  )  ), sep="" , collapse="_" )
-   if (	f != ""	) 
+   if (	f != ""	)
       lst[[cmd]][[f]]
    else if ( length(lst[[cmd]])==1 )
       lst[[cmd]][[1]]
-   else		
-      lst[[cmd]]	
+   else
+      lst[[cmd]]
 }
 
 lx2 <- function( k , ... ) { do.call( rbind , lapply( k , lx , ... ) ) }
 
-lid <- function(d,id) { d[ d$ID %in% id , ] } 
+lid <- function(d,id) { d[ d$ID %in% id , ] }
 
-lstages <- function() { 
+lstages <- function() {
  leval( "STAGE" )$STAGE$E$STAGE
 }
 
@@ -434,7 +466,7 @@ lstgcols <- function(s) {
 }
 
 
-lstgn <- function(x) {	
+lstgn <- function(x) {
  x[ x == "N1" ] <- 1
  x[ x == "N2" ] <- 2
  x[ x == "N3" ] <- 3
@@ -445,7 +477,7 @@ lstgn <- function(x) {
 }
 
 lstgpal <- function() {
- c("N1","N2","N3","REM","W") 
+ c("N1","N2","N3","REM","W")
 }
 
 
@@ -466,13 +498,13 @@ loutliers <- function(x,m =mean(x,na.rm=T) , sdev = sd(x,na.rm=T) ,t=3)
 }
 
 
-ldenoise <- function(x,lambda) { 
+ldenoise <- function(x,lambda) {
  .Call( "R1d_denoise" , as.numeric(x) , as.numeric(lambda) , PACKAGE = "luna" )
-} 
+}
 
 
 
-lbands <- function( l ) { 
+lbands <- function( l ) {
 invisible(capture.output({ leval( paste( "COPY sig=",l, " tag=delta" , sep="" ) )
 leval( paste( "COPY sig=",l, " tag=theta" , sep="" ) )
 leval( paste( "COPY sig=",l, " tag=alpha" , sep="" ) )
@@ -492,26 +524,26 @@ leval( paste( "FILTER sig=",l,"_beta  bandpass=15,30 tw=1 ripple=0.02" , sep="" 
 ## Visualization                                  ##
 ##                                                ##
 ####################################################
- 
+
 lheatmap <- function(x,y,z,
-            col = luna.globals$turbo.colors(100) , 
+            col = luna.globals$turbo.colors(100) ,
 	    mt = "" ,
-	    f = rep( T , length( z ) ) , 
-            zero = rep( F , length(z) ) , 
+	    f = rep( T , length( z ) ) ,
+            zero = rep( F , length(z) ) ,
             xlines = NULL , ylines = NULL ,
-            zlim = NULL , 
+            zlim = NULL ,
 	    win = NULL ) {
- # assumes a square matrix 
+ # assumes a square matrix
  z[zero] <- 0
- x <- x[f] ; y <- y[f] ; z <- z[f] 
+ x <- x[f] ; y <- y[f] ; z <- z[f]
  nx <- length(unique(x))
  ny <- length(unique(y))
  nz <- length(z)
  if  ( nz == 0 ) stop( "no data to plot" )
  if ( nz != nx * ny ) stop( "requires square data" )
- d <- data.frame( x,y,z ) 
+ d <- data.frame( x,y,z )
  d <- d[ order(d$y,d$x) , ]
- if ( ! is.null( win ) ) { d$z <- lwin( d$z , win ) } 
+ if ( ! is.null( win ) ) { d$z <- lwin( d$z , win ) }
  if ( is.null( zlim ) ) zlim = range( d$z )
  m <- matrix( d$z , byrow = T , nrow = ny , ncol = nx )
  image(t(m[1:ny,]),col=col,xaxt='n',yaxt='n',main=mt,zlim=zlim)
@@ -539,15 +571,15 @@ chs[ chs == "T6" ] <- "P8"
 chs
 }
 
-ldefault.xy <- function( chs = character(0) ) { 
+ldefault.xy <- function( chs = character(0) ) {
 
 chlab <- c( "Fp1", "AF7", "AF3", "F1",  "F3",  "F5",  "F7",  "FT7", "FC5", "FC3", "FC1", "C1",
- "C3",  "C5",  "T7",  "TP7", "CP5", "CP3", "CP1", "P1",  "P3",  "P5",  "P7",  "P9", 
+ "C3",  "C5",  "T7",  "TP7", "CP5", "CP3", "CP1", "P1",  "P3",  "P5",  "P7",  "P9",
  "PO7", "PO3", "O1",  "Iz",  "Oz",  "POz", "Pz",  "CPz", "Fpz", "Fp2", "AF8", "AF4",
- "AFz", "Fz",  "F2",  "F4",  "F6",  "F8",  "FT8", "FC6", "FC4", "FC2", "FCz", "Cz", 
- "C2",  "C4",  "C6",  "T8",  "TP8", "CP6", "CP4", "CP2", "P2",  "P4",  "P6",  "P8", 
+ "AFz", "Fz",  "F2",  "F4",  "F6",  "F8",  "FT8", "FC6", "FC4", "FC2", "FCz", "Cz",
+ "C2",  "C4",  "C6",  "T8",  "TP8", "CP6", "CP4", "CP2", "P2",  "P4",  "P6",  "P8",
  "P10", "PO8", "PO4", "O2" )
- 
+
 chx <- c( -0.139058, -0.264503, -0.152969, -0.091616, -0.184692, -0.276864, -0.364058,
  -0.427975, -0.328783, -0.215938, -0.110678, -0.112500, -0.225000, -0.337500,
  -0.450000, -0.427975, -0.328783, -0.215938, -0.110678, -0.091616, -0.184692,
@@ -573,77 +605,77 @@ chy <- c( 0.430423,  0.373607,  0.341595,  0.251562,  0.252734,  0.263932,  0.28
 chxy <- data.frame( CH = toupper( chlab ) , X = chx , Y = chy )
 
 if ( length( chs ) == 0 )  return(chxy)
-chxy <- chxy[ chxy$CH %in% toupper( chs ) , ] 
+chxy <- chxy[ chxy$CH %in% toupper( chs ) , ]
 return(chxy)
 }
 
 
 ## --------------------------------------------------------------------------------
-## 
-## Plot generic X/Y line plots (e.g. power spectra) with  
+##
+## Plot generic X/Y line plots (e.g. power spectra) with
 ##
 ## --------------------------------------------------------------------------------
 
-ltopo.xy <- function( c , x , y , z = NA , zlim = NA , 
-	 	      f = rep(T, length(x) ) , y.symm = F , 
+ltopo.xy <- function( c , x , y , z = NA , zlim = NA ,
+	 	      f = rep(T, length(x) ) , y.symm = F ,
 	       	       	 sz = 0.08 ,
 			 col = "black" , lwd = 0.5 ,
 			 xline = numeric() ,
 			 yline = numeric() ,
 			 pch = NA , cex = 1 ,
-			 ylim = NULL , 
- 	       		 xlab="Frequency (Hz)" , ylab = "log(power)" , mt="" ) { 
+			 ylim = NULL ,
+ 	       		 xlab="Frequency (Hz)" , ylab = "log(power)" , mt="" ) {
 topo <- ldefault.xy()
 c <- lremap.chs( c )
-f[ ! c %in% toupper( topo$CH ) ] <- F 
+f[ ! c %in% toupper( topo$CH ) ] <- F
 # z is color depth: scaled 1..100 as requires that col is a 100-element pallete
 if ( ! is.na( z[1] ) ) {
 if ( length(z) != length(x) ) stop( "is z is specified, must match other long data" )
 if ( is.na(pch) ) stop( "cannot specify z with line points" )
 if ( length(col) != 100 ) stop( "requires col is a 100-element palette if z is specified" )
 z <- z[f]
-if (is.na(zlim[1])) zlim <- range( z , na.rm=T) 
-zcol = col[ 1 + round( 99 * ( ( z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ] 
+if (is.na(zlim[1])) zlim <- range( z , na.rm=T)
+zcol = col[ 1 + round( 99 * ( ( z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ]
 col = zcol
 } else if ( ! is.na( pch ) ) {
 # single color for point plots
 col = rep( col , length(x) )
 }
 # also pair down x/y/CH to filtered set
-c <- c[f]; x <- x[f]; y <- y[f] 
+c <- c[f]; x <- x[f]; y <- y[f]
 # ranges (and symmetric Y?)
 rx <- range( x );
 if ( is.null(ylim) ) { ry <- range( y ) } else { ry <- ylim }
-if ( y.symm ) ry <- c( - max(abs(ry)) , max(abs(ry) ) ) 
+if ( y.symm ) ry <- c( - max(abs(ry)) , max(abs(ry) ) )
 # pltos
 plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
 rect(0,0,1,1)
-#draw.circle( 0.5,0.5,0.5 ) 
+#draw.circle( 0.5,0.5,0.5 )
 if (mt!="") text(0.025,0.05,mt,cex=0.8,pos=4)
 lgd.x <- 0.88 ; lgd.y <- 0.08
-lines( c(lgd.x,lgd.x+sz),c(lgd.y,lgd.y) ) ; lines( c(lgd.x,lgd.x) , c(lgd.y,lgd.y+sz) ) 
-text( lgd.x , lgd.y , signif(ry[1],2) , cex=0.5 , pos=2) ; text( lgd.x , lgd.y+sz , signif(ry[2],2) , cex=0.5 , pos=2) 
-text( lgd.x , lgd.y , signif(rx[1],2) , cex=0.5 , pos=1) ; text( lgd.x+sz , lgd.y , signif(rx[2],2) , cex=0.5 , pos=1) 
-text( lgd.x+sz/2,lgd.y-0.05 , xlab , cex=0.5 )  ; text( lgd.x-0.05,lgd.y+sz/2 , ylab , cex=0.5 ) 
+lines( c(lgd.x,lgd.x+sz),c(lgd.y,lgd.y) ) ; lines( c(lgd.x,lgd.x) , c(lgd.y,lgd.y+sz) )
+text( lgd.x , lgd.y , signif(ry[1],2) , cex=0.5 , pos=2) ; text( lgd.x , lgd.y+sz , signif(ry[2],2) , cex=0.5 , pos=2)
+text( lgd.x , lgd.y , signif(rx[1],2) , cex=0.5 , pos=1) ; text( lgd.x+sz , lgd.y , signif(rx[2],2) , cex=0.5 , pos=1)
+text( lgd.x+sz/2,lgd.y-0.05 , xlab , cex=0.5 )  ; text( lgd.x-0.05,lgd.y+sz/2 , ylab , cex=0.5 )
 # plot each channel
-for ( ch in unique( c ) ) { 
- ch.idx <- toupper( topo$CH ) == ch 
+for ( ch in unique( c ) ) {
+ ch.idx <- toupper( topo$CH ) == ch
  px <- topo$X[ ch.idx ] + 0.5
  py <- topo$Y[ ch.idx ] + 0.5
- if ( length(px) == 1 ) { 
+ if ( length(px) == 1 ) {
  ch.label <- topo$CH[ ch.idx ]
- x0 <- px - sz/2 ; x1 <- x0 + sz 
- y0 <- py - sz/2 ; y1 <- y0 + sz 
+ x0 <- px - sz/2 ; x1 <- x0 + sz
+ y0 <- py - sz/2 ; y1 <- y0 + sz
  lines( c(x0,x1),c(y0,y0),col="gray"); lines( c(x0,x0),c(y0,y1),col="gray" )
- xx <- x[ c == ch ] 
- yy <- y[ c == ch ] 
+ xx <- x[ c == ch ]
+ yy <- y[ c == ch ]
  xx <- ( xx - rx[1] ) / ( rx[2] - rx[1] )
  yy <- ( yy - ry[1] ) / ( ry[2] - ry[1] )
  for ( xl in xline ) lines( rep( x0+sz*(xl-rx[1])/(rx[2]-rx[1]) , 2 ) , c(y0,y1) , col="gray",lwd=0.5)
  for ( yl in yline ) lines( c(x0,x1) , rep( y0+sz*(yl-ry[1])/(ry[2]-ry[1]) , 2 ) , col="gray",lwd=0.5)
  if ( ! is.na( pch ) ) points( x0 + xx * sz , y0 + yy * sz ,pch = pch , cex = cex , col=col[ c == ch ] )
  else lines( x0 + xx * sz , y0 + yy * sz ,lwd=lwd , col=col) # just single color for lines
- text( x0+0.8*sz,y0+0.9*sz, ch.label , cex=0.5,col=ifelse( col=="black" , "blue", "black" ) ) 
+ text( x0+0.8*sz,y0+0.9*sz, ch.label , cex=0.5,col=ifelse( col=="black" , "blue", "black" ) )
 }
 }}
 
@@ -657,9 +689,9 @@ for ( ch in unique( c ) ) {
 ltopo.heat <- function( c , z ,
                         sz = 1 ,
                         flt = rep(T,length(z)),
-                        zlab="" , 
+                        zlab="" ,
 			mt="" ,
-                        zlim = NULL , 
+                        zlim = NULL ,
                         th = NA ,
 			th.z = z ,
 			show.leg = F ,
@@ -674,22 +706,22 @@ ltopo.rb <- function( c , z ,
                       sz = 1 ,
 		      zlab="",
 		      mt="" ,
-                      zlim = NULL , 
+                      zlim = NULL ,
                       th = NULL ,
 		      th.z = z ,
 		      show.leg = F ,
 		      zeroed = T ,
-		      head = F , 
+		      head = F ,
                       col = colorRampPalette( c("blue","white","red" ))(101) ,
 		      ring.lwd = 1 )
 {
  topo <- ldefault.xy()
  if ( length(col) != 101 ) stop( "col needs to be 101 length" )
- c <- c[flt] ; z <- z[flt] ; th.z <- th.z[flt] 
+ c <- c[flt] ; z <- z[flt] ; th.z <- th.z[flt]
  c <- lremap.chs( c ) ; f <- c %in% toupper( topo$CH ) ; c <- c[f] ; z <- z[f] ; th.z <- th.z[f]
- c <- c[ order(abs(z)) ] ; th.z <- th.z[ order(abs(z)) ] ; z <- z[ order(abs(z)) ] 
+ c <- c[ order(abs(z)) ] ; th.z <- th.z[ order(abs(z)) ] ; z <- z[ order(abs(z)) ]
  if ( is.null(zlim) ) zlim <- range( z , na.rm=T)
- if ( zeroed ) zlim <- c(-1,1) * max(abs(zlim)) 
+ if ( zeroed ) zlim <- c(-1,1) * max(abs(zlim))
  plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
  if (head) {
     draw.ellipse(0.5, 0.5, 0.5, 0.45,lwd=0.75,border="darkgray")
@@ -697,21 +729,21 @@ ltopo.rb <- function( c , z ,
     lines(c(0.5, 0.55), c(0.99, 0.95), lwd = 0.75,col="darkgray")
  }
  if (mt!="") text(0.025,0.95,mt,cex=0.8,pos=4)
- text( 0.75,0.05 , zlab , cex=1 )  
- for ( ch in unique( c ) ) { 
+ text( 0.75,0.05 , zlab , cex=1 )
+ for ( ch in unique( c ) ) {
  px <- topo$X[ topo$CH == ch ] + 0.5
  py <- topo$Y[ topo$CH == ch ] + 0.5
  if ( length(px) == 1 ) {
-  if ( sum( c == ch ) > 1 ) stop("multiple values for a single channel" )  
+  if ( sum( c == ch ) > 1 ) stop("multiple values for a single channel" )
   ch.label <- topo$CH[ toupper( topo$CH ) == ch ]
-  this.z <-  z[ c == ch ] ; this.th.z <- th.z[ c == ch ] 
-  ring <- rep( "gray" , length(px) ) ; ring.lwd = 1 
+  this.z <-  z[ c == ch ] ; this.th.z <- th.z[ c == ch ]
+  ring <- rep( "gray" , length(px) ) ; ring.lwd = 1
   if ( ! is.null(th) ) ring[ this.th.z >= th ] <- "black"
-  if ( ! is.null(th) ) ring.lwd[ this.th.z >= th ] <- 2  
-  points( px , py , pch = 21 , cex = sz , col = ring , lwd= ring.lwd, 
-  bg = col[ 1 + round( 100 * ( ( this.z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ] ) 
-  x0 <- px - sz/2 ; y0 <- py - sz/2 
-#  cat( ch , ch.label, this.z , "\n" ) 
+  if ( ! is.null(th) ) ring.lwd[ this.th.z >= th ] <- 2
+  points( px , py , pch = 21 , cex = sz , col = ring , lwd= ring.lwd,
+  bg = col[ 1 + round( 100 * ( ( this.z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ] )
+  x0 <- px - sz/2 ; y0 <- py - sz/2
+#  cat( ch , ch.label, this.z , "\n" )
 }}
 for ( ch in unique( c ) ) {
  px <- topo$X[ toupper( topo$CH ) == ch ] + 0.5
@@ -721,7 +753,7 @@ for ( ch in unique( c ) ) {
  x0 <- px - sz/2 ; y0 <- py - sz/2
  #text( px-0.005*sz,py+0.005*sz, ch.label , cex=0.6,col="blue")
 }}
-if ( show.leg ) { 
+if ( show.leg ) {
  points(seq( 0.05 , 0.5 , length.out = 101 ) , rep( 0.05 , 101 )  , col = col , pch=20 )
  text( 0.05 , 0.01 , signif( zlim[1] , 3 )  , cex=1 ) ; text( 0.5 , 0.01 , signif( zlim[2] , 3 ) , cex=1 )
 }
@@ -743,9 +775,9 @@ ldefault.coh.xy <- function( xy )
 }
 
 # helper function: draw ARC
-farc <- function(c1,c2,kol,w=4) { 
- gc <- gcIntermediate( as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c1 , c("X","Y") ] ) , 
-                       as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c2 , c("X","Y") ] ) , 
+farc <- function(c1,c2,kol,w=4) {
+ gc <- gcIntermediate( as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c1 , c("X","Y") ] ) ,
+                       as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c2 , c("X","Y") ] ) ,
                        breakAt=TRUE, n=100 )
  lines(gc,lwd=w+1,col="black")
  lines(gc,lwd=w,col=kol)
@@ -753,42 +785,42 @@ farc <- function(c1,c2,kol,w=4) {
 }
 
 
-farc.signed <- function (c1, c2, k1, k2, w = 4) 
+farc.signed <- function (c1, c2, k1, k2, w = 4)
 {
  gc <- gcIntermediate( as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c1, c("X", "Y")]),
-                       as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c2, c("X", "Y")]), 
+                       as.vector( luna.globals$xy.coh[ luna.globals$xy.coh$CH == c2, c("X", "Y")]),
                        breakAt = TRUE,
-		       n = 100)		       
- segments( gc[,1] , gc[,2] , gc[,1],gc[,2], lwd=w , 
+		       n = 100)
+ segments( gc[,1] , gc[,2] , gc[,1],gc[,2], lwd=w ,
            t_cols( colorRampPalette( c(k2,"white",k1) )(101) , 80 ) )
 }
 
 
 
-# palette 
-rbpal <- rev( rainbow(150)[1:100] ) 
-fcol <- colorRampPalette( c( "blue" , "white" , "red" ) ) 
+# palette
+rbpal <- rev( rainbow(150)[1:100] )
+fcol <- colorRampPalette( c( "blue" , "white" , "red" ) )
 rbpal <- fcol(100)
 
 
 # fhead1() topo
 
-fhead1 <- function( chs , z , flt = T , zr = range(z,na.rm=T) , cex = 4 , title = "" ) 
+fhead1 <- function( chs , z , flt = T , zr = range(z,na.rm=T) , cex = 4 , title = "" )
 {
-plot( luna.globals$xy.coh$X , luna.globals$xy.coh$Y , pch=21 , cex=cex*0.5 , bg="white" , 
-  axes=F,xaxt='n' , yaxt='n' , xlab="" , ylab = "" , ylim=c(-2,24) , xlim=c(-55,55) , main = title ) 
-draw.ellipse( 0, 9.5 , 52 , 12 ); lines( c(0,-8),c(23,21), lwd=1)  ; lines( c(0,8),c(23,21), lwd=1)  
-if ( ! any(flt) ) { return(0) } 
-chs <- chs[flt] ; z <- z[ flt ] 
+plot( luna.globals$xy.coh$X , luna.globals$xy.coh$Y , pch=21 , cex=cex*0.5 , bg="white" ,
+  axes=F,xaxt='n' , yaxt='n' , xlab="" , ylab = "" , ylim=c(-2,24) , xlim=c(-55,55) , main = title )
+draw.ellipse( 0, 9.5 , 52 , 12 ); lines( c(0,-8),c(23,21), lwd=1)  ; lines( c(0,8),c(23,21), lwd=1)
+if ( ! any(flt) ) { return(0) }
+chs <- chs[flt] ; z <- z[ flt ]
 if ( length(chs) != length( z ) ) stop( "bad" )
 z <- ( z - zr[1] ) / ( zr[2] - zr[1] )
 z <- round( z * 100 )
 z[ z==0 ] <- 1
 z[ z> 100 ] <- 100
-for (j in 1:length(chs)) { 
+for (j in 1:length(chs)) {
 xx <- luna.globals$xy.coh$X[ xy$CH == chs[j] ] ; yy <- luna.globals$xy.coh$Y[ xy$CH == chs[j] ]
-points( xx , yy , pch=21 , cex=cex*1.1 , bg="white" , lwd=1.5 ) 
-points( xx , yy , pch=21 , cex=cex , bg= rbpal[z[j]] ) 
+points( xx , yy , pch=21 , cex=cex*1.1 , bg="white" , lwd=1.5 )
+points( xx , yy , pch=21 , cex=cex , bg= rbpal[z[j]] )
 }
 }
 
@@ -796,24 +828,24 @@ points( xx , yy , pch=21 , cex=cex , bg= rbpal[z[j]] )
 # ltopo: connectivity
 #
 
-ltopo.conn <- function (chs1, chs2, z, flt = T, zr = range(z[flt], na.rm = T), 
-                        cex = 2, w = 8, title = "", head = T , signed = F ) 
+ltopo.conn <- function (chs1, chs2, z, flt = T, zr = range(z[flt], na.rm = T),
+                        cex = 2, w = 8, title = "", head = T , signed = F )
 {
     chs1 <- lremap.chs(chs1)
     chs2 <- lremap.chs(chs2)
     xy.coh <- ldefault.coh.xy(ldefault.xy(unique(c(chs1, chs2))))
     plot(xy.coh$X, xy.coh$Y, pch = 21, cex = cex, main = title, lwd=0.5,
-        bg = NA, col="gray", axes = F, xaxt = "n", yaxt = "n", xlab = "", 
+        bg = NA, col="gray", axes = F, xaxt = "n", yaxt = "n", xlab = "",
         ylab = "", ylim = c(-2, 24), xlim = c(-55, 55))
     if (head) {
         draw.ellipse(0, 9.5, 52, 12,lwd=0.75,border="darkgray")
         lines(c(0, -8), c(23, 21), lwd = 0.75,col="darkgray")
         lines(c(0, 8), c(23, 21), lwd = 0.75,col="darkgray")
     }
-    if ( ! any(flt) ) return(0) 
-    if ( signed ) zr <- c( -max(abs(zr)) , max(abs(zr)) ) 
+    if ( ! any(flt) ) return(0)
+    if ( signed ) zr <- c( -max(abs(zr)) , max(abs(zr)) )
     chs1 <- chs1[flt] ; chs2 <- chs2[flt]
-    z <- z[flt] 
+    z <- z[flt]
     chs1 <- chs1[order(abs(z))]
     chs2 <- chs2[order(abs(z))]
     z <- z[order(abs(z))]
@@ -876,7 +908,7 @@ ltopo.dconn <- function( ch, chs1 , chs2 , z , flt = T , zr = NULL, cex = 2 , w 
 if ( is.null(zr) ) zr = range(z[flt],na.rm=T)
 zr <- c(-1,1) * max(abs(zr))
 print(table(flt))
-chs1 <- chs1[flt] ; chs2 <- chs2[flt] ; z <- z[flt] 
+chs1 <- chs1[flt] ; chs2 <- chs2[flt] ; z <- z[flt]
 # double entry whatever is left
 dchs1 <- c( chs1 , chs2 )
 dchs2 <- c( chs2 , chs1 )
@@ -885,70 +917,70 @@ inc <- dchs1 == ch
 dchs1 <- dchs1[ inc ]
 dchs2 <- dchs2[ inc ]
 dz <- dz[ inc ]
-print( cbind( dchs1 , dchs2 , dz ) ) 
+print( cbind( dchs1 , dchs2 , dz ) )
 # filtering done above, so set flt to 'T' here
 ltopo.conn( chs1 = dchs1 , chs2=dchs2 , z=dz , flt = T , zr = zr , cex = cex , w = w , title = title , head = head , signed=signed )
 }
 
 ##
-## TOPO HEATMAP: each point is a lheatmap() object (X/Y/Z plot) 
+## TOPO HEATMAP: each point is a lheatmap() object (X/Y/Z plot)
 ##
 
-ltopo.heat2 <- function( c , x , y , z , zlim = NULL , 
-                         f = rep(T, length(x) ) , 
+ltopo.heat2 <- function( c , x , y , z , zlim = NULL ,
+                         f = rep(T, length(x) ) ,
                          sz = 0.08 ,cex = 1 ,
-                         col = luna.globals$turbo.colors(100) , lwd = 0.5 ,                         
+                         col = luna.globals$turbo.colors(100) , lwd = 0.5 ,
                          ylab="Frequency (Hz)" , xlab="Time",  zlab = "log(power)" , mt="" )
 
-{ 
+{
 topo <- ldefault.xy()
 c <- lremap.chs( c )
-f[ ! c %in% toupper( topo$CH ) ] <- F 
+f[ ! c %in% toupper( topo$CH ) ] <- F
 # z is color depth: scaled 1..100 as requires that col is a 100-element pallete
 if ( ! is.na( z[1] ) ) {
  if ( length(z) != length(x) ) stop( "is z is specified, must match other long data" )
  if ( length(col) != 100 ) stop( "requires col is a 100-element palette if z is specified" )
  z <- z[f]
- if (is.null(zlim)) zlim <- range( z , na.rm=T ) 
- zcol = col[ 1 + round( 99 * ( ( z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ] 
+ if (is.null(zlim)) zlim <- range( z , na.rm=T )
+ zcol = col[ 1 + round( 99 * ( ( z - zlim[1] ) / ( zlim[2] - zlim[1] ) ) ) ]
  col = zcol
-} 
+}
 # also pair down x/y/z/CH to filtered set
 c <- c[f]; x <- x[f]; y <- y[f]; z <- z[f]
-rx <- range( x ); ry <- range( y ) 
+rx <- range( x ); ry <- range( y )
 # plots
 plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
 rect(0,0,1,1)
 if (mt!="") text(0.025,0.05,mt,cex=0.8,pos=4)
 lgd.x <- 0.88 ; lgd.y <- 0.08
-lines( c(lgd.x,lgd.x+sz),c(lgd.y,lgd.y) ) ; lines( c(lgd.x,lgd.x) , c(lgd.y,lgd.y+sz) ) 
-text( lgd.x , lgd.y , signif(ry[1],2) , cex=0.5 , pos=2) ; text( lgd.x , lgd.y+sz , signif(ry[2],2) , cex=0.5 , pos=2) 
-text( lgd.x , lgd.y , signif(rx[1],2) , cex=0.5 , pos=1) ; text( lgd.x+sz , lgd.y , signif(rx[2],2) , cex=0.5 , pos=1) 
-text( lgd.x+sz/2,lgd.y-0.05 , xlab , cex=0.5 )  ; text( lgd.x-0.05,lgd.y+sz/2 , ylab , cex=0.5 ) 
+lines( c(lgd.x,lgd.x+sz),c(lgd.y,lgd.y) ) ; lines( c(lgd.x,lgd.x) , c(lgd.y,lgd.y+sz) )
+text( lgd.x , lgd.y , signif(ry[1],2) , cex=0.5 , pos=2) ; text( lgd.x , lgd.y+sz , signif(ry[2],2) , cex=0.5 , pos=2)
+text( lgd.x , lgd.y , signif(rx[1],2) , cex=0.5 , pos=1) ; text( lgd.x+sz , lgd.y , signif(rx[2],2) , cex=0.5 , pos=1)
+text( lgd.x+sz/2,lgd.y-0.05 , xlab , cex=0.5 )  ; text( lgd.x-0.05,lgd.y+sz/2 , ylab , cex=0.5 )
 # plot each channel
-for ( ch in unique( c ) ) { 
- ch.idx <- toupper( topo$CH ) == ch 
+for ( ch in unique( c ) ) {
+ ch.idx <- toupper( topo$CH ) == ch
  px <- topo$X[ ch.idx ] + 0.5
  py <- topo$Y[ ch.idx ] + 0.5
- if ( length(px) == 1 ) { 
+ if ( length(px) == 1 ) {
   ch.label <- topo$CH[ ch.idx ]
-  x0 <- px - sz/2 ; x1 <- x0 + sz 
-  y0 <- py - sz/2 ; y1 <- y0 + sz 
+  x0 <- px - sz/2 ; x1 <- x0 + sz
+  y0 <- py - sz/2 ; y1 <- y0 + sz
   lines( c(x0,x1),c(y0,y0),col="gray"); lines( c(x0,x0),c(y0,y1),col="gray" )
-  xx <- x[ c == ch ] 
-  yy <- y[ c == ch ] 
+  xx <- x[ c == ch ]
+  yy <- y[ c == ch ]
   zz <- z[ c == ch ]
   xx <- ( xx - rx[1] ) / ( rx[2] - rx[1] )
   yy <- ( yy - ry[1] ) / ( ry[2] - ry[1] )
   points( x0 + xx * sz , y0 + yy * sz ,pch = "." , cex = cex , col=col[ c == ch ] )
 #lines( x0 + xx * sz , y0 + yy * sz ,lwd=lwd , col=col) # just single color for lines
-  text( x0+0.8*sz,y0+0.9*sz, ch.label , cex=0.5,col=ifelse( col=="black" , "blue", "black" ) ) 
+  text( x0+0.8*sz,y0+0.9*sz, ch.label , cex=0.5,col=ifelse( col=="black" , "blue", "black" ) )
 } }
 }
 
 # Helpr:: winsorize format
 lwin <- function(x,p=0.05) {
- t <- quantile( x , c(p,1-p) , na.rm=T) 
+ t <- quantile( x , c(p,1-p) , na.rm=T)
  x[x<t[1]] <- t[1]
  x[x>t[2]] <- t[2]
  x
@@ -961,15 +993,15 @@ lwin <- function(x,p=0.05) {
 #    z    plot value
 #
 
-ltopo.topo <- function( c , c2 , z , zlim = NULL , 
-                         f = rep(T, length(z) ) , 
-                         sz = 0.05 , sz2 = 0.05 , 
-			 ring.lwd = 1 , 
-                         same.cols = T , 
-                         col = rbpal , 
+ltopo.topo <- function( c , c2 , z , zlim = NULL ,
+                         f = rep(T, length(z) ) ,
+                         sz = 0.05 , sz2 = 0.05 ,
+			 ring.lwd = 1 ,
+                         same.cols = T ,
+                         col = rbpal ,
                          zlab = "" , mt="" , zeroed = T )
 
-{ 
+{
 # key inputs: c, c2 and z
 topo <- ldefault.xy()
 topo$CH <- toupper( topo$CH )
@@ -977,13 +1009,13 @@ c  <- lremap.chs( c )
 c2 <- lremap.chs( c2 )
 
 f[ ! c  %in% toupper( topo$CH ) ] <- F
-f[ ! c2 %in% toupper( topo$CH ) ] <- F 
+f[ ! c2 %in% toupper( topo$CH ) ] <- F
 
 c <- c[f];
 c2 <- c2[f];
 z <- z[f]
-if ( is.null( zlim ) & same.cols ) zlim <- range( z , na.rm=T ) 
-zlim2 <- zlim 
+if ( is.null( zlim ) & same.cols ) zlim <- range( z , na.rm=T )
+zlim2 <- zlim
 
 # plots
 plot( c(0,1),c(0,1) , type="n" , axes = F , xlab="", ylab="" , xaxt='n' , yaxt='n' )
@@ -991,15 +1023,15 @@ rect(0,0,1,1)
 if (mt!="") text(0.025,0.05,mt,cex=0.8,pos=4)
 
 # loop over key channels (c)
-for ( ch in unique( c ) ) { 
- ch.idx <- topo$CH == ch 
+for ( ch in unique( c ) ) {
+ ch.idx <- topo$CH == ch
  px <- topo$X[ ch.idx ] + 0.5
  py <- topo$Y[ ch.idx ] + 0.5
  ch.label <- topo$CH[ ch.idx ]
 
  # plot loc. for this key channel: x0-x1 and y0-y1
- x0 <- px - sz/2 ; x1 <- x0 + sz 
- y0 <- py - sz/2 ; y1 <- y0 + sz 
+ x0 <- px - sz/2 ; x1 <- x0 + sz
+ y0 <- py - sz/2 ; y1 <- y0 + sz
 # lines( c(x0,x1),c(y0,y0),col="gray"); lines( c(x0,x0),c(y0,y1),col="gray" )
  # get inner values
  zz <- z[ c == ch ]
@@ -1025,11 +1057,11 @@ for ( ch in unique( c ) ) {
 #
 ##############################################################
 
-lhypno <- function( ss , cycles = NULL ) { 
-  ss[ is.na( ss ) ] <- "?" 
+lhypno <- function( ss , cycles = NULL ) {
+  ss[ is.na( ss ) ] <- "?"
   e <- 1:length(ss)
   e <- e/120
-  sn <- lstgn( ss ) 
+  sn <- lstgn( ss )
   plot( e  , sn , type = "l" , lwd = 2, col = "gray" , axes = F , ylim = c(-3, 3.5) , ylab = "" , yaxt='n' , xaxs="i" , xlab="Time (hrs)" )
   points( e  , sn , col = lstgcols(ss) , type = "p" , cex = 1 , pch = 20 )
   axis(1)#axis(1, at=seq(0,round(max(e)),2))
@@ -1043,7 +1075,7 @@ lhypno <- function( ss , cycles = NULL ) {
   {
    if ( length(cycles) != length(ss) ) stop( "ss and cycles must be same length" )
    cc <- unique( cycles )
-   cc <- cc[ !is.na(cc) ] 
+   cc <- cc[ !is.na(cc) ]
    odd <- T
    for (i in cc ) {
      xc <- range( e[ cycles == i & ! is.na( cycles ) ] )
@@ -1061,7 +1093,7 @@ lstgn <- function(x) {
  x[ x == "R" ] <- 0
  x[ x == "W" ] <- 1
  x[ x == "?" ] <- 2
- x[ is.na(x) ] <- 2 
+ x[ is.na(x) ] <- 2
  as.numeric( x )
 }
 
