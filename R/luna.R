@@ -37,7 +37,7 @@ luna.globals$logmode <- 0
   require(shinyFiles, quietly = T)
   require(xtable, quietly = T)
   require(shinydashboard, quietly = T)
-  require(viridis, quietly = T)
+#  require(viridis, quietly = T)
 }
 
 .onUnload <- function(libpath) {
