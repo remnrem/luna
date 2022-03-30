@@ -28,6 +28,7 @@ luna.globals$logmode <- 0
   luna.globals$xy.coh <- ldefault.coh.xy(luna.globals$xy)
 
   luna.globals$turbo.colors <- make.turbo.colors()
+  luna.globals$plasma.colors <- make.turbo.colors()
   luna.globals$rbpal <- colorRampPalette(c("navy", "blue", "white", "red", "darkred"))
 
   require(plotrix, quietly = T)
@@ -2178,6 +2179,17 @@ lpp2 <- function(m) {
 
 ##############################################################
 #
+# Color palettes
+#
+##############################################################
+
+
+lturbo <- function( n = 100 ) { luna.globals$turbo.colors( n ) }
+
+lplasma <- function( n = 100 ) { luna.globals$plasma.colors( n ) } 
+
+##############################################################
+#
 # Misc helper functions
 #
 ##############################################################
@@ -2189,3 +2201,4 @@ lpp2 <- function(m) {
 # Loaders
 #
 ##############################################################
+

@@ -2310,9 +2310,8 @@ moonlight <- function(sample.list = NULL,
                 values$sigstats$E <= epochs[2] &
                 values$sigstats$CH %in% chs, ]
 
-
               # palette for H2
-              pal100 <- rev(plasma(100))
+              pal100 <- rev( luna.globals$plasma.colors(100) )  
 
               # reset
               yidx <- 0
