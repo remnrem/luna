@@ -311,10 +311,12 @@ moonlight <- function(sample.list = NULL,
             tabPanel(
               "Signals",
               fluidRow(
-                column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev")),
-                column(width = 1, actionButton("button_epoch_nxt", "Next > ")),
-                column(width = 1, offset = 0, actionButton("entire.record", "All")),
-                column(width = 9, verbatimTextOutput("info2"))
+                column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev", width = '100%' )),
+                column(width = 1, actionButton("button_epoch_nxt", "Next > ", width = '100%' )),
+                column(width = 1, offset = 0, actionButton("entire.record", "All", width = '100%' )),
+		column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
+		column(width = 1, offset = 0 ),
+                column(width = 6, verbatimTextOutput("info2"))
               ),
               plotOutput("signal.master",
                 width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
@@ -416,6 +418,7 @@ moonlight <- function(sample.list = NULL,
             tabPanel(
               "Signals",
               actionButton("entire.record", "Entire record"),
+	      actionButton("rescale.ylim", "Entire record"),	
               verbatimTextOutput("info2"),
               plotOutput("signal.master",
                 width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
@@ -981,7 +984,7 @@ moonlight <- function(sample.list = NULL,
       values$epochs <- c(1, 1)
       values$zoom <- NULL
       values$raw.signals <- T
-
+      values$yscale <- T 
 
       #
       # SOAP tracker
@@ -1983,14 +1986,15 @@ moonlight <- function(sample.list = NULL,
         par(mar = c(2, 1, 1, 1))
 
         #  print( values$ss.aligned )
-        ss <- values$ss.aligned
+        #ss <- values$ss.aligned
+        ss <- values$data$luna_suds_SOAP$"luna_suds_SOAP_E"$data
         # cat( "SOAP\n")
-        # print( values$data$luna_suds_SOAP$"luna_suds_SOAP_E" )
+	# print( values$data$luna_suds_SOAP$"luna_suds_SOAP_E" )
         # cat( "POPS\n")
         # print( values$data$luna_suds_POPS$"luna_suds_POPS_E" )
 
         # hypnogram image
-        fhypnogram(ss$E, ss$STAGE_N, ss$STAGE)
+        fhypnogram(ss$E, lstgn(ss$PRIOR), ss$PRIOR )
       })
 
       # SOAP hypnogram (w/ discordance)
@@ -2272,10 +2276,12 @@ moonlight <- function(sample.list = NULL,
                 yr <- range(dy)
                 # zero-centered signal?
                 zc <- yr[1] < 0 & yr[2] > 0
+		# mean center
+		dy <- dy - mean(dy)
                 # max absolute value
                 yrmx <- max(abs(range(dy)))
                 # if +/- signal, scale to -1, +1 ( 0 .. 1 ) based on max( |x| )
-                dy <- (dy - mean(dy)) / (2 * yrmx)
+                dy <- dy / (2 * yrmx)
                 # convert to plot co-oords
                 dy <- (yp + (yinc * cfac) / 2) + dy * yspan * cfac
                 # plot
@@ -2537,6 +2543,12 @@ moonlight <- function(sample.list = NULL,
       clear_sel_inst()
       values$epochs <- c(1, values$ne)
       values$zoom <- NULL
+    })
+
+    # Full Length selection
+    observeEvent(input$rescale.ylim, {
+      req(attached.edf())
+      values$yscale <- ! values$yscale
     })
 
     # drive by annotation instance box
