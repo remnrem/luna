@@ -1111,6 +1111,7 @@ lsanitize <- function(s) {
 }
 
 
+
 lstrat <- function(lst, cmd = "") {
   if (cmd == "") {
     n <- names(lst)
@@ -1403,7 +1404,35 @@ ldenoise <- function(x, lambda) {
   .Call("R1d_denoise", as.numeric(x), as.numeric(lambda), PACKAGE = "luna")
 }
 
+#' FIR filtering
+#'
+#' Applies a FIR bandpass filter
+#'
+#' @param x a time series vector
+#' @param sr Sample rate of \code{x}
+#' @param lwr Lower transition frequency
+#' @param upr Upper transition frequency
+#'
+#' @return a filtered version of \code{x}
+#' @export
+#'
+#' @note This is a wrapper around the method implemented by the \code{FILTER} command.
+lfilter <- function(x, sr, lwr, upr) {
+  .Call("R_filter", as.numeric(x), as.numeric(sr), as.numeric(lwr), as.numeric(upr), 1, 0.02, PACKAGE = "luna")
+}
 
+
+#' Linear detrending
+#'
+#' Detrend a time series
+#'
+#' @param x a time series vector
+#'
+#' @return a detrended version of \code{x}
+#' @export
+ldetrend <- function(x) {
+resid( lm( x ~ I(1:length(x)) ) )
+}
 
 #' Splits a signal into five band-pass filtered signals
 #'

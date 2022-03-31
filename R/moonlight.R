@@ -314,7 +314,8 @@ moonlight <- function(sample.list = NULL,
                 column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev", width = '100%' )),
                 column(width = 1, actionButton("button_epoch_nxt", "Next > ", width = '100%' )),
                 column(width = 1, offset = 0, actionButton("entire.record", "All", width = '100%' )),
-		column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
+#		column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
+		column(width = 2, offset = 0, actionButton("bandpass", "Toggle 0.3-35Hz", width = '100%' )),
 		column(width = 1, offset = 0 ),
                 column(width = 6, verbatimTextOutput("info2"))
               ),
@@ -418,7 +419,8 @@ moonlight <- function(sample.list = NULL,
             tabPanel(
               "Signals",
               actionButton("entire.record", "Entire record"),
-	      actionButton("rescale.ylim", "Entire record"),	
+#	      actionButton("rescale.ylim", "Toggle Y scale"),
+	      actionButton("bandpass", "0.3-35 Hz"),	
               verbatimTextOutput("info2"),
               plotOutput("signal.master",
                 width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
@@ -984,7 +986,8 @@ moonlight <- function(sample.list = NULL,
       values$epochs <- c(1, 1)
       values$zoom <- NULL
       values$raw.signals <- T
-      values$yscale <- T 
+      values$yscale <- T  # not used
+      values$bandpass <- F 
 
       #
       # SOAP tracker
@@ -1000,7 +1003,11 @@ moonlight <- function(sample.list = NULL,
       isolate({
         values$units <- values$eval$HEADERS$CH$PDIM
         names(values$units) <- as.character(values$eval$HEADERS$CH$CH)
-      })
+
+	values$sr <- as.integer( values$eval$HEADERS$CH$SR ) 
+        names(values$sr) <- as.character(values$eval$HEADERS$CH$CH)
+
+})
 
 
       return(1)
@@ -2146,6 +2153,7 @@ moonlight <- function(sample.list = NULL,
 
         epochs <- values$epochs
         zoom <- values$zoom
+	bp <- values$bandpass 
 
         isolate({
 
@@ -2268,12 +2276,17 @@ moonlight <- function(sample.list = NULL,
               yidx <- 0
               for (ch in rev(chs)) {
                 req(epochs[1] >= 1, epochs[2] <= values$ne)
-                dat <- ldata(epochs[1]:epochs[2], chs = ch)
+		dat <- ldata(epochs[1]:epochs[2], chs = ch)
                 dat <- dat[dat$SEC >= secs[1] & dat$SEC <= secs[2], ]
                 ts <- dat$SEC
                 dy <- dat[, 4]
 
-                yr <- range(dy)
+                # filter?
+		if ( values$bandpass ) {
+		 dy <- ldetrend(dy)
+		 dy <- lfilter( dy , values$sr[ch] , 0.3 , 35 )
+                }
+		yr <- range(dy)
                 # zero-centered signal?
                 zc <- yr[1] < 0 & yr[2] > 0
 		# mean center
@@ -2545,13 +2558,19 @@ moonlight <- function(sample.list = NULL,
       values$zoom <- NULL
     })
 
-    # Full Length selection
-    observeEvent(input$rescale.ylim, {
+#    # set Y-axis rescaling
+#    observeEvent(input$rescale.ylim, {
+#      req(attached.edf())
+#      values$yscale <- ! values$yscale
+#    })
+
+    # Apply bandpass filter to all signals
+    observeEvent(input$bandpass, {
       req(attached.edf())
-      values$yscale <- ! values$yscale
+      values$bandpass <- ! values$bandpass
     })
 
-    # drive by annotation instance box
+# drive by annotation instance box
     observeEvent(input$sel.inst, {
       xx <- range(as.numeric(unlist(strsplit(input$sel.inst, " "))))
       xx <- c(floor(xx[1] / 30) + 1, ceiling(xx[2] / 30))
@@ -2641,8 +2660,9 @@ moonlight <- function(sample.list = NULL,
         if (all_good) {
           paste0(
             "Epoch ", floor(epochs[1]), " to ", ceiling(epochs[2]),
-            " ( ", (ceiling(epochs[2]) - floor(epochs[1]) + 1) * 0.5, " minutes )",
-            " beginning ", signif(hrs, 2), " hours from EDF start", zoom_info
+            " (", (ceiling(epochs[2]) - floor(epochs[1]) + 1) * 0.5, " minutes)",
+            " ", signif(hrs, 2), " hours from start", zoom_info ,
+	    ifelse( values$bandpass , " (w/ 0.3-35 Hz filter)" , " (unfiltered)" )	    
           )
         } else {
           paste0("Selected value is out of range")

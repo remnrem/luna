@@ -156,6 +156,8 @@ extern "C" {
   
   SEXP R1d_denoise( SEXP x , SEXP l );
 
+  SEXP R_filter( SEXP x , SEXP Rsr, SEXP Rlwr , SEXP Rupr , SEXP Rtw , SEXP Rripple );
+
   //
   // Helper functions to report errors, etc
   //

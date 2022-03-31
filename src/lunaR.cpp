@@ -328,6 +328,28 @@ SEXP Rdesc()
       
 }
 
+SEXP R_filter( SEXP x , SEXP Rsr, SEXP Rlwr , SEXP Rupr , SEXP Rtw , SEXP Rripple )
+{
+  
+  std::vector<double> d = Rluna_to_dblvector( x );
+  const double sr = Rf_asReal( Rsr );
+  const double lwr = Rf_asReal( Rlwr );
+  const double upr = Rf_asReal( Rupr );
+  const double tw = Rf_asReal( Rtw );
+  const double ripple = Rf_asReal( Rripple );
+  
+  d  = dsptools::apply_fir( d , sr ,
+			    fir_t::BAND_PASS ,
+			    1, // kaiser 
+			    ripple , tw , lwr , upr );
+  
+  SEXP retval;
+  PROTECT( retval = Rmake_dblvector( d ) );
+  protect();  
+  // all done
+  unprotect();
+  return retval;  
+}
 
 SEXP R1d_denoise( SEXP x , SEXP y )
 {
