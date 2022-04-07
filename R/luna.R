@@ -31,14 +31,14 @@ luna.globals$logmode <- 0
   luna.globals$plasma.colors <- make.turbo.colors()
   luna.globals$rbpal <- colorRampPalette(c("navy", "blue", "white", "red", "darkred"))
 
-  require(plotrix, quietly = T)
-  require(geosphere, quietly = T)
-  require(shiny, quietly = T)
-  require(DT, quietly = T)
-  require(shinyFiles, quietly = T)
-  require(xtable, quietly = T)
-  require(shinydashboard, quietly = T)
-#  require(viridis, quietly = T)
+  require(plotrix, quietly = T, warn.conflicts = F)
+  require(geosphere, quietly = T, warn.conflicts = F)
+  require(shiny, quietly = T, warn.conflicts = F)
+  require(DT, quietly = T, warn.conflicts = F)
+  require(shinyFiles, quietly = T, warn.conflicts = F)
+  require(xtable, quietly = T, warn.conflicts = F)
+  require(shinydashboard, quietly = T, warn.conflicts = F)
+
 }
 
 .onUnload <- function(libpath) {
@@ -1481,7 +1481,8 @@ lheatmap <- function(x, y, z,
                      zero = rep(F, length(z)),
                      xlines = NULL, ylines = NULL,
                      zlim = NULL,
-                     win = NULL) {
+                     win = NULL ,
+		     legend = NULL ) {
   # assumes a square matrix
   z[zero] <- 0
   x <- x[f]
@@ -1498,15 +1499,23 @@ lheatmap <- function(x, y, z,
     d$z <- lwin(d$z, win)
   }
   if (is.null(zlim)) zlim <- range(d$z)
+
   m <- matrix(d$z, byrow = T, nrow = ny, ncol = nx)
   image(t(m[1:ny, ]), col = col, xaxt = "n", yaxt = "n", main = mt, zlim = zlim)
   xr <- range(x)
   yr <- range(y)
   if (!is.null(xlines)) abline(v = ((xlines - xr[1]) / (xr[2] - xr[1])))
   if (!is.null(ylines)) abline(h = ((ylines - yr[1]) / (yr[2] - yr[1])))
+
+  # for making a legend
+  if ( ! is.null( legend ) )
+  {
+    if ( ! is.numeric( legend ) ) stop( "legend should be an integer" )
+    q  <- quantile( z , probs = seq(0,1,length.out=legend))
+    return( q )
+  }
+
 }
-
-
 
 
 ## --------------------------------------------------------------------------------
@@ -2005,7 +2014,17 @@ ltopo.heat2 <- function(c, x, y, z, zlim = NULL,
   }
 }
 
-# Helpr:: winsorize format
+#' Winsorize a vector
+#'
+#' @param x a numeric vector
+#' @param p percentile
+#'
+#' @return winsorized version of \code{x}
+#' @export
+#'
+#' @examples dcd
+#' dc
+#'
 lwin <- function(x, p = 0.05) {
   t <- quantile(x, c(p, 1 - p), na.rm = T)
   x[x < t[1]] <- t[1]
@@ -2215,7 +2234,7 @@ lpp2 <- function(m) {
 
 lturbo <- function( n = 100 ) { luna.globals$turbo.colors( n ) }
 
-lplasma <- function( n = 100 ) { luna.globals$plasma.colors( n ) } 
+lplasma <- function( n = 100 ) { luna.globals$plasma.colors( n ) }
 
 ##############################################################
 #
