@@ -63,7 +63,7 @@ lload <- function(filename,
 
   # Luna output structure: ID { factors } { variables }
   if (!is.null(factors)) {
-    df <- setDF(dcast(setDT(df),
+    df <- data.table::setDF(data.table::dcast(data.table::setDT(df),
       as.formula(paste(c(
         paste(c("ID", rows), sep = "+", collapse = "+"),
         "~",
