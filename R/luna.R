@@ -1474,6 +1474,32 @@ lbands <- function(l) {
 ##                                                ##
 ####################################################
 
+#' LUNA plotting
+#'
+#' draws a rectangular heatmap (e.g. spectrogram)
+#'
+#' @param x x-axis values
+#' @param y y-axis values, of \code{length(x)}
+#' @param z z-axis values, of \code{length(x)}
+#' @param col 100-valued color palette, defaults to \code{\link{lturbo}(100)}
+#' @param mt main title (string)
+#' @param f filter: boolean values of length equal to \code{length(x)}
+#' @param zero boolean vector of length equal to \code{length(x)}; if T, set Z to 0
+#' @param xlines draw vertical lines along the x-axis at these values (default: none)
+#' @param ylines draw horizontal lines along the y-axus at these values (default: none)
+#' @param zlim set range for Z axis (defaults to observed range in Z)
+#' @param win winsorize Z at this percentile, e.g. 0.05
+#' @param legend integer: return Z quantiles at this many uniformly-spaced positions
+#'
+#' @return plot is generated in the current graphics device; no return value unless legend is set
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' k <- ldb("out.db")
+#' d <- k$PSD$CH_E_F
+#' lheatmap(d$E, d$F, 10*log10(d$PSD))
+#' }
 lheatmap <- function(x, y, z,
                      col = luna.globals$turbo.colors(100),
                      mt = "",
@@ -1534,6 +1560,18 @@ lremap.chs <- function(chs) {
   chs
 }
 
+#' Generating a data frame with default 64-channel EEG positions
+#'
+#' @param chs an optional character vector of channel labels
+#'
+#' @return a data frame of channel, X and Y co-ordiantes (CH, X and Y);  if the
+#' \code{chs} argument is not empty, then only channels matching an entry in \code{chs} are displayed
+#' @export
+#'
+#' @note
+#' - Label matching is case-insenstive;
+#' - Currently, coordinates are only specified for standard 64-channel montages;
+#' - This function is primarily used internally by other luna plotting functions;
 ldefault.xy <- function(chs = character(0)) {
   chlab <- c(
     "Fp1", "AF7", "AF3", "F1",  "F3",  "F5",  "F7",  "FT7", "FC5", "FC3", "FC1", "C1",
@@ -1586,6 +1624,42 @@ ldefault.xy <- function(chs = character(0)) {
 ##
 ## --------------------------------------------------------------------------------
 
+#' LUNA plotting
+#'
+#' draw a series of X-Y scatter/line plots, one-per-channel arranged as a topoplot
+#'
+#' @param c character vector of channel labels
+#' @param x nuremic vector of X-axis values
+#' @param y numeric vector of Y-axis values
+#' @param z optional numeric vector of Z-axis values (default NA)
+#' @param zlim optional range for Z
+#' @param f optional boolean vector of length(x), filter in/out each observation
+#' @param y.symm boolean, make Y-axis symmetric around 0 (default = F)
+#' @param sz optional numeric value: size of points (default 0.08)
+#' @param col optional color, default 'black'
+#' @param lwd optional numeric value for line width (default to 0.5)
+#' @param xline optional vector of X values to plot vertical lines
+#' @param yline optional vector of Y values to plot horizontal lines
+#' @param pch optional point symbol (default NA)
+#' @param cex optional point size (default 1)
+#' @param ylim optional Y axis limit
+#' @param xlab X axis label (default = Frequency Hz))
+#' @param ylab Y axis label (default = log(power))
+#' @param mt main title (default, "")
+#'
+#' @return plot is generated in the current graphics device; no return value
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' ltopo.xy(c = hj$CH, x = hj$E, y = log(hj$H1), xlab = "Epoch", ylab = "H1", pch=20, col=rbpal, cex = 0.2)
+#' }
+#'
+#' @note If \code{pch} is non-\code{NULL}, then \code{z} can be a vector of values
+#' (\code{length(x)}) and \code{col} can be a 100-element palette: in this case,
+#' the color of each point is scaled by the percentile of \code{z};
+#' if \code{pch} is missing, this function draws a X-Y line
+#' plots, which must be a single color (i.e. no \code{z} values are allowed)
 ltopo.xy <- function(c, x, y, z = NA, zlim = NA,
                      f = rep(T, length(x)), y.symm = F,
                      sz = 0.08,
@@ -1674,6 +1748,30 @@ ltopo.xy <- function(c, x, y, z = NA, zlim = NA,
 ##
 ## --------------------------------------------------------------------------------
 
+#' LUNA plotting
+#'
+#' draws a 'topoplot' using a heatmap color scale
+#'
+#' @param c vector of channel labels
+#' @param z vector of values to plot (same length as \code{c})
+#' @param sz integer: size of channel circles plotted (default = 1)
+#' @param flt boolean filter of length equal to \code{length(c)}
+#' @param zlab label for Z-axis
+#' @param mt main title label
+#' @param zlim set Z range (defaults to observed range)
+#' @param th single numeric value threshold for highlighting certain channels (default NULL)
+#' @param th.z vector, same length as \code{c} and \code{z}; channels with \code{th.z} \eqn{\ge} \code{th} are highlighted
+#' @param show.leg boolean: plot a legend (default T)
+#' @param zeroed boolean: make Z range symmetric around zero if T (default = F)
+#' @param head boolean: draw simple head image (circle, default = F)
+#'
+#' @return plot is generated in the current graphics device; no return value
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' ltopo.heat(psd$CH, psd$PSD, flt = psd$F == 15, sz = 3, zlab = "Power 15 Hz", mt = "Plot 1")
+#' }
 ltopo.heat <- function(c, z,
                        sz = 1,
                        flt = rep(T, length(z)),
@@ -1687,6 +1785,19 @@ ltopo.heat <- function(c, z,
   ltopo.rb(c, z, flt, sz, zlab, mt, zlim, th, th.z, show.leg, zeroed, head, col = colorRampPalette(rev(c("red", "orange", "yellow", "cyan", "blue")))(101))
 }
 
+#' LUNA plotting
+#'
+#' draws a 'topoplot' using a red-blue color scale
+#'
+#' @inheritParams ltopo.heat
+#' @param col 101-valued palette, defaults to \code{colorRampPalette(c("blue", "white", "red"))(101)}
+#' @param ring.lwd width of rings around highlighted channels (defaults to 1)#'
+#'
+#' @return plot is generated in the current graphics device; no return value
+#' @export
+#'
+#' @note \code{ltopo.rb(...)} is the same as \code{\link{ltopo.heat}(...)} with
+#' \code{zeroed = T} and a different color scheme (blue as negative, red as positive, white as 0)
 ltopo.rb <- function(c, z,
                      flt = rep(T, length(z)),
                      sz = 1,
@@ -1769,6 +1880,19 @@ ltopo.rb <- function(c, z,
 ## --------------------------------------------------------------------------------
 
 # need diff. coords, so make xy.coh
+#' Generating a rescaled coordinate data frame
+#'
+#' Rescales a coordinate data frame (e.g. from \code{\link{ldefault.xy}()})
+#' such that it is appropriate for pairwise (connectivity) plots
+#'
+#' @param xy a data frame with columns \code{X} and \code{Y}
+#'
+#' @return a data frame with X and Y coordinates rescaled
+#' @export
+#'
+#' @note
+#' - Assumes the X and Y inputs are scaled for a unit circle, i.e. -0.5 to +0.5
+#' - This function is only intended to be used internally
 ldefault.coh.xy <- function(xy) {
   xy$X <- 100 * xy$X
   xy$Y <- (30 * xy$Y) + 10
@@ -1839,6 +1963,41 @@ fhead1 <- function(chs, z, flt = T, zr = range(z, na.rm = T), cex = 4, title = "
 # ltopo: connectivity
 #
 
+#' LUNA plotting
+#'
+#' draw a connectivity topoplot (i.e. of lines between pairs of channels)
+#'
+#' @param chs1 channel \code{a}
+#' @param chs2 channel \code{b}
+#' @param z numeric vector - the associated value for the pair \code{(a,b)}
+#' @param flt optional boolean vector of \code{length(z)} - only plot values that are T here
+#' @param zr range of Z axis
+#' @param cex size of points (default 2)
+#' @param w width of lines (defauly 8)
+#' @param title main title text (default "")
+#' @param head boolean value: if T, plot a simple head outline
+#' @param signed boolean value: if T, assume Z values are signed and show directions in plots
+#'
+#' @return plot is generated in the current graphics device; no return value
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' ltopo.conn(chs1 = coh$CH1, chs2 = coh$CH2, z = coh$ICOH, flt = coh$B == "SIGMA" & coh$COH > 0.7, w = 5, signed = T)
+#' }
+#'
+#' @note
+#' - lines are drawn in ascending order of the absolute value of \code{z} - i.e. so that
+#' larger values are more evident on the plot.  Note that this plot can take a long
+#' time and give very indistinct figures if too many pairs are included - use the
+#' filter \code{f} argument to restrict visualization to only the most relevant sets of pairs
+#' - if signed equals T, then the lines connecting two channels are drawn using a gradient
+#' of 'red-to-white-to-blue' going from one channel to the second, depending on the sign
+#' of Z, such that if Z(A,B) = +2, then the line at channel 'A' is blue, whereas the end at 'B' will be red
+#' (e.g. implying a flow of information "from A to B").  If Z(a,b) = -2, the opposite will be rendered.
+#' - if \code{signed} is F, then all lines are of the same, solid color. The intention of the signed option
+#' is to be able to visually represent directed connectivity metrics (e.g. PSI), in contrast to
+#' undirected metrics such as magnitude squared coherence.
 ltopo.conn <- function(chs1, chs2, z, flt = T, zr = range(z[flt], na.rm = T),
                        cex = 2, w = 8, title = "", head = T, signed = F) {
   chs1 <- lremap.chs(chs1)
@@ -1927,6 +2086,34 @@ t_cols <- function(x, percent = 50) {
 # so always assuming a signed value here
 #
 
+#' LUNA plotting
+#'
+#' draw	a connectivity topoplot	(i.e. of lines between pairs of	channels, but seeding on one channel,
+#' i.e. as a special case of \code{\link{ltopo.conn}()}
+#'
+#' @param ch single character value: channel to seed on
+#' @param chs1 channel 'a' as per \code{\link{ltopo.conn}()}
+#' @param chs2 channel 'b' as per \code{\link{ltopo.conn}()}
+#' @param z numeric vector of pairwise Z values
+#' @param flt optional boolean vector of length(z), to filter observations in/out of the plot
+#' @param zr range of Z axis
+#' @param cex size of channel circles
+#' @param w width of lines between channels
+#' @param title main title text
+#' @param head boolean: draw simple head circle if T
+#' @param signed assume that Z is directional (see \code{\link{ltopo.conn}()} notes)
+#'
+#' @return plot is generated in the current graphics device; no return value
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' ltopo.dconn(ch = "C3", chs1 = coh$CH1, chs2 = coh$CH2, z = coh$COH, flt = coh$B == "SIGMA")
+#' }
+#'
+#' @note
+#' This is a special case of \code{\link{ltopo.conn}()}, where instead of showing all available pairwise measures,
+#' only those where channel A matches the single channel specified by \code{ch} are shown.
 ltopo.dconn <- function(ch, chs1, chs2, z, flt = T, zr = NULL, cex = 2, w = 8, title = "", head = T, signed = F) {
   if (is.null(zr)) zr <- range(z[flt], na.rm = T)
   zr <- c(-1, 1) * max(abs(zr))
@@ -2016,14 +2203,13 @@ ltopo.heat2 <- function(c, x, y, z, zlim = NULL,
 
 #' Winsorize a vector
 #'
-#' @param x a numeric vector
-#' @param p percentile
+#' Winsorizes a vector (sets values greater/less than the specified percentile to that value)
+#'
+#' @param x a numeric vector to be winsorized
+#' @param p percentile, must be less than 0.5 (defaults to 0.05, implying 5th and 95th percentiles)
 #'
 #' @return winsorized version of \code{x}
 #' @export
-#'
-#' @examples dcd
-#' dc
 #'
 lwin <- function(x, p = 0.05) {
   t <- quantile(x, c(p, 1 - p), na.rm = T)
@@ -2039,6 +2225,31 @@ lwin <- function(x, p = 0.05) {
 #    z    plot value
 #
 
+#' LUNA plotting
+#'
+#' draw a 'topoplot of topoplots'
+#'
+#' @param c character vector of channel labels for the inner plots
+#' @param c2 character vector of channel labels for the outer plots
+#' @param z numeric vector of values to plot (by Z-axis color scale)
+#' @param zlim set Z range (defaults to observed range)
+#' @param f boolean vector: filter of \code{length(z)}
+#' @param sz relative size of each inner point (default 0.05)
+#' @param sz2 relative size of each outer plot (default 0.05)
+#' @param ring.lwd width of ring around each point
+#' @param same.cols use the same Z color range for each inner topoplot
+#' @param col optional color palette (100-elements)
+#' @param zlab optional Z-axis label for legend
+#' @param mt optional main title text (default "")
+#' @param zeroed boolean value: if T, set Z ranges to be symmetric around 0
+#'
+#' @return plot is generated in the current graphics device; no return value
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' ltopo.topo(c = c(coh$CH1, coh$CH2), c2 = c(coh$CH2, coh$CH1), z = c(coh$ICOH, -1 * coh$ICOH), f = rep(coh$B == "SIGMA", 2), sz=0.08, sz2=0.6)
+#' }
 ltopo.topo <- function(c, c2, z, zlim = NULL,
                        f = rep(T, length(z)),
                        sz = 0.05, sz2 = 0.05,
@@ -2232,8 +2443,20 @@ lpp2 <- function(m) {
 ##############################################################
 
 
+#' Generating a turbo palette
+#'
+#' @param n number of colors to return
+#'
+#' @return vector of color values, length \code{n}
+#' @export
 lturbo <- function( n = 100 ) { luna.globals$turbo.colors( n ) }
 
+#' Generating a plasma palette (based on \code{viridis} package)
+#'
+#' @param n number of colors to return
+#'
+#' @return vector of color values, length \code{n}
+#' @export
 lplasma <- function( n = 100 ) { luna.globals$plasma.colors( n ) }
 
 ##############################################################
