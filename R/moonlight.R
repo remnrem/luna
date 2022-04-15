@@ -57,6 +57,15 @@ ml.globals$sm_allowChangeSelection <- TRUE
 # --------------------------------------------------------------------------------
 
 
+#' Initiate the Moonlight viewer in a browser window
+#'
+#' @param sample.list sample list (defaults to \code{s.lst})
+#' @param proj.path working folder for Moonlight (default current)
+#' @param nap.mode boolean value to indicate whether to expect NAP output (default F)
+#' @param environ.file if non-NULL, specify a file with environment variables
+#' @param local boolean value to indicate whether running locally (versus Docker container) (default T)
+#'
+#' @export
 moonlight <- function(sample.list = NULL,
                       proj.path = NULL,
                       nap.mode = FALSE,
@@ -420,7 +429,7 @@ moonlight <- function(sample.list = NULL,
               "Signals",
               actionButton("entire.record", "Entire record"),
 #	      actionButton("rescale.ylim", "Toggle Y scale"),
-	      actionButton("bandpass", "0.3-35 Hz"),	
+	      actionButton("bandpass", "0.3-35 Hz"),
               verbatimTextOutput("info2"),
               plotOutput("signal.master",
                 width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
@@ -987,7 +996,7 @@ moonlight <- function(sample.list = NULL,
       values$zoom <- NULL
       values$raw.signals <- T
       values$yscale <- T  # not used
-      values$bandpass <- F 
+      values$bandpass <- F
 
       #
       # SOAP tracker
@@ -1004,7 +1013,7 @@ moonlight <- function(sample.list = NULL,
         values$units <- values$eval$HEADERS$CH$PDIM
         names(values$units) <- as.character(values$eval$HEADERS$CH$CH)
 
-	values$sr <- as.integer( values$eval$HEADERS$CH$SR ) 
+	values$sr <- as.integer( values$eval$HEADERS$CH$SR )
         names(values$sr) <- as.character(values$eval$HEADERS$CH$CH)
 
 })
@@ -2153,7 +2162,7 @@ moonlight <- function(sample.list = NULL,
 
         epochs <- values$epochs
         zoom <- values$zoom
-	bp <- values$bandpass 
+	bp <- values$bandpass
 
         isolate({
 
@@ -2330,7 +2339,7 @@ moonlight <- function(sample.list = NULL,
                 values$sigstats$CH %in% chs, ]
 
               # palette for H2
-              pal100 <- rev( luna.globals$plasma.colors(100) )  
+              pal100 <- rev( lplasma(100) )
 
               # reset
               yidx <- 0
@@ -2662,7 +2671,7 @@ moonlight <- function(sample.list = NULL,
             "Epoch ", floor(epochs[1]), " to ", ceiling(epochs[2]),
             " (", (ceiling(epochs[2]) - floor(epochs[1]) + 1) * 0.5, " minutes)",
             " ", signif(hrs, 2), " hours from start", zoom_info ,
-	    ifelse( values$bandpass , " (w/ 0.3-35 Hz filter)" , " (unfiltered)" )	    
+	    ifelse( values$bandpass , " (w/ 0.3-35 Hz filter)" , " (unfiltered)" )
           )
         } else {
           paste0("Selected value is out of range")
