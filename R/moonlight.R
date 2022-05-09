@@ -843,7 +843,7 @@ moonlight <- function(sample.list = NULL,
         )
 
         harm.sl.edfz[[input$edfs]]$EDF <- list.files(paste(nap.dir, values$ID, "data/", sep = "/"),
-          full.names = T, pattern = "*harm.edfz$"
+          full.names = T, pattern = "*harm.edf.gz$"
         )
 
         # this gets populated below w/ harm.lst anyway

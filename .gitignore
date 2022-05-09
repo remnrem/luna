@@ -34,3 +34,4 @@
 *.out
 *.app
 .Rproj.user
+.Rhistory

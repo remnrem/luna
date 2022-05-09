@@ -4,8 +4,6 @@
 #
 # --------------------------------------------------------------------------------
 
-library(data.table)
-
 lhead <- function(filename,
                   prefix = NULL,
                   comment.char = "#") {
