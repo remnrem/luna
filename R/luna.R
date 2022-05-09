@@ -29,7 +29,7 @@ luna.globals$logmode <- 0
 
   luna.globals$turbo.colors <- make.turbo.colors()
   luna.globals$plasma.colors <- make.turbo.colors()
-  luna.globals$rbpal <- colorRampPalette(c("navy", "blue", "white", "red", "darkred"))
+  luna.globals$rbpal <- grDevices::colorRampPalette(c("navy", "blue", "white", "red", "darkred"))
 
   require(plotrix, quietly = T, warn.conflicts = F)
   require(geosphere, quietly = T, warn.conflicts = F)
@@ -1301,10 +1301,7 @@ lstages <- function() {
 #' and multi-line statements are concatenated into a single line.
 #' @export
 #'
-#' @examples
-#' \dontrun{
-#' k <- leval(lcmd("/path/to/command.txt"))
-#' }
+#' @examples k <- leval(lcmd("/path/to/command.txt"))
 lcmd <- function(filename) {
   lines <- readLines(filename, warn = F)
   lines <- lines[which(lines != "")]
@@ -1785,7 +1782,7 @@ ltopo.heat <- function(c, z,
                        th.z = z,
                        show.leg = F,
                        zeroed = F, head = F) {
-  ltopo.rb(c, z, flt, sz, zlab, mt, zlim, th, th.z, show.leg, zeroed, head, col = colorRampPalette(rev(c("red", "orange", "yellow", "cyan", "blue")))(101))
+  ltopo.rb(c, z, flt, sz, zlab, mt, zlim, th, th.z, show.leg, zeroed, head, col = grDevices::colorRampPalette(rev(c("red", "orange", "yellow", "cyan", "blue")))(101))
 }
 
 #' LUNA plotting
@@ -1793,7 +1790,7 @@ ltopo.heat <- function(c, z,
 #' draws a 'topoplot' using a red-blue color scale
 #'
 #' @inheritParams ltopo.heat
-#' @param col 101-valued palette, defaults to \code{colorRampPalette(c("blue", "white", "red"))(101)}
+#' @param col 101-valued palette, defaults to \code{grDevices::colorRampPalette(c("blue", "white", "red"))(101)}
 #' @param ring.lwd width of rings around highlighted channels (defaults to 1)#'
 #'
 #' @return plot is generated in the current graphics device; no return value
@@ -1812,7 +1809,7 @@ ltopo.rb <- function(c, z,
                      show.leg = F,
                      zeroed = T,
                      head = F,
-                     col = colorRampPalette(c("blue", "white", "red"))(101),
+                     col = grDevices::colorRampPalette(c("blue", "white", "red"))(101),
                      ring.lwd = 1) {
   topo <- ldefault.xy()
   if (length(col) != 101) stop("col needs to be 101 length")
@@ -1922,7 +1919,7 @@ farc.signed <- function(c1, c2, k1, k2, w = 4) {
   )
   segments(gc[, 1], gc[, 2], gc[, 1], gc[, 2],
     lwd = w,
-    t_cols(colorRampPalette(c(k2, "white", k1))(101), 80)
+    t_cols(grDevices::colorRampPalette(c(k2, "white", k1))(101), 80)
   )
 }
 
@@ -1930,7 +1927,7 @@ farc.signed <- function(c1, c2, k1, k2, w = 4) {
 
 # palette
 rbpal <- rev(rainbow(150)[1:100])
-fcol <- colorRampPalette(c("blue", "white", "red"))
+fcol <- grDevices::colorRampPalette(c("blue", "white", "red"))
 rbpal <- fcol(100)
 
 

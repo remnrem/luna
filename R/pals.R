@@ -40,7 +40,7 @@ make.turbo.colors <- function() {
     "#850702", "#810602", "#7E0502", "#7A0403"
   )
 
-  turbo.colors <- colorRampPalette(colors = turbo.hex, space = "rgb", interpolate = "spline")
+  turbo.colors <- grDevices::colorRampPalette(colors = turbo.hex, space = "rgb", interpolate = "spline")
 
   turbo.colors
 }
@@ -92,7 +92,7 @@ make.plasma.colors <- function() {
  "#F1F426FF", "#F1F525FF", "#F0F724FF", "#F0F921FF"
   )
 
-  plasma.colors <- colorRampPalette(colors = plasma.hex, space = "rgb", interpolate = "spline")
+  plasma.colors <- grDevices::colorRampPalette(colors = plasma.hex, space = "rgb", interpolate = "spline")
 
   plasma.colors
 }

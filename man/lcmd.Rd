@@ -20,7 +20,5 @@ and multi-line statements are concatenated into a single line.
 Reads Luna commands from a file
 }
 \examples{
-\dontrun{
 k <- leval(lcmd("/path/to/command.txt"))
-}
 }

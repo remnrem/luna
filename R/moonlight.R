@@ -2739,7 +2739,7 @@ moonlight <- function(sample.list = NULL,
       plot(tt, rep(0, n), ylim = yr, xaxt = "n", yaxt = "n", xaxs = "i", yaxs = "i", type = "n", axes = F, xlab = "", ylab = "", main = "", xlim = xr)
       abline(h = 0)
 
-      bpal <- colorRampPalette(c("blue", "white", "red"))(7)
+      bpal <- grDevices::colorRampPalette(c("blue", "white", "red"))(7)
       # pos
       ycurr <- rep(0, n)
       for (b in pcol) {

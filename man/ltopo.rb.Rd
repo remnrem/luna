@@ -17,7 +17,7 @@ ltopo.rb(
   show.leg = F,
   zeroed = T,
   head = F,
-  col = colorRampPalette(c("blue", "white", "red"))(101),
+  col = (grDevices::colorRampPalette(c("blue", "white", "red")))(101),
   ring.lwd = 1
 )
 }
@@ -46,7 +46,7 @@ ltopo.rb(
 
 \item{head}{boolean: draw simple head image (circle, default = F)}
 
-\item{col}{101-valued palette, defaults to \code{colorRampPalette(c("blue", "white", "red"))(101)}}
+\item{col}{101-valued palette, defaults to \code{grDevices::colorRampPalette(c("blue", "white", "red"))(101)}}
 
 \item{ring.lwd}{width of rings around highlighted channels (defaults to 1)#'}
 }
