@@ -7,11 +7,11 @@
 #
 # --------------------------------------------------------------------------------
 
-require(shiny, quietly = T)
-require(DT, quietly = T)
-require(shinyFiles, quietly = T)
-require(xtable, quietly = T)
-require(shinydashboard, quietly = T)
+requireNamespace("shiny", quietly = T)
+requireNamespace("DT", quietly = T)
+requireNamespace("shinyFiles", quietly = T)
+requireNamespace("xtable", quietly = T)
+requireNamespace("shinydashboard", quietly = T)
 
 # --------------------------------------------------------------------------------
 #
@@ -38,7 +38,7 @@ ml.globals$pal10 <- c(
 ml.globals$pre_select_rowname <- NULL
 ml.globals$derived_data <- NULL
 ml.globals$ID_col_index <- 1
-ml.globals$show_detailed_logs_butn <- reactiveVal(FALSE)
+ml.globals$show_detailed_logs_butn <- shiny::reactiveVal(FALSE)
 
 ml.globals$annots_panel_present <- TRUE
 ml.globals$staging_panel_present <- TRUE
@@ -172,9 +172,9 @@ moonlight <- function(sample.list = NULL,
   if (Sys.getenv("USE_URL_AUTH") == "TRUE") use_url_auth <- T
 
   if (use_url_auth) {
-    require(lubridate, quietly = T)
-    require(wkb, quietly = T)
-    require(digest, quietly = T)
+    requireNamespace(lubridate, quietly = T)
+    requireNamespace(wkb, quietly = T)
+    requireNamespace(digest, quietly = T)
     enc_key <- charToRaw(Sys.getenv("ENCRYPT_KEY"))
     enc_iv <- charToRaw(Sys.getenv("ENCRYPT_IV"))
     token_exp_time <- Sys.getenv("TOKEN_EXPIRY_MINUTES")
@@ -203,7 +203,7 @@ moonlight <- function(sample.list = NULL,
   # --------------------------------------------------------------------------------
 
   if (opt_aws) {
-    require(aws.s3, quietly = T)
+    requireNamespace(aws.s3, quietly = T)
     s3BucketName <- Sys.getenv("AWS_S3_BUCKET_NAME")
     AWS_ACCESS_KEY_ID <- Sys.getenv("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY <- Sys.getenv("AWS_SECRET_ACCESS_KEY")

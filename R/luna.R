@@ -31,13 +31,13 @@ luna.globals$logmode <- 0
   luna.globals$plasma.colors <- make.turbo.colors()
   luna.globals$rbpal <- grDevices::colorRampPalette(c("navy", "blue", "white", "red", "darkred"))
 
-  require(plotrix, quietly = T, warn.conflicts = F)
-  require(geosphere, quietly = T, warn.conflicts = F)
-  require(shiny, quietly = T, warn.conflicts = F)
-  require(DT, quietly = T, warn.conflicts = F)
-  require(shinyFiles, quietly = T, warn.conflicts = F)
-  require(xtable, quietly = T, warn.conflicts = F)
-  require(shinydashboard, quietly = T, warn.conflicts = F)
+  requireNamespace("plotrix", quietly = T, warn.conflicts = F)
+  requireNamespace("geosphere", quietly = T, warn.conflicts = F)
+  requireNamespace("shiny", quietly = T, warn.conflicts = F)
+  requireNamespace("DT", quietly = T, warn.conflicts = F)
+  requireNamespace("shinyFiles", quietly = T, warn.conflicts = F)
+  requireNamespace("xtable", quietly = T, warn.conflicts = F)
+  requireNamespace("shinydashboard", quietly = T, warn.conflicts = F)
 
 }
 
@@ -1301,7 +1301,10 @@ lstages <- function() {
 #' and multi-line statements are concatenated into a single line.
 #' @export
 #'
-#' @examples k <- leval(lcmd("/path/to/command.txt"))
+#' @examples
+#' \dontrun{
+#' k <- leval(lcmd("/path/to/command.txt"))
+#' }
 lcmd <- function(filename) {
   lines <- readLines(filename, warn = F)
   lines <- lines[which(lines != "")]
@@ -1652,7 +1655,8 @@ ldefault.xy <- function(chs = character(0)) {
 #'
 #' @examples
 #' \dontrun{
-#' ltopo.xy(c = hj$CH, x = hj$E, y = log(hj$H1), xlab = "Epoch", ylab = "H1", pch=20, col=rbpal, cex = 0.2)
+#' ltopo.xy(c = hj$CH, x = hj$E, y = log(hj$H1), xlab = "Epoch", ylab = "H1",
+#'     pch=20, col=rbpal, cex = 0.2)
 #' }
 #'
 #' @note If \code{pch} is non-\code{NULL}, then \code{z} can be a vector of values
@@ -1983,7 +1987,8 @@ fhead1 <- function(chs, z, flt = T, zr = range(z, na.rm = T), cex = 4, title = "
 #'
 #' @examples
 #' \dontrun{
-#' ltopo.conn(chs1 = coh$CH1, chs2 = coh$CH2, z = coh$ICOH, flt = coh$B == "SIGMA" & coh$COH > 0.7, w = 5, signed = T)
+#' ltopo.conn(chs1 = coh$CH1, chs2 = coh$CH2, z = coh$ICOH,
+#'     flt = coh$B == "SIGMA" & coh$COH > 0.7, w = 5, signed = T)
 #' }
 #'
 #' @note
@@ -2248,7 +2253,9 @@ lwin <- function(x, p = 0.05) {
 #'
 #' @examples
 #' \dontrun{
-#' ltopo.topo(c = c(coh$CH1, coh$CH2), c2 = c(coh$CH2, coh$CH1), z = c(coh$ICOH, -1 * coh$ICOH), f = rep(coh$B == "SIGMA", 2), sz=0.08, sz2=0.6)
+#' ltopo.topo(c = c(coh$CH1, coh$CH2), c2 = c(coh$CH2, coh$CH1),
+#'     z = c(coh$ICOH, -1 * coh$ICOH), f = rep(coh$B == "SIGMA", 2),
+#'     sz=0.08, sz2=0.6)
 #' }
 ltopo.topo <- function(c, c2, z, zlim = NULL,
                        f = rep(T, length(z)),
