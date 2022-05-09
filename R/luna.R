@@ -1301,7 +1301,10 @@ lstages <- function() {
 #' and multi-line statements are concatenated into a single line.
 #' @export
 #'
-#' @examples k <- leval(lcmd("/path/to/command.txt"))
+#' @examples
+#' \dontrun{
+#' k <- leval(lcmd("/path/to/command.txt"))
+#' }
 lcmd <- function(filename) {
   lines <- readLines(filename, warn = F)
   lines <- lines[which(lines != "")]

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 cd ./src
 # export LUNA_ARCH=`${R_HOME}/bin/Rscript.exe -e 'cat(ifelse(.Platform$OS.type == "windows", "WINDOWS", ""))'`
 # if [[ -z "${LUNA_ARCH}" ]]; then
