@@ -1,4 +1,5 @@
-PKG_CPPFLAGS=-I./include/ -I$(FFTW)/include/ -std=gnu++11
+CXX_STD = CXX11
+PKG_CPPFLAGS=-I./include/ -I$(FFTW)/include/ 
 PKG_LIBS=include/libluna.a -L$(FFTW)/lib/ -lfftw3
 
 #PKG_CPPFLAGS=-I./include/ `pkg-config --cflags fftw3`
