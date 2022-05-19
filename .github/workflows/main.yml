@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install R
       run: sudo apt-get install -y r-base libfftw3-dev
-        
+
     - name: make lunaR
       run: |
         cd $HOME
@@ -29,4 +29,8 @@ jobs:
         sudo R -e "install.packages('shinyFiles', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('xtable', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('shinydashboard', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('lubridate', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('wkb', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('digest', repos='https://cloud.r-project.org')"
+        sudo R -e "install.packages('aws.s3', repos='https://cloud.r-project.org')"
         sudo R CMD INSTALL ${GITHUB_WORKSPACE}
