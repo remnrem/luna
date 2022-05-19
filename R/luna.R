@@ -476,6 +476,7 @@ letable <- function(annots = character(0)) {
 ladd.annot.file <- function(a) {
   if (!file.exists(a)) stop(paste("cannot find", a))
   .Call("Radd_annot", as.character(a), PACKAGE = "luna")
+  luna.globals$annots <- c(luna.globals$annots, as.character(a))
   invisible(1)
 }
 
