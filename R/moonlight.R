@@ -66,6 +66,16 @@ ml.globals$sm_allowChangeSelection <- TRUE
 #' @param local boolean value to indicate whether running locally (versus Docker container) (default T)
 #'
 #' @export
+#'
+#' @importFrom shiny renderPlot renderTable renderImage renderText appendTab updateSelectizeInput observe incProgress withProgress getDefaultReactiveDomain showNotification isolate fileInput getDefaultReactiveDomain insertTab removeTab parseQueryString selectInput renderUI showModal updateSelectInput removeModal observeEvent actionButton modalButton tagList tags div textInput modalDialog reactive req reactiveValues textOutput verticalLayout imageOutput sliderInput brushOpts plotOutput h4 dataTableOutput tableOutput verbatimTextOutput tabPanel tabsetPanel fluidPage uiOutput selectizeInput fluidRow column actionButton checkboxInput selectInput br hr
+#' @importFrom shinydashboard dashboardPage dashboardHeader dashboardSidebar dashboardBody
+#' @importFrom digest AES
+#' @importFrom wkb hex2raw
+#' @importFrom lubridate time_length interval
+#' @importFrom utils read.delim2 read.delim write.table glob2rx tail
+#' @importFrom aws.s3 get_bucket save_object
+#' @importFrom DT renderDataTable
+#' @importFrom graphics par axis rect text points image barplot lines legend abline polygon
 moonlight <- function(sample.list = NULL,
                       proj.path = NULL,
                       nap.mode = FALSE,
@@ -172,9 +182,9 @@ moonlight <- function(sample.list = NULL,
   if (Sys.getenv("USE_URL_AUTH") == "TRUE") use_url_auth <- T
 
   if (use_url_auth) {
-    requireNamespace(lubridate, quietly = T)
-    requireNamespace(wkb, quietly = T)
-    requireNamespace(digest, quietly = T)
+    requireNamespace("lubridate", quietly = T)
+    requireNamespace("wkb", quietly = T)
+    requireNamespace("digest", quietly = T)
     enc_key <- charToRaw(Sys.getenv("ENCRYPT_KEY"))
     enc_iv <- charToRaw(Sys.getenv("ENCRYPT_IV"))
     token_exp_time <- Sys.getenv("TOKEN_EXPIRY_MINUTES")
@@ -203,7 +213,7 @@ moonlight <- function(sample.list = NULL,
   # --------------------------------------------------------------------------------
 
   if (opt_aws) {
-    requireNamespace(aws.s3, quietly = T)
+    requireNamespace("aws.s3", quietly = T)
     s3BucketName <- Sys.getenv("AWS_S3_BUCKET_NAME")
     AWS_ACCESS_KEY_ID <- Sys.getenv("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY <- Sys.getenv("AWS_SECRET_ACCESS_KEY")
@@ -320,12 +330,12 @@ moonlight <- function(sample.list = NULL,
             tabPanel(
               "Signals",
               fluidRow(
-                column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev", width = '100%' )),
-                column(width = 1, actionButton("button_epoch_nxt", "Next > ", width = '100%' )),
-                column(width = 1, offset = 0, actionButton("entire.record", "All", width = '100%' )),
-#		column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
-		column(width = 2, offset = 0, actionButton("bandpass", "Toggle 0.3-35Hz", width = '100%' )),
-		column(width = 1, offset = 0 ),
+                column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev", width = "100%")),
+                column(width = 1, actionButton("button_epoch_nxt", "Next > ", width = "100%")),
+                column(width = 1, offset = 0, actionButton("entire.record", "All", width = "100%")),
+                # 		column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
+                column(width = 2, offset = 0, actionButton("bandpass", "Toggle 0.3-35Hz", width = "100%")),
+                column(width = 1, offset = 0),
                 column(width = 6, verbatimTextOutput("info2"))
               ),
               plotOutput("signal.master",
@@ -380,7 +390,6 @@ moonlight <- function(sample.list = NULL,
               dataTableOutput("derived.view")
             )
           ) # tabsetpanel
-
         ) # dashboardBody
       ) # dashboardPage
     ) # fluidPage
@@ -428,8 +437,8 @@ moonlight <- function(sample.list = NULL,
             tabPanel(
               "Signals",
               actionButton("entire.record", "Entire record"),
-#	      actionButton("rescale.ylim", "Toggle Y scale"),
-	      actionButton("bandpass", "0.3-35 Hz"),
+              # 	      actionButton("rescale.ylim", "Toggle Y scale"),
+              actionButton("bandpass", "0.3-35 Hz"),
               verbatimTextOutput("info2"),
               plotOutput("signal.master",
                 width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
@@ -452,7 +461,6 @@ moonlight <- function(sample.list = NULL,
               uiOutput("ui_psdplot")
             )
           ) # tabsetpanel
-
         ) # dashboardBody
       ) # dashboardPage
     )
@@ -995,7 +1003,7 @@ moonlight <- function(sample.list = NULL,
       values$epochs <- c(1, 1)
       values$zoom <- NULL
       values$raw.signals <- T
-      values$yscale <- T  # not used
+      values$yscale <- T # not used
       values$bandpass <- F
 
       #
@@ -1013,10 +1021,9 @@ moonlight <- function(sample.list = NULL,
         values$units <- values$eval$HEADERS$CH$PDIM
         names(values$units) <- as.character(values$eval$HEADERS$CH$CH)
 
-	values$sr <- as.integer( values$eval$HEADERS$CH$SR )
+        values$sr <- as.integer(values$eval$HEADERS$CH$SR)
         names(values$sr) <- as.character(values$eval$HEADERS$CH$CH)
-
-})
+      })
 
 
       return(1)
@@ -2002,15 +2009,15 @@ moonlight <- function(sample.list = NULL,
         par(mar = c(2, 1, 1, 1))
 
         #  print( values$ss.aligned )
-        #ss <- values$ss.aligned
+        # ss <- values$ss.aligned
         ss <- values$data$luna_suds_SOAP$"luna_suds_SOAP_E"$data
         # cat( "SOAP\n")
-	# print( values$data$luna_suds_SOAP$"luna_suds_SOAP_E" )
+        # print( values$data$luna_suds_SOAP$"luna_suds_SOAP_E" )
         # cat( "POPS\n")
         # print( values$data$luna_suds_POPS$"luna_suds_POPS_E" )
 
         # hypnogram image
-        fhypnogram(ss$E, lstgn(ss$PRIOR), ss$PRIOR )
+        fhypnogram(ss$E, lstgn(ss$PRIOR), ss$PRIOR)
       })
 
       # SOAP hypnogram (w/ discordance)
@@ -2162,7 +2169,7 @@ moonlight <- function(sample.list = NULL,
 
         epochs <- values$epochs
         zoom <- values$zoom
-	bp <- values$bandpass
+        bp <- values$bandpass
 
         isolate({
 
@@ -2285,21 +2292,21 @@ moonlight <- function(sample.list = NULL,
               yidx <- 0
               for (ch in rev(chs)) {
                 req(epochs[1] >= 1, epochs[2] <= values$ne)
-		dat <- ldata(epochs[1]:epochs[2], chs = ch)
+                dat <- ldata(epochs[1]:epochs[2], chs = ch)
                 dat <- dat[dat$SEC >= secs[1] & dat$SEC <= secs[2], ]
                 ts <- dat$SEC
                 dy <- dat[, 4]
 
                 # filter?
-		if ( values$bandpass ) {
-		 dy <- ldetrend(dy)
-		 dy <- lfilter( dy , values$sr[ch] , 0.3 , 35 )
+                if (values$bandpass) {
+                  dy <- ldetrend(dy)
+                  dy <- lfilter(dy, values$sr[ch], 0.3, 35)
                 }
-		yr <- range(dy)
+                yr <- range(dy)
                 # zero-centered signal?
                 zc <- yr[1] < 0 & yr[2] > 0
-		# mean center
-		dy <- dy - mean(dy)
+                # mean center
+                dy <- dy - mean(dy)
                 # max absolute value
                 yrmx <- max(abs(range(dy)))
                 # if +/- signal, scale to -1, +1 ( 0 .. 1 ) based on max( |x| )
@@ -2339,7 +2346,7 @@ moonlight <- function(sample.list = NULL,
                 values$sigstats$CH %in% chs, ]
 
               # palette for H2
-              pal100 <- rev( lplasma(100) )
+              pal100 <- rev(lplasma(100))
 
               # reset
               yidx <- 0
@@ -2567,19 +2574,19 @@ moonlight <- function(sample.list = NULL,
       values$zoom <- NULL
     })
 
-#    # set Y-axis rescaling
-#    observeEvent(input$rescale.ylim, {
-#      req(attached.edf())
-#      values$yscale <- ! values$yscale
-#    })
+    #    # set Y-axis rescaling
+    #    observeEvent(input$rescale.ylim, {
+    #      req(attached.edf())
+    #      values$yscale <- ! values$yscale
+    #    })
 
     # Apply bandpass filter to all signals
     observeEvent(input$bandpass, {
       req(attached.edf())
-      values$bandpass <- ! values$bandpass
+      values$bandpass <- !values$bandpass
     })
 
-# drive by annotation instance box
+    # drive by annotation instance box
     observeEvent(input$sel.inst, {
       xx <- range(as.numeric(unlist(strsplit(input$sel.inst, " "))))
       xx <- c(floor(xx[1] / 30) + 1, ceiling(xx[2] / 30))
@@ -2670,8 +2677,8 @@ moonlight <- function(sample.list = NULL,
           paste0(
             "Epoch ", floor(epochs[1]), " to ", ceiling(epochs[2]),
             " (", (ceiling(epochs[2]) - floor(epochs[1]) + 1) * 0.5, " minutes)",
-            " ", signif(hrs, 2), " hours from start", zoom_info ,
-	    ifelse( values$bandpass , " (w/ 0.3-35 Hz filter)" , " (unfiltered)" )
+            " ", signif(hrs, 2), " hours from start", zoom_info,
+            ifelse(values$bandpass, " (w/ 0.3-35 Hz filter)", " (unfiltered)")
           )
         } else {
           paste0("Selected value is out of range")

@@ -31,7 +31,11 @@ Imports:
     DT,
     shinyFiles,
     xtable,
-    shinydashboard
+    shinydashboard,
+    lubridate,
+    wkb,
+    digest,
+    aws.s3
 URL: https://github.com/remnrem/luna, http://zzz.bwh.harvard.edu/luna
 BugReports: https://github.com/remnrem/luna/issues
 Encoding: UTF-8

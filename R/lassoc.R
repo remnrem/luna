@@ -1,4 +1,5 @@
 # this function is not used anywhere else.
+#' @importFrom stats sd
 outlier <- function(x, t = 3) {
   mean(x, na.rm = T) + t * sd(x, na.rm = T)
 }
@@ -16,6 +17,8 @@ outlier <- function(x, t = 3) {
 #'
 #' @return \code{x} after setting outliers to \code{NA}
 #' @export
+#'
+#' @importFrom stats sd
 outliers <- function(x, m = mean(x, na.rm = T), sdev = sd(x, na.rm = T), t = 3) {
   lwr <- m - t * sdev
   upr <- m + t * sdev
@@ -37,6 +40,7 @@ outliers <- function(x, m = mean(x, na.rm = T), sdev = sd(x, na.rm = T), t = 3) 
 #' @return \code{x} after setting outliers to \code{NA}
 #' @export
 #'
+#' @importFrom stats sd
 outliers.inc <- function(x, inc = rep(T, length(x)), m = mean(x[inc], na.rm = T), sdev = sd(x[inc], na.rm = T), t = 3) {
   lwr <- m - t * sdev
   upr <- m + t * sdev
@@ -50,6 +54,8 @@ outliers.inc <- function(x, inc = rep(T, length(x)), m = mean(x[inc], na.rm = T)
 #'
 #' @inheritParams outliers
 #'
+#' @importFrom stats sd
+#'
 #' @return boolean vector with same length as \code{x}, \code{TRUE} means the corresponding
 #' element in \code{x} is an outlier and is not \code{NA}
 #' @export
@@ -58,6 +64,8 @@ is.outlier <- function(x, m = mean(x, na.rm = T), sdev = sd(x, na.rm = T), t = 3
 }
 
 #' Check outliers with masking
+#'
+#' @importFrom stats sd
 #'
 #' @param x numeric vector
 #' @param inc boolean vector with same length as \code{x}, used for masking.
@@ -85,6 +93,8 @@ is.outlier.inc <- function(x, inc = inc, t = 3) {
 #'
 #' @return normalized vector with same length as \code{x}
 #' @export
+#'
+#' @importFrom stats sd
 zf <- function(x, m = mean(x, na.rm = T), sdev = sd(x, na.rm = T)) {
   (x - m) / sdev
 }
