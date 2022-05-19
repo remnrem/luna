@@ -22,7 +22,7 @@ luna.globals$logmode <- 0
 
 .onLoad <- function(libname, pkgname) {
   packageStartupMessage(paste("** lunaR", luna.globals$version, luna.globals$date))
-  library.dynam("luna", package = "luna", lib.loc = NULL)
+  #library.dynam("luna", package = "luna", lib.loc = NULL)
   luna.globals$logmode <- 0
   luna.globals$xy <- ldefault.xy()
   luna.globals$xy.coh <- ldefault.coh.xy(luna.globals$xy)
