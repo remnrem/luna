@@ -5,5 +5,9 @@
 #' @docType package
 #' @name luna
 #' @useDynLib luna, .registration=TRUE
+# Suppress R CMD check note
+#' @importFrom git2r clone
+#' @importFrom xtable xtable
+#' @importFrom shinyFiles parseFilePaths
 NULL
 #> NULL
