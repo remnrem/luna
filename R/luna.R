@@ -22,22 +22,22 @@ luna.globals$logmode <- 0
 
 .onLoad <- function(libname, pkgname) {
   packageStartupMessage(paste("** lunaR", luna.globals$version, luna.globals$date))
-  library.dynam("luna", package = "luna", lib.loc = NULL)
+  #library.dynam("luna", package = "luna", lib.loc = NULL)
   luna.globals$logmode <- 0
   luna.globals$xy <- ldefault.xy()
   luna.globals$xy.coh <- ldefault.coh.xy(luna.globals$xy)
 
   luna.globals$turbo.colors <- make.turbo.colors()
   luna.globals$plasma.colors <- make.turbo.colors()
-  luna.globals$rbpal <- colorRampPalette(c("navy", "blue", "white", "red", "darkred"))
+  luna.globals$rbpal <- grDevices::colorRampPalette(c("navy", "blue", "white", "red", "darkred"))
 
-  require(plotrix, quietly = T, warn.conflicts = F)
-  require(geosphere, quietly = T, warn.conflicts = F)
-  require(shiny, quietly = T, warn.conflicts = F)
-  require(DT, quietly = T, warn.conflicts = F)
-  require(shinyFiles, quietly = T, warn.conflicts = F)
-  require(xtable, quietly = T, warn.conflicts = F)
-  require(shinydashboard, quietly = T, warn.conflicts = F)
+  requireNamespace("plotrix", quietly = T, warn.conflicts = F)
+  requireNamespace("geosphere", quietly = T, warn.conflicts = F)
+  requireNamespace("shiny", quietly = T, warn.conflicts = F)
+  requireNamespace("DT", quietly = T, warn.conflicts = F)
+  requireNamespace("shinyFiles", quietly = T, warn.conflicts = F)
+  requireNamespace("xtable", quietly = T, warn.conflicts = F)
+  requireNamespace("shinydashboard", quietly = T, warn.conflicts = F)
 
 }
 
@@ -87,6 +87,7 @@ luna.globals$logmode <- 0
 #' ..$ EDF  : chr "edfs/learn-nsrr03.edf"
 #' ..$ ANNOT: chr "edfs/learn-nsrr03-profusion.xml"
 #' }
+#' @importFrom utils read.table
 lsl <- function(file, path = "") {
   d <- read.table(file, header = F, fill = T, sep = "\t", stringsAsFactors = F)
   if (dim(d)[2] < 2) stop("invalid sample list")
@@ -201,6 +202,8 @@ lattach <- function(sl, idx = "") {
 #'
 #' the \code{\link{lreset}()} function clears all variables, and resets all
 #' special variables to their default values.
+#'
+#' @importFrom utils read.table
 lset <- function(var, val = NULL) {
   if (!is.null(val)) {
     .Call("Rset_var", as.character(var), as.character(val), PACKAGE = "luna")
@@ -853,6 +856,8 @@ ldb <- function(dbfile, ids = character(0)) {
 #' nsrr01 nsrr02 nsrr03
 #'     10     10     10
 #' }
+#'
+#' @importFrom utils read.table
 ltxttab <- function(root, f = "", ids = dir(root), silent = F) {
   if (f == "") {
     return(ltxttab.dir(root, ids))
@@ -1302,7 +1307,10 @@ lstages <- function() {
 #' and multi-line statements are concatenated into a single line.
 #' @export
 #'
-#' @examples k <- leval(lcmd("/path/to/command.txt"))
+#' @examples
+#' \dontrun{
+#' k <- leval(lcmd("/path/to/command.txt"))
+#' }
 lcmd <- function(filename) {
   lines <- readLines(filename, warn = F)
   lines <- lines[which(lines != "")]
@@ -1338,6 +1346,8 @@ lcmd <- function(filename) {
 #'
 #' @examples
 #' lstgcols(c("NREM1", "NREM2", "NREM3", "NREM4", "REM", "wake", "?"))
+#'
+#' @importFrom grDevices rgb
 lstgcols <- function(s) {
   as.vector(sapply(s, function(x) {
     ifelse(x == "NREM1" | x == "N1", rgb(0, 190, 250, 255, maxColorValue = 255),
@@ -1378,7 +1388,7 @@ lstgpal <- function() {
 ##                                                ##
 ####################################################
 
-
+#' @importFrom stats sd
 loutliers <- function(x, m = mean(x, na.rm = T), sdev = sd(x, na.rm = T), t = 3) {
   lwr <- m - t * sdev
   upr <- m + t * sdev
@@ -1429,15 +1439,19 @@ lfilter <- function(x, sr, lwr, upr) {
 #'
 #' @param x a time series vector
 #'
+#' @importFrom stats resid lm
+#'
 #' @return a detrended version of \code{x}
 #' @export
 ldetrend <- function(x) {
-resid( lm( x ~ I(1:length(x)) ) )
+resid(lm(x ~ I(1:length(x))))
 }
 
 #' Splits a signal into five band-pass filtered signals
 #'
 #' Convenience function to generate five new band-filtered signals given a raw EEG channel
+#'
+#' @importFrom utils capture.output
 #'
 #' @param l a required parameter, which should be a single channel name, e.g.
 #' matching one from \code{\link{lchs}()}
@@ -1501,6 +1515,9 @@ lbands <- function(l) {
 #' d <- k$PSD$CH_E_F
 #' lheatmap(d$E, d$F, 10*log10(d$PSD))
 #' }
+#'
+#' @importFrom graphics image abline
+#' @importFrom stats quantile
 lheatmap <- function(x, y, z,
                      col = luna.globals$turbo.colors(100),
                      mt = "",
@@ -1653,7 +1670,8 @@ ldefault.xy <- function(chs = character(0)) {
 #'
 #' @examples
 #' \dontrun{
-#' ltopo.xy(c = hj$CH, x = hj$E, y = log(hj$H1), xlab = "Epoch", ylab = "H1", pch=20, col=rbpal, cex = 0.2)
+#' ltopo.xy(c = hj$CH, x = hj$E, y = log(hj$H1), xlab = "Epoch", ylab = "H1",
+#'     pch=20, col=rbpal, cex = 0.2)
 #' }
 #'
 #' @note If \code{pch} is non-\code{NULL}, then \code{z} can be a vector of values
@@ -1661,6 +1679,8 @@ ldefault.xy <- function(chs = character(0)) {
 #' the color of each point is scaled by the percentile of \code{z};
 #' if \code{pch} is missing, this function draws a X-Y line
 #' plots, which must be a single color (i.e. no \code{z} values are allowed)
+#'
+#' @importFrom graphics rect text lines points
 ltopo.xy <- function(c, x, y, z = NA, zlim = NA,
                      f = rep(T, length(x)), y.symm = F,
                      sz = 0.08,
@@ -1783,7 +1803,7 @@ ltopo.heat <- function(c, z,
                        th.z = z,
                        show.leg = F,
                        zeroed = F, head = F) {
-  ltopo.rb(c, z, flt, sz, zlab, mt, zlim, th, th.z, show.leg, zeroed, head, col = colorRampPalette(rev(c("red", "orange", "yellow", "cyan", "blue")))(101))
+  ltopo.rb(c, z, flt, sz, zlab, mt, zlim, th, th.z, show.leg, zeroed, head, col = grDevices::colorRampPalette(rev(c("red", "orange", "yellow", "cyan", "blue")))(101))
 }
 
 #' LUNA plotting
@@ -1791,7 +1811,7 @@ ltopo.heat <- function(c, z,
 #' draws a 'topoplot' using a red-blue color scale
 #'
 #' @inheritParams ltopo.heat
-#' @param col 101-valued palette, defaults to \code{colorRampPalette(c("blue", "white", "red"))(101)}
+#' @param col 101-valued palette, defaults to \code{grDevices::colorRampPalette(c("blue", "white", "red"))(101)}
 #' @param ring.lwd width of rings around highlighted channels (defaults to 1)#'
 #'
 #' @return plot is generated in the current graphics device; no return value
@@ -1799,6 +1819,9 @@ ltopo.heat <- function(c, z,
 #'
 #' @note \code{ltopo.rb(...)} is the same as \code{\link{ltopo.heat}(...)} with
 #' \code{zeroed = T} and a different color scheme (blue as negative, red as positive, white as 0)
+#'
+#' @importFrom plotrix draw.ellipse
+#' @importFrom graphics lines points text
 ltopo.rb <- function(c, z,
                      flt = rep(T, length(z)),
                      sz = 1,
@@ -1810,7 +1833,7 @@ ltopo.rb <- function(c, z,
                      show.leg = F,
                      zeroed = T,
                      head = F,
-                     col = colorRampPalette(c("blue", "white", "red"))(101),
+                     col = grDevices::colorRampPalette(c("blue", "white", "red"))(101),
                      ring.lwd = 1) {
   topo <- ldefault.xy()
   if (length(col) != 101) stop("col needs to be 101 length")
@@ -1901,26 +1924,29 @@ ldefault.coh.xy <- function(xy) {
 }
 
 # helper function: draw ARC
+#' @importFrom geosphere gcIntermediate
+#' @importFrom graphics lines
 farc <- function(c1, c2, kol, w = 4) {
   gc <- gcIntermediate(as.vector(luna.globals$xy.coh[luna.globals$xy.coh$CH == c1, c("X", "Y")]),
     as.vector(luna.globals$xy.coh[luna.globals$xy.coh$CH == c2, c("X", "Y")]),
-    breakAt = TRUE, n = 100
+    breakAtDateLine = TRUE, n = 100
   )
   lines(gc, lwd = w + 1, col = "black")
   lines(gc, lwd = w, col = kol)
   # invisible(lapply(gc, lines, col=k, lwd=2))
 }
 
-
+#' @importFrom geosphere gcIntermediate
+#' @importFrom graphics segments
 farc.signed <- function(c1, c2, k1, k2, w = 4) {
   gc <- gcIntermediate(as.vector(luna.globals$xy.coh[luna.globals$xy.coh$CH == c1, c("X", "Y")]),
     as.vector(luna.globals$xy.coh[luna.globals$xy.coh$CH == c2, c("X", "Y")]),
-    breakAt = TRUE,
+    breakAtDateLine = TRUE,
     n = 100
   )
   segments(gc[, 1], gc[, 2], gc[, 1], gc[, 2],
     lwd = w,
-    t_cols(colorRampPalette(c(k2, "white", k1))(101), 80)
+    t_cols(grDevices::colorRampPalette(c(k2, "white", k1))(101), 80)
   )
 }
 
@@ -1928,12 +1954,13 @@ farc.signed <- function(c1, c2, k1, k2, w = 4) {
 
 # palette
 rbpal <- rev(rainbow(150)[1:100])
-fcol <- colorRampPalette(c("blue", "white", "red"))
+fcol <- grDevices::colorRampPalette(c("blue", "white", "red"))
 rbpal <- fcol(100)
 
 
 # fhead1() topo
-
+#' @importFrom plotrix draw.ellipse
+#' @importFrom graphics lines points
 fhead1 <- function(chs, z, flt = T, zr = range(z, na.rm = T), cex = 4, title = "") {
   plot(luna.globals$xy.coh$X, luna.globals$xy.coh$Y,
     pch = 21, cex = cex * 0.5, bg = "white",
@@ -1984,7 +2011,8 @@ fhead1 <- function(chs, z, flt = T, zr = range(z, na.rm = T), cex = 4, title = "
 #'
 #' @examples
 #' \dontrun{
-#' ltopo.conn(chs1 = coh$CH1, chs2 = coh$CH2, z = coh$ICOH, flt = coh$B == "SIGMA" & coh$COH > 0.7, w = 5, signed = T)
+#' ltopo.conn(chs1 = coh$CH1, chs2 = coh$CH2, z = coh$ICOH,
+#'     flt = coh$B == "SIGMA" & coh$COH > 0.7, w = 5, signed = T)
 #' }
 #'
 #' @note
@@ -1999,6 +2027,9 @@ fhead1 <- function(chs, z, flt = T, zr = range(z, na.rm = T), cex = 4, title = "
 #' - if \code{signed} is F, then all lines are of the same, solid color. The intention of the signed option
 #' is to be able to visually represent directed connectivity metrics (e.g. PSI), in contrast to
 #' undirected metrics such as magnitude squared coherence.
+#'
+#' @importFrom plotrix draw.ellipse
+#' @importFrom graphics lines points
 ltopo.conn <- function(chs1, chs2, z, flt = T, zr = range(z[flt], na.rm = T),
                        cex = 2, w = 8, title = "", head = T, signed = F) {
   chs1 <- lremap.chs(chs1)
@@ -2053,22 +2084,24 @@ ltopo.conn <- function(chs1, chs2, z, flt = T, zr = range(z[flt], na.rm = T),
   cat("zr", zr, "\n")
 }
 
+#' @importFrom stats quantile
 intop <- function(x, p) {
   x > quantile(x, 1 - p)
 }
 
+#' @importFrom stats quantile
 inbottom <- function(x, p) {
   x < quantile(x, p)
 }
 
-
+#' @importFrom grDevices col2rgb rgb
 t_col <- function(color, percent = 50, name = NULL) {
   #      color = color name
   #    percent = % transparency
   #       name = an optional name for the color
   rgb.val <- col2rgb(color)
   t.col <- rgb(rgb.val[1], rgb.val[2], rgb.val[3],
-    max = 255,
+    maxColorValue = 255,
     alpha = (100 - percent) * 255 / 100,
     names = name
   )
@@ -2139,6 +2172,7 @@ ltopo.dconn <- function(ch, chs1, chs2, z, flt = T, zr = NULL, cex = 2, w = 8, t
 ## TOPO HEATMAP: each point is a lheatmap() object (X/Y/Z plot)
 ##
 
+#' @importFrom graphics rect text lines points
 ltopo.heat2 <- function(c, x, y, z, zlim = NULL,
                         f = rep(T, length(x)),
                         sz = 0.08, cex = 1,
@@ -2212,6 +2246,7 @@ ltopo.heat2 <- function(c, x, y, z, zlim = NULL,
 #' @return winsorized version of \code{x}
 #' @export
 #'
+#' @importFrom stats quantile
 lwin <- function(x, p = 0.05) {
   t <- quantile(x, c(p, 1 - p), na.rm = T)
   x[x < t[1]] <- t[1]
@@ -2249,8 +2284,12 @@ lwin <- function(x, p = 0.05) {
 #'
 #' @examples
 #' \dontrun{
-#' ltopo.topo(c = c(coh$CH1, coh$CH2), c2 = c(coh$CH2, coh$CH1), z = c(coh$ICOH, -1 * coh$ICOH), f = rep(coh$B == "SIGMA", 2), sz=0.08, sz2=0.6)
+#' ltopo.topo(c = c(coh$CH1, coh$CH2), c2 = c(coh$CH2, coh$CH1),
+#'     z = c(coh$ICOH, -1 * coh$ICOH), f = rep(coh$B == "SIGMA", 2),
+#'     sz=0.08, sz2=0.6)
 #' }
+#'
+#' @importFrom graphics rect text points
 ltopo.topo <- function(c, c2, z, zlim = NULL,
                        f = rep(T, length(z)),
                        sz = 0.05, sz2 = 0.05,
@@ -2318,6 +2357,7 @@ ltopo.topo <- function(c, c2, z, zlim = NULL,
 #
 ##############################################################
 
+#' @importFrom graphics points axis rect
 lhypno <- function(ss, cycles = NULL) {
   ss[is.na(ss)] <- "?"
   e <- 1:length(ss)
@@ -2373,6 +2413,7 @@ lstgn2 <- function(x) {
   as.numeric(x)
 }
 
+#' @importFrom graphics image
 lstgmat <- function(m) {
   m <- apply(m, 2, lstgn2)
   pal <- lstgcols(c("?", "W", "N1", "N2", "N3", "R"))
@@ -2397,6 +2438,7 @@ lf100 <- function(x) {
 }
 
 # expecting
+#' @importFrom graphics image
 lpp <- function(m) {
   e <- m$E
   ne <- max(e)
@@ -2414,6 +2456,7 @@ lpp <- function(m) {
   image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F)
 }
 
+#' @importFrom graphics par image points
 lpp2 <- function(m) {
   par(mfcol = c(2, 1), mar = c(0.2, 0.2, 0.2, 0.2))
   e <- m$E

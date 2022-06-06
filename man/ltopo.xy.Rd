@@ -77,7 +77,8 @@ plots, which must be a single color (i.e. no \code{z} values are allowed)
 }
 \examples{
 \dontrun{
-ltopo.xy(c = hj$CH, x = hj$E, y = log(hj$H1), xlab = "Epoch", ylab = "H1", pch=20, col=rbpal, cex = 0.2)
+ltopo.xy(c = hj$CH, x = hj$E, y = log(hj$H1), xlab = "Epoch", ylab = "H1",
+    pch=20, col=rbpal, cex = 0.2)
 }
 
 }

@@ -4,8 +4,7 @@
 #
 # --------------------------------------------------------------------------------
 
-library(data.table)
-
+#' @importFrom utils read.table
 lhead <- function(filename,
                   prefix = NULL,
                   comment.char = "#") {
@@ -14,6 +13,8 @@ lhead <- function(filename,
   names(df)
 }
 
+#' @importFrom utils read.table
+#' @importFrom stats as.formula
 lload <- function(filename,
                   take.logs = NULL,
                   factors = NULL,

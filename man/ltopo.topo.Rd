@@ -55,6 +55,9 @@ draw a 'topoplot of topoplots'
 }
 \examples{
 \dontrun{
-ltopo.topo(c = c(coh$CH1, coh$CH2), c2 = c(coh$CH2, coh$CH1), z = c(coh$ICOH, -1 * coh$ICOH), f = rep(coh$B == "SIGMA", 2), sz=0.08, sz2=0.6)
+ltopo.topo(c = c(coh$CH1, coh$CH2), c2 = c(coh$CH2, coh$CH1),
+    z = c(coh$ICOH, -1 * coh$ICOH), f = rep(coh$B == "SIGMA", 2),
+    sz=0.08, sz2=0.6)
 }
+
 }
