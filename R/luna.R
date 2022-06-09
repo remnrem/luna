@@ -20,8 +20,11 @@ luna.globals$logmode <- 0
 ##                                                ##
 ####################################################
 
-.onLoad <- function(libname, pkgname) {
+.onAttach <- function(libname, pkgname) {
   packageStartupMessage(paste("** lunaR", luna.globals$version, luna.globals$date))
+}
+
+.onLoad <- function(libname, pkgname) {
   #library.dynam("luna", package = "luna", lib.loc = NULL)
   luna.globals$logmode <- 0
   luna.globals$xy <- ldefault.xy()
@@ -1980,8 +1983,8 @@ fhead1 <- function(chs, z, flt = T, zr = range(z, na.rm = T), cex = 4, title = "
   z[z == 0] <- 1
   z[z > 100] <- 100
   for (j in 1:length(chs)) {
-    xx <- luna.globals$xy.coh$X[xy$CH == chs[j]]
-    yy <- luna.globals$xy.coh$Y[xy$CH == chs[j]]
+    xx <- luna.globals$xy.coh$X[luna.globals$xy$CH == chs[j]]
+    yy <- luna.globals$xy.coh$Y[luna.globals$xy$CH == chs[j]]
     points(xx, yy, pch = 21, cex = cex * 1.1, bg = "white", lwd = 1.5)
     points(xx, yy, pch = 21, cex = cex, bg = rbpal[z[j]])
   }
