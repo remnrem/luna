@@ -238,160 +238,160 @@ moonlight <- function(sample.list = NULL,
        Shiny.onInputChange("soap.keypress", e.which);
     });
   '),
-      dashboardPage(
+  dashboardPage(
 
-        #
-        # Application title
-        #
+    #
+    # Application title
+    #
 
-        dashboardHeader(title = "Luna | Moonlight | NAP"),
-        dashboardSidebar(
-          uiOutput("cohort"),
-          uiOutput("samplesLocal"),
-          selectizeInput("edfs", "Samples", options = list(maxOptions = 20000), list()),
-          fluidRow(
-            column(width = 2, actionButton("button_prv", "<")),
-            column(width = 2, offset = 0, actionButton("button_nxt", ">")),
-            column(width = 6, offset = 1, checkboxInput("harmedf", "Harmonized", TRUE))
-          ),
-          selectInput("sel.ch", "Channels", list(), multiple = TRUE, selectize = TRUE),
-          selectInput("sel.ann", "Annotations", list(), multiple = TRUE, selectize = TRUE),
-          #      selectInput( "sel.epoch", "Epochs" , list(), multiple = FALSE ,  selectize = TRUE ),
-          br(), hr(),
-          selectInput("disp.ann", "Annotations (list instances)", list(), multiple = TRUE, selectize = TRUE),
-          selectInput("sel.inst", "Instances", list(), multiple = TRUE, selectize = FALSE)
+    dashboardHeader(title = "Luna | Moonlight | NAP"),
+    dashboardSidebar(
+      uiOutput("cohort"),
+      uiOutput("samplesLocal"),
+      selectizeInput("edfs", "Samples", options = list(maxOptions = 20000), list()),
+      fluidRow(
+        column(width = 2, actionButton("button_prv", "<")),
+        column(width = 2, offset = 0, actionButton("button_nxt", ">")),
+        column(width = 6, offset = 1, checkboxInput("harmedf", "Harmonized", TRUE))
+      ),
+      selectInput("sel.ch", "Channels", list(), multiple = TRUE, selectize = TRUE),
+      selectInput("sel.ann", "Annotations", list(), multiple = TRUE, selectize = TRUE),
+      #      selectInput( "sel.epoch", "Epochs" , list(), multiple = FALSE ,  selectize = TRUE ),
+      br(), hr(),
+      selectInput("disp.ann", "Annotations (list instances)", list(), multiple = TRUE, selectize = TRUE),
+      selectInput("sel.inst", "Instances", list(), multiple = TRUE, selectize = FALSE)
+    ),
+    dashboardBody(
+      tabsetPanel(
+        id = "main_panel",
+        tabPanel(
+          "NAP", actionButton("refresh_nap_log", "Reload NAP log"),
+          br(),
+          verbatimTextOutput("logger", placeholder = TRUE),
+          uiOutput("errLogsButton"), br(), uiOutput("errLogs")
         ),
-        dashboardBody(
+        tabPanel(
+          "Headers",
           tabsetPanel(
-            id = "main_panel",
+            tabPanel("EDF", br(), tableOutput("header.summary"), br(), dataTableOutput("header.channels")),
+            tabPanel("Harmonized EDF", fluidRow(
+              column(width = 6, h4("Harmonized channels"), tableOutput("channel.mapping1")),
+              column(width = 2),
+              column(width = 3, h4("Unmapped channels"), tableOutput("channel.mapping2"))
+            )),
+            tabPanel("Base EDF", fluidRow(
+              column(width = 6, h4("Canonical channels"), tableOutput("channel.base.mapping1")),
+              column(width = 2),
+              column(width = 3, h4("Unselected channels"), tableOutput("channel.base.mapping2"))
+            )),
+            tabPanel("Annotations", fluidRow(
+              column(width = 6, h4("Harmonized annotations"), tableOutput("annot.mapping1")),
+              column(width = 1),
+              column(width = 5, h4("Aliases"), tableOutput("annot.mapping2"))
+            ))
+          )
+        ),
+        tabPanel("Phenotypes", br(), dataTableOutput("pheno.table")),
+        tabPanel(
+          "Staging",
+          tabsetPanel(
             tabPanel(
-              "NAP", actionButton("refresh_nap_log", "Reload NAP log"),
-              br(),
-              verbatimTextOutput("logger", placeholder = TRUE),
-              uiOutput("errLogsButton"), br(), uiOutput("errLogs")
-            ),
-            tabPanel(
-              "Headers",
-              tabsetPanel(
-                tabPanel("EDF", br(), tableOutput("header.summary"), br(), dataTableOutput("header.channels")),
-                tabPanel("Harmonized EDF", fluidRow(
-                  column(width = 6, h4("Harmonized channels"), tableOutput("channel.mapping1")),
-                  column(width = 2),
-                  column(width = 3, h4("Unmapped channels"), tableOutput("channel.mapping2"))
-                )),
-                tabPanel("Base EDF", fluidRow(
-                  column(width = 6, h4("Canonical channels"), tableOutput("channel.base.mapping1")),
-                  column(width = 2),
-                  column(width = 3, h4("Unselected channels"), tableOutput("channel.base.mapping2"))
-                )),
-                tabPanel("Annotations", fluidRow(
-                  column(width = 6, h4("Harmonized annotations"), tableOutput("annot.mapping1")),
-                  column(width = 1),
-                  column(width = 5, h4("Aliases"), tableOutput("annot.mapping2"))
-                ))
-              )
-            ),
-            tabPanel("Phenotypes", br(), dataTableOutput("pheno.table")),
-            tabPanel(
-              "Staging",
-              tabsetPanel(
-                tabPanel(
-                  "Manual", br(),
-                  plotOutput("stage.view", width = "100%", height = "100px"),
-                  hr(),
-                  tableOutput("stage.summary")
-                ),
-                tabPanel(
-                  "SOAP",
-                  plotOutput("soap.view.orig", width = "100%", height = "100px"),
-                  plotOutput("soap.view.hypno", width = "100%", height = "100px"),
-                  plotOutput("soap.view.prob", width = "100%", height = "100px"),
-                  plotOutput("soap.view.stgdur", width = "100%", height = "250px"),
-                  hr(),
-                  verbatimTextOutput("soap.summary")
-                ),
-                tabPanel(
-                  "POPS",
-                  plotOutput("pops.view.orig", width = "100%", height = "100px"),
-                  plotOutput("pops.view.hypno", width = "100%", height = "100px"),
-                  plotOutput("pops.view.prob", width = "100%", height = "100px"),
-                  plotOutput("pops.view.stgdur", width = "100%", height = "250px"),
-                  hr(),
-                  verbatimTextOutput("pops.summary")
-                )
-              )
-            ),
-            tabPanel(
-              "Annotations",
-              plotOutput("annot.view", width = "100%", height = "200px"),
-              br(),
-              tabsetPanel(tabPanel("Summary", tableOutput("annot.summary")), tabPanel("Instances", dataTableOutput("annot.table")))
-            ),
-            tabPanel(
-              "Signals",
-              fluidRow(
-                column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev", width = "100%")),
-                column(width = 1, actionButton("button_epoch_nxt", "Next > ", width = "100%")),
-                column(width = 1, offset = 0, actionButton("entire.record", "All", width = "100%")),
-                # 		column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
-                column(width = 2, offset = 0, actionButton("bandpass", "Toggle 0.3-35Hz", width = "100%")),
-                column(width = 1, offset = 0),
-                column(width = 6, verbatimTextOutput("info2"))
-              ),
-              plotOutput("signal.master",
-                width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
-                brush = brushOpts(id = "master_brush", direction = "x", resetOnNew = F)
-              ),
-              plotOutput("signal.master2", width = "100%", height = "10px"),
-              br(), plotOutput("signal.spsd", width = "100%", height = "100px"),
-              plotOutput("signal.view",
-                width = "100%", height = "50vh", dblclick = "zoom_dblclick",
-                brush = brushOpts(id = "zoom_brush", direction = "x", resetOnNew = F)
-              )
-            ),
-
-            # to resize the plot dynamically, uiOutput() rather than plotOutput()
-            tabPanel(
-              "Spectral",
-              sliderInput("sel.freq", "Frequency (Hz)", width = "100%", min = 0, max = 100, step = 0.25, value = c(0.25, 35)),
-              uiOutput("ui_psdplot")
-            ),
-            tabPanel("MTM", uiOutput("ui_mtmplot")),
-            tabPanel("Issues", br(), dataTableOutput("issue.table")),
-            tabPanel(
-              "Tables",
-              selectInput("sel.table.group", label = "Group", choices = list()),
-              selectInput("sel.table.table", label = "Table", choices = list()),
+              "Manual", br(),
+              plotOutput("stage.view", width = "100%", height = "100px"),
               hr(),
-              dataTableOutput("table.table")
+              tableOutput("stage.summary")
             ),
             tabPanel(
-              "Figures",
-              selectInput("sel.figure.group", label = "Group", choices = list()),
-              selectInput("sel.figure.figure", label = "Figure", choices = list()),
+              "SOAP",
+              plotOutput("soap.view.orig", width = "100%", height = "100px"),
+              plotOutput("soap.view.hypno", width = "100%", height = "100px"),
+              plotOutput("soap.view.prob", width = "100%", height = "100px"),
+              plotOutput("soap.view.stgdur", width = "100%", height = "250px"),
               hr(),
-              imageOutput("figure.view")
+              verbatimTextOutput("soap.summary")
             ),
             tabPanel(
-              "Metrics",
-              fluidRow(
-                column(
-                  width = 4,
-                  verticalLayout(selectInput("sel.derived.group", label = "Group", choices = list()),
-                    selectInput("sel.derived.table", label = "Sample metrics", choices = list()),
-                    selectInput("sel.derived.variables", label = "Variables", choices = list()),
-                    fluid = T
-                  )
-                ),
-                column(width = 8, plotOutput("var_plot", height = "200px"))
-              ),
-              br(),
-              verbatimTextOutput("selected.info"),
-              dataTableOutput("derived.view")
+              "POPS",
+              plotOutput("pops.view.orig", width = "100%", height = "100px"),
+              plotOutput("pops.view.hypno", width = "100%", height = "100px"),
+              plotOutput("pops.view.prob", width = "100%", height = "100px"),
+              plotOutput("pops.view.stgdur", width = "100%", height = "250px"),
+              hr(),
+              verbatimTextOutput("pops.summary")
             )
-          ) # tabsetpanel
-        ) # dashboardBody
-      ) # dashboardPage
+          )
+        ),
+        tabPanel(
+          "Annotations",
+          plotOutput("annot.view", width = "100%", height = "200px"),
+          br(),
+          tabsetPanel(tabPanel("Summary", tableOutput("annot.summary")), tabPanel("Instances", dataTableOutput("annot.table")))
+        ),
+        tabPanel(
+          "Signals",
+          fluidRow(
+            column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev", width = "100%")),
+            column(width = 1, actionButton("button_epoch_nxt", "Next > ", width = "100%")),
+            column(width = 1, offset = 0, actionButton("entire.record", "All", width = "100%")),
+            # 		column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
+            column(width = 2, offset = 0, actionButton("bandpass", "Toggle 0.3-35Hz", width = "100%")),
+            column(width = 1, offset = 0),
+            column(width = 6, verbatimTextOutput("info2"))
+          ),
+          plotOutput("signal.master",
+                     width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
+                     brush = brushOpts(id = "master_brush", direction = "x", resetOnNew = F)
+          ),
+          plotOutput("signal.master2", width = "100%", height = "10px"),
+          br(), plotOutput("signal.spsd", width = "100%", height = "100px"),
+          plotOutput("signal.view",
+                     width = "100%", height = "50vh", dblclick = "zoom_dblclick",
+                     brush = brushOpts(id = "zoom_brush", direction = "x", resetOnNew = F)
+          )
+        ),
+
+        # to resize the plot dynamically, uiOutput() rather than plotOutput()
+        tabPanel(
+          "Spectral",
+          sliderInput("sel.freq", "Frequency (Hz)", width = "100%", min = 0, max = 100, step = 0.25, value = c(0.25, 35)),
+          uiOutput("ui_psdplot")
+        ),
+        tabPanel("MTM", uiOutput("ui_mtmplot")),
+        tabPanel("Issues", br(), dataTableOutput("issue.table")),
+        tabPanel(
+          "Tables",
+          selectInput("sel.table.group", label = "Group", choices = list()),
+          selectInput("sel.table.table", label = "Table", choices = list()),
+          hr(),
+          dataTableOutput("table.table")
+        ),
+        tabPanel(
+          "Figures",
+          selectInput("sel.figure.group", label = "Group", choices = list()),
+          selectInput("sel.figure.figure", label = "Figure", choices = list()),
+          hr(),
+          imageOutput("figure.view")
+        ),
+        tabPanel(
+          "Metrics",
+          fluidRow(
+            column(
+              width = 4,
+              verticalLayout(selectInput("sel.derived.group", label = "Group", choices = list()),
+                             selectInput("sel.derived.table", label = "Sample metrics", choices = list()),
+                             selectInput("sel.derived.variables", label = "Variables", choices = list()),
+                             fluid = T
+              )
+            ),
+            column(width = 8, plotOutput("var_plot", height = "200px"))
+          ),
+          br(),
+          verbatimTextOutput("selected.info"),
+          dataTableOutput("derived.view")
+        )
+      ) # tabsetpanel
+    ) # dashboardBody
+  ) # dashboardPage
     ) # fluidPage
   }
 
@@ -441,14 +441,14 @@ moonlight <- function(sample.list = NULL,
               actionButton("bandpass", "0.3-35 Hz"),
               verbatimTextOutput("info2"),
               plotOutput("signal.master",
-                width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
-                brush = brushOpts(id = "master_brush", direction = "x", resetOnNew = F)
+                         width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
+                         brush = brushOpts(id = "master_brush", direction = "x", resetOnNew = F)
               ),
               plotOutput("signal.master2", width = "100%", height = "10px"),
               br(),
               plotOutput("signal.view",
-                width = "100%", height = "50vh", dblclick = "zoom_dblclick",
-                brush = brushOpts(id = "zoom_brush", direction = "x", resetOnNew = F)
+                         width = "100%", height = "50vh", dblclick = "zoom_dblclick",
+                         brush = brushOpts(id = "zoom_brush", direction = "x", resetOnNew = F)
               ),
               br(),
               fluidRow(column(width = 1, offset = 5, actionButton("button_epoch_prv", "previous")), column(width = 1, actionButton("button_epoch_nxt", "next")))
@@ -665,8 +665,8 @@ moonlight <- function(sample.list = NULL,
       } else {
         if (!ml.globals$pheno_panel_present) {
           insertTab("main_panel",
-            tabPanel("Phenotypes", br(), dataTableOutput("pheno.table")), "Headers",
-            position = "after", select = FALSE, session = getDefaultReactiveDomain()
+                    tabPanel("Phenotypes", br(), dataTableOutput("pheno.table")), "Headers",
+                    position = "after", select = FALSE, session = getDefaultReactiveDomain()
           )
           ml.globals$pheno_panel_present <- TRUE
         }
@@ -748,7 +748,7 @@ moonlight <- function(sample.list = NULL,
 
         if (!is_sl_file_present) {
           showNotification("Sample list is missing, you may close the app",
-            duration = NULL, type = "error", session = getDefaultReactiveDomain()
+                           duration = NULL, type = "error", session = getDefaultReactiveDomain()
           )
         }
 
@@ -759,7 +759,7 @@ moonlight <- function(sample.list = NULL,
 
         if (awl_sl_file_size == 0) {
           showNotification("No EDFs are available for the project, you may close the app",
-            duration = NULL, type = "error", session = getDefaultReactiveDomain()
+                           duration = NULL, type = "error", session = getDefaultReactiveDomain()
           )
         }
 
@@ -850,11 +850,11 @@ moonlight <- function(sample.list = NULL,
         harm.sl.edfz <- list()
 
         harm.sl[[input$edfs]]$EDF <- list.files(paste(nap.dir, values$ID, "data/", sep = "/"),
-          full.names = T, pattern = "*harm.edf$"
+                                                full.names = T, pattern = "*harm.edf$"
         )
 
         harm.sl.edfz[[input$edfs]]$EDF <- list.files(paste(nap.dir, values$ID, "data/", sep = "/"),
-          full.names = T, pattern = "*harm.edf.gz$"
+                                                     full.names = T, pattern = "*harm.edf.gz$"
         )
 
         # this gets populated below w/ harm.lst anyway
@@ -888,7 +888,7 @@ moonlight <- function(sample.list = NULL,
 
       if (opt_nap) {
         nap.annots <- list.files(paste(nap.dir, values$ID, "annots/", sep = "/"),
-          full.names = T, pattern = "*.annot"
+                                 full.names = T, pattern = "*.annot"
         )
         lapply(nap.annots, ladd.annot.file)
       }
@@ -1120,14 +1120,14 @@ moonlight <- function(sample.list = NULL,
 
           if (!opt_nap) {
             insertTab("main_panel",
-              tabPanel(
-                "Staging", br(),
-                textOutput("stage.num.epochs"), hr(),
-                plotOutput("stage.view", width = "100%", height = "100px"), hr(),
-                tableOutput("stage.summary")
-              ),
-              "Headers",
-              position = "after", select = FALSE, session = getDefaultReactiveDomain()
+                      tabPanel(
+                        "Staging", br(),
+                        textOutput("stage.num.epochs"), hr(),
+                        plotOutput("stage.view", width = "100%", height = "100px"), hr(),
+                        tableOutput("stage.summary")
+                      ),
+                      "Headers",
+                      position = "after", select = FALSE, session = getDefaultReactiveDomain()
             )
           } else {
 
@@ -1138,53 +1138,53 @@ moonlight <- function(sample.list = NULL,
 
             if (values$has_manual_staging & values$has_soap_staging & values$has_pops_staging) {
               insertTab("main_panel",
-                tabPanel(
-                  "Staging",
-                  tabsetPanel(
-                    tabPanel(
-                      "Manual", br(),
-                      textOutput("stage.num.epochs"), hr(),
-                      plotOutput("stage.view", width = "100%", height = "100px"), hr(),
-                      tableOutput("stage.summary")
-                    ),
-                    tabPanel(
-                      "SOAP",
-                      plotOutput("soap.view.orig", width = "100%", height = "100px"),
-                      plotOutput("soap.view.hypno", width = "100%", height = "100px"),
-                      plotOutput("soap.view.prob", width = "100%", height = "100px"),
-                      plotOutput("soap.view.stgdur", width = "100%", height = "250px"),
-                      hr(),
-                      verbatimTextOutput("soap.summary")
-                    ),
-                    tabPanel(
-                      "POPS",
-                      plotOutput("pops.view.orig", width = "100%", height = "100px"),
-                      plotOutput("pops.view.hypno", width = "100%", height = "100px"),
-                      plotOutput("pops.view.prob", width = "100%", height = "100px"),
-                      plotOutput("pops.view.stgdur", width = "100%", height = "250px"),
-                      hr(),
-                      verbatimTextOutput("pops.summary")
-                    )
-                  )
-                ),
-                "Headers",
-                position = "after", select = FALSE, session = getDefaultReactiveDomain()
+                        tabPanel(
+                          "Staging",
+                          tabsetPanel(
+                            tabPanel(
+                              "Manual", br(),
+                              textOutput("stage.num.epochs"), hr(),
+                              plotOutput("stage.view", width = "100%", height = "100px"), hr(),
+                              tableOutput("stage.summary")
+                            ),
+                            tabPanel(
+                              "SOAP",
+                              plotOutput("soap.view.orig", width = "100%", height = "100px"),
+                              plotOutput("soap.view.hypno", width = "100%", height = "100px"),
+                              plotOutput("soap.view.prob", width = "100%", height = "100px"),
+                              plotOutput("soap.view.stgdur", width = "100%", height = "250px"),
+                              hr(),
+                              verbatimTextOutput("soap.summary")
+                            ),
+                            tabPanel(
+                              "POPS",
+                              plotOutput("pops.view.orig", width = "100%", height = "100px"),
+                              plotOutput("pops.view.hypno", width = "100%", height = "100px"),
+                              plotOutput("pops.view.prob", width = "100%", height = "100px"),
+                              plotOutput("pops.view.stgdur", width = "100%", height = "250px"),
+                              hr(),
+                              verbatimTextOutput("pops.summary")
+                            )
+                          )
+                        ),
+                        "Headers",
+                        position = "after", select = FALSE, session = getDefaultReactiveDomain()
               )
             }
 
             if (values$has_pops_staging & !values$has_manual_staging) {
               insertTab("main_panel",
-                tabPanel(
-                  "POPS",
-                  plotOutput("pops.view.orig", width = "100%", height = "100px"),
-                  plotOutput("pops.view.hypno", width = "100%", height = "100px"),
-                  plotOutput("pops.view.prob", width = "100%", height = "100px"),
-                  plotOutput("pops.view.stgdur", width = "100%", height = "250px"),
-                  hr(),
-                  verbatimTextOutput("pops.summary")
-                ),
-                "Headers",
-                position = "after", select = FALSE, session = getDefaultReactiveDomain()
+                        tabPanel(
+                          "POPS",
+                          plotOutput("pops.view.orig", width = "100%", height = "100px"),
+                          plotOutput("pops.view.hypno", width = "100%", height = "100px"),
+                          plotOutput("pops.view.prob", width = "100%", height = "100px"),
+                          plotOutput("pops.view.stgdur", width = "100%", height = "250px"),
+                          hr(),
+                          verbatimTextOutput("pops.summary")
+                        ),
+                        "Headers",
+                        position = "after", select = FALSE, session = getDefaultReactiveDomain()
               )
             }
           }
@@ -1234,8 +1234,8 @@ moonlight <- function(sample.list = NULL,
 
         nap.files <-
           list.files(paste(nap.dir, values$ID, sep = "/"),
-            full.names = T,
-            pattern = "*-tab.RData"
+                     full.names = T,
+                     pattern = "*-tab.RData"
           )
         cat("dir", paste(nap.dir, values$ID, sep = "/"), "\n")
         print(nap.files)
@@ -1263,8 +1263,8 @@ moonlight <- function(sample.list = NULL,
 
         nap.files <-
           list.files(paste(nap.dir, values$ID, sep = "/"),
-            full.names = T,
-            pattern = "*-fig.RData"
+                     full.names = T,
+                     pattern = "*-fig.RData"
           )
         tmpenv <- new.env()
         invisible(lapply(nap.files, load, envir = tmpenv))
@@ -1296,24 +1296,24 @@ moonlight <- function(sample.list = NULL,
           } else {
             if (!ml.globals$sm_panel_present) {
               appendTab("main_panel",
-                tabPanel(
-                  "Metrics",
-                  fluidRow(
-                    column(
-                      width = 4,
-                      verticalLayout(selectInput("sel.derived.group", label = "Group", choices = list()),
-                        selectInput("sel.derived.table", label = "Sample metrics", choices = list()),
-                        selectInput("sel.derived.variables", label = "Variables", choices = list()),
-                        fluid = T
-                      )
-                    ),
-                    column(width = 8, plotOutput("var_plot", height = "200px"))
-                  ),
-                  br(),
-                  verbatimTextOutput("selected.info"),
-                  dataTableOutput("derived.view")
-                ),
-                select = FALSE, session = getDefaultReactiveDomain()
+                        tabPanel(
+                          "Metrics",
+                          fluidRow(
+                            column(
+                              width = 4,
+                              verticalLayout(selectInput("sel.derived.group", label = "Group", choices = list()),
+                                             selectInput("sel.derived.table", label = "Sample metrics", choices = list()),
+                                             selectInput("sel.derived.variables", label = "Variables", choices = list()),
+                                             fluid = T
+                              )
+                            ),
+                            column(width = 8, plotOutput("var_plot", height = "200px"))
+                          ),
+                          br(),
+                          verbatimTextOutput("selected.info"),
+                          dataTableOutput("derived.view")
+                        ),
+                        select = FALSE, session = getDefaultReactiveDomain()
               )
               ml.globals$sm_panel_present <- T
             }
@@ -1348,7 +1348,7 @@ moonlight <- function(sample.list = NULL,
         #
 
         values$mtm.files <- list.files(paste(nap.dir, values$ID, sep = "/"),
-          full.names = T, pattern = glob2rx("mtm-*.png")
+                                       full.names = T, pattern = glob2rx("mtm-*.png")
         )
 
 
@@ -1357,6 +1357,7 @@ moonlight <- function(sample.list = NULL,
         #
 
         values$spsd <- NULL
+        spsd <- NULL
         spsd.filename <- paste(nap.dir, values$ID, "nap.spsd.RData", sep = "/")
         if (file.exists(spsd.filename)) {
           # loads 'spsd'
@@ -1371,6 +1372,8 @@ moonlight <- function(sample.list = NULL,
         #
 
         values$sigstats <- NULL
+        harm.sigstats <- NULL
+        sigstats <- NULL
         sigstats.filename <- ifelse(input$harmedf, "nap.harm.sigstats.RData", "nap.sigstats.RData")
         sigstats.filename <- paste(nap.dir, values$ID, sigstats.filename, sep = "/")
         if (file.exists(sigstats.filename)) {
@@ -1402,7 +1405,12 @@ moonlight <- function(sample.list = NULL,
         values$chmap1 <- values$chmap2 <- NULL
         values$bchmap1 <- values$bchmap2 <- NULL
         values$amap1 <- values$amap2 <- NULL
-
+        sigs.harm.map1 <- NULL
+        sigs.harm.map2 <- NULL
+        sigs.base.map1 <- NULL
+        sigs.base.map2 <- NULL
+        annot.map <- NULL
+        annot.alias <- NULL
         # harmonized EDF channels
 
         if (file.exists(chmap1.filename)) {
@@ -1992,9 +2000,9 @@ moonlight <- function(sample.list = NULL,
         d <- d[order(d$SS), ]
         d2 <- t(as.matrix(d[dim(d)[1]:1, c("DUR_OBS", "DUR_PRD")]))
         barplot(matrix(as.numeric(d2), ncol = ncol(d2)),
-          beside = T, horiz = T, col = lstgcols(rev(rep(d$SS, each = 2))),
-          names = rev(d$SS), las = 2, density = c(30, NA),
-          xlab = "Minutes", ylab = "Sleep Stage"
+                beside = T, horiz = T, col = lstgcols(rev(rep(d$SS, each = 2))),
+                names = rev(d$SS), las = 2, density = c(30, NA),
+                xlab = "Minutes", ylab = "Sleep Stage"
         )
       }
 
@@ -2123,14 +2131,14 @@ moonlight <- function(sample.list = NULL,
 
         if (values$has_manual_staging) {
           plot(values$ss$E, rep(0.5, length(values$ss$E)),
-            col = lstgcols(values$ss$STAGE), axes = F, ylim = c(0, 1), pch = "|", ylab = "", xaxs = "i", yaxs = "i"
+               col = lstgcols(values$ss$STAGE), axes = F, ylim = c(0, 1), pch = "|", ylab = "", xaxs = "i", yaxs = "i"
           )
         } else if (values$has_pops_staging) {
           pops_ss <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$PRED
           pops_ep <- values$data$luna_suds_POPS$luna_suds_POPS_E$data$E
 
           plot(pops_ep, rep(0.5, length(pops_ss)),
-            col = lstgcols(pops_ss), axes = F, ylim = c(0, 1), pch = "|", ylab = "", xaxs = "i", yaxs = "i"
+               col = lstgcols(pops_ss), axes = F, ylim = c(0, 1), pch = "|", ylab = "", xaxs = "i", yaxs = "i"
           )
         }
       } else {
@@ -2246,10 +2254,10 @@ moonlight <- function(sample.list = NULL,
           par(mar = c(2.2, 0, 0, 0))
 
           plot(c(0, 1),
-            type = "n",
-            ylim = c(0, 1),
-            xlim = xr, xaxt = "n", yaxt = "n", axes = F,
-            xlab = "", ylab = ""
+               type = "n",
+               ylim = c(0, 1),
+               xlim = xr, xaxt = "n", yaxt = "n", axes = F,
+               xlab = "", ylab = ""
           )
 
           axis(1, c(secs[1], secs[2]))
@@ -2269,8 +2277,8 @@ moonlight <- function(sample.list = NULL,
                 s_end <- secs[2]
               }
               rect(s, 0.99, s_end, 1.00,
-                col = lstgcols(stgs[enum == e]),
-                border = NA
+                   col = lstgcols(stgs[enum == e]),
+                   border = NA
               )
             }
           }
@@ -2321,8 +2329,8 @@ moonlight <- function(sample.list = NULL,
                 lines(ts, dy, lwd = 0.75, col = ml.globals$pal10[cidx])
                 # labels
                 text(x0, yp + (yinc * cfac) / 2,
-                  paste(ch, "\n(", signif(yr[1], 3), ",", signif(yr[2], 3), values$units[ch], ")"),
-                  pos = 4, col = ml.globals$pal10[cidx], cex = 0.9
+                     paste(ch, "\n(", signif(yr[1], 3), ",", signif(yr[2], 3), values$units[ch], ")"),
+                     pos = 4, col = ml.globals$pal10[cidx], cex = 0.9
                 )
                 # drop down to next channel
                 yp <- yp + yinc * cfac
@@ -2345,8 +2353,8 @@ moonlight <- function(sample.list = NULL,
               #  if only S1 defiend , S1 = mean  ( S2 == NA )
 
               sigstats <- values$sigstats[values$sigstats$E >= epochs[1] &
-                values$sigstats$E <= epochs[2] &
-                values$sigstats$CH %in% chs, ]
+                                            values$sigstats$E <= epochs[2] &
+                                            values$sigstats$CH %in% chs, ]
 
               # palette for H2
               pal100 <- rev(lplasma(100))
@@ -2366,12 +2374,12 @@ moonlight <- function(sample.list = NULL,
 
                 if (no_summaries) {
                   text(x0 + 0.1 * (xr[2] - xr[1]), yp + (yinc * cfac) / 2,
-                    "... no summary values available ... \n... select a smaller region to view this signal ... ",
-                    pos = 4, col = ml.globals$pal10[cidx], cex = 1
+                       "... no summary values available ... \n... select a smaller region to view this signal ... ",
+                       pos = 4, col = ml.globals$pal10[cidx], cex = 1
                   )
                   text(x0, yp + (yinc * cfac) / 2,
-                    ch,
-                    pos = 4, col = ml.globals$pal10[cidx], cex = 0.9
+                       ch,
+                       pos = 4, col = ml.globals$pal10[cidx], cex = 0.9
                   )
                 } else {
 
@@ -2411,8 +2419,8 @@ moonlight <- function(sample.list = NULL,
 
                     # labels
                     text(x0, yp + (yinc * cfac) / 2,
-                      paste(ch, "\n(", signif(min.S1, 3), ",", signif(max.S1, 3), values$units[ch], ")"),
-                      pos = 4, col = ml.globals$pal10[cidx], cex = 0.9
+                         paste(ch, "\n(", signif(min.S1, 3), ",", signif(max.S1, 3), values$units[ch], ")"),
+                         pos = 4, col = ml.globals$pal10[cidx], cex = 0.9
                     )
                   } else {
 
@@ -2440,8 +2448,8 @@ moonlight <- function(sample.list = NULL,
                         ycol <- floor(100 * h2)
                         ycol[ycol < 1] <- 1
                         rect(secx, yp + (yinc * cfac) / 2 - yspan * ydat,
-                          secx_end, yp + (yinc * cfac) / 2 + yspan * ydat,
-                          col = pal100[ycol], border = pal100[ycol]
+                             secx_end, yp + (yinc * cfac) / 2 + yspan * ydat,
+                             col = pal100[ycol], border = pal100[ycol]
                         )
                       }
                     }
@@ -2468,14 +2476,14 @@ moonlight <- function(sample.list = NULL,
                 cidx <- yidx %% 10 + 1
 
                 text(x0 + 0.1 * (xr[2] - xr[1]), yp + (yinc * cfac) / 2,
-                  "... no summary values available ... \n... select a smaller region to view this signal ... ",
-                  pos = 4, col = ml.globals$pal10[cidx], cex = 1.0
+                     "... no summary values available ... \n... select a smaller region to view this signal ... ",
+                     pos = 4, col = ml.globals$pal10[cidx], cex = 1.0
                 )
 
                 # labels
                 text(x0, yp + (yinc * cfac) / 2,
-                  ch,
-                  pos = 4, col = ml.globals$pal10[cidx], cex = 0.9
+                     ch,
+                     pos = 4, col = ml.globals$pal10[cidx], cex = 0.9
                 )
 
                 # drop down to next channel
@@ -2504,8 +2512,8 @@ moonlight <- function(sample.list = NULL,
 
               for (a in flt) {
                 rect(df$START[flt], yp + yinc / 2 + yinc / 4,
-                  df$STOP[flt], yp + yinc / 2 - yinc / 4,
-                  col = ml.globals$pal10[cidx], border = NA
+                     df$STOP[flt], yp + yinc / 2 - yinc / 4,
+                     col = ml.globals$pal10[cidx], border = NA
                 )
               }
               # labels
