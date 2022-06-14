@@ -722,7 +722,7 @@ moonlight <- function(sample.list = NULL,
           pre_val <- paste(aws.user, aws.runid, sep = "/", collapse = NULL)
         }
 
-        s3_bucket <- get_bucket(s3BucketName, prefix = pre_val)
+        s3_bucket <<- get_bucket(s3BucketName, prefix = pre_val)
 
         is_sl_file_present <- FALSE
         keyV <- paste(pre_val, "s.lst", sep = "/", collapse = NULL)
