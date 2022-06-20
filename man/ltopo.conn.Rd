@@ -61,7 +61,8 @@ undirected metrics such as magnitude squared coherence.
 }
 \examples{
 \dontrun{
-ltopo.conn(chs1 = coh$CH1, chs2 = coh$CH2, z = coh$ICOH, flt = coh$B == "SIGMA" & coh$COH > 0.7, w = 5, signed = T)
+ltopo.conn(chs1 = coh$CH1, chs2 = coh$CH2, z = coh$ICOH,
+    flt = coh$B == "SIGMA" & coh$COH > 0.7, w = 5, signed = T)
 }
 
 }
