@@ -221,6 +221,7 @@ moonlight <- function(sample.list = NULL,
     aws.user <- ""
     aws.runid <- ""
     aws.cid <- ""
+    s3_bucket <- ""
   }
 
 
@@ -685,11 +686,6 @@ moonlight <- function(sample.list = NULL,
     # --------------------------------------------------------------------------------
 
     attached.sl <- reactive({
-      # add this line to bind the variable locally and
-      # avoid complaints from R CMD CHECK
-      s3_bucket <- NULL
-
-      #  cat( "DBUG: in attached.sl()\n" )
 
       values$query <- parseQueryString(session$clientData$url_search)
 
@@ -726,7 +722,7 @@ moonlight <- function(sample.list = NULL,
           pre_val <- paste(aws.user, aws.runid, sep = "/", collapse = NULL)
         }
 
-        s3_bucket <- get_bucket(s3BucketName, prefix = pre_val)
+        s3_bucket <<- get_bucket(s3BucketName, prefix = pre_val)
 
         is_sl_file_present <- FALSE
         keyV <- paste(pre_val, "s.lst", sep = "/", collapse = NULL)
