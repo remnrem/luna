@@ -1,6 +1,11 @@
 name: lunaR CI
 
+
 on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Test scenario tags'
   push:
     branches: master
   pull_request:
