@@ -334,12 +334,13 @@ moonlight <- function(sample.list = NULL,
             column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev", width = "100%")),
             column(width = 1, actionButton("button_epoch_nxt", "Next > ", width = "100%")),
             column(width = 1, offset = 0, actionButton("entire.record", "All", width = "100%")),
-            # 		column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
-            column(width = 2, offset = 0, actionButton("bandpass", "Toggle 0.3-35Hz", width = "100%")),
-            column(width = 1, offset = 0),
-            column(width = 6, verbatimTextOutput("info2"))
+#           column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
+            column(width = 2, offset = 0, actionButton("bandpass", "Toggle Bandpass", width = "100%")),
+            column(width = 1, offset = 0 ),
+            column(width = 6, verbatimTextOutput("info2") )
           ),
-          plotOutput("signal.master",
+         sliderInput("flt.freq", "Frequency (Hz)", width = "100%", min = 0, max = 200, step = 0.25, value = c(0.3, 35)),
+         plotOutput("signal.master",
                      width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
                      brush = brushOpts(id = "master_brush", direction = "x", resetOnNew = F)
           ),
@@ -437,10 +438,13 @@ moonlight <- function(sample.list = NULL,
             ),
             tabPanel(
               "Signals",
-              actionButton("entire.record", "Entire record"),
-              # 	      actionButton("rescale.ylim", "Toggle Y scale"),
-              actionButton("bandpass", "0.3-35 Hz"),
-              verbatimTextOutput("info2"),
+              fluidRow(
+	         column( width=1, offset=0, actionButton("entire.record", "Entire record") ),
+                 # 	      actionButton("rescale.ylim", "Toggle Y scale"),
+                 column( width=1, offset=0, actionButton("bandpass", "Toggle bandpass") ),
+                 column( width=6, offset=0, verbatimTextOutput("info2") ) 
+              ), 
+              sliderInput("flt.freq", "Bandpass frequency (Hz)", width = "100%", min = 0, max = 200, step = 0.25, value = c(0.3, 35)),        
               plotOutput("signal.master",
                          width = "100%", height = "30px", click = "master_click", dblclick = "master_dblclick",
                          brush = brushOpts(id = "master_brush", direction = "x", resetOnNew = F)
@@ -1004,7 +1008,8 @@ moonlight <- function(sample.list = NULL,
       values$raw.signals <- T
       values$yscale <- T # not used
       values$bandpass <- F
-
+      values$bpflt <- c(0.3,35)
+      
       #
       # SOAP tracker
       #
@@ -1685,6 +1690,7 @@ moonlight <- function(sample.list = NULL,
           "Record duration (secs)",
           "Start date",
           "Start time",
+	  "Stop time",
           "Duration (hh:mm:ss)",
           "Duration (secs)",
           "Duration (epoch)"
@@ -1704,7 +1710,7 @@ moonlight <- function(sample.list = NULL,
     output$header.channels <- renderDataTable(
       {
         req(attached.edf())
-
+	cat( "in here\n" )
         k <- values$eval$HEADERS$CH
 
         k$ID <- NULL
@@ -1716,7 +1722,6 @@ moonlight <- function(sample.list = NULL,
         # return value
         k
       },
-      rownames = FALSE,
       options = list(pageLength = 20, rownames = F, columnDefs = list(list(className = "dt-center", targets = "_all")))
     )
 
@@ -2177,6 +2182,7 @@ moonlight <- function(sample.list = NULL,
         epochs <- values$epochs
         zoom <- values$zoom
         bp <- values$bandpass
+	bpflt <- values$bpflt
 
         isolate({
 
@@ -2221,7 +2227,12 @@ moonlight <- function(sample.list = NULL,
           na <- length(annots)
           nc <- length(chs)
 
+cat("chs\n")
+ print( chs ) 
 
+cat("units\n")
+ print( values$units ) 
+ 
           #
           # Plot parameters
           #
@@ -2299,17 +2310,26 @@ moonlight <- function(sample.list = NULL,
               yidx <- 0
               for (ch in rev(chs)) {
                 req(epochs[1] >= 1, epochs[2] <= values$ne)
+
+		cat( "ch",ch,"\n")
+		cat( "ep" , epochs , "\n")
                 dat <- ldata(epochs[1]:epochs[2], chs = ch)
                 dat <- dat[dat$SEC >= secs[1] & dat$SEC <= secs[2], ]
                 ts <- dat$SEC
                 dy <- dat[, 4]
 
+		
+		print(dat)
+		print( dy ) 
+
                 # filter?
                 if (values$bandpass) {
                   dy <- ldetrend(dy)
-                  dy <- lfilter(dy, values$sr[ch], 0.3, 35)
+		  dy <- lfilter(dy, values$sr[ch], values$bpflt[1] , values$bpflt[2] )
                 }
                 yr <- range(dy)
+
+		print(yr)
                 # zero-centered signal?
                 zc <- yr[1] < 0 & yr[2] > 0
                 # mean center
@@ -2591,9 +2611,16 @@ moonlight <- function(sample.list = NULL,
     observeEvent(input$bandpass, {
       req(attached.edf())
       values$bandpass <- !values$bandpass
+      values$bpflt <- input$flt.freq
     })
 
-    # drive by annotation instance box
+    # Apply bandpass filter to all signals
+    observeEvent(input$flt.freq, {
+      req(attached.edf())
+      values$bpflt <- input$flt.freq
+    })
+
+# drive by annotation instance box
     observeEvent(input$sel.inst, {
       xx <- range(as.numeric(unlist(strsplit(input$sel.inst, " "))))
       xx <- c(floor(xx[1] / 30) + 1, ceiling(xx[2] / 30))
@@ -2685,7 +2712,7 @@ moonlight <- function(sample.list = NULL,
             "Epoch ", floor(epochs[1]), " to ", ceiling(epochs[2]),
             " (", (ceiling(epochs[2]) - floor(epochs[1]) + 1) * 0.5, " minutes)",
             " ", signif(hrs, 2), " hours from start", zoom_info,
-            ifelse(values$bandpass, " (w/ 0.3-35 Hz filter)", " (unfiltered)")
+            ifelse(values$bandpass, paste( " (w/" , values$bpflt[1] , "-" , values$bpflt[2] , "Hz filter)"), " (unfiltered)")
           )
         } else {
           paste0("Selected value is out of range")

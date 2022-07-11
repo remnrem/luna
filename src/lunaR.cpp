@@ -510,7 +510,7 @@ void Radd_annot_fromR( SEXP name , SEXP a )
 void Radd_annot( SEXP ann )
 {
   
-  if ( rdata == NULL )
+  if ( rdata == R_NilValue )
     {
       R_error( "no EDF attached" );
       unprotect();
@@ -531,10 +531,10 @@ void Radd_annot( SEXP ann )
 void Rdrop()
 {
   
-  if ( rdata != NULL )
+  if ( rdata != R_NilValue )
     {
       delete rdata;
-      rdata = NULL;
+      rdata = R_NilValue;
     }
   
 }
@@ -962,7 +962,7 @@ SEXP Rmatrix_epochs( SEXP e , SEXP ch , SEXP ann )
   
   for (int s=0; s< signals.size(); s++) 
     {      
-      if ( rdata->edf.header.is_data_channel( s ) )
+      if ( rdata->edf.header.is_data_channel( signals(s) ) )
 	{
 	  if ( fs < 0 ) fs = rdata->edf.header.sampling_freq( signals(s) );
 	  else if ( rdata->edf.header.sampling_freq( signals(s) ) != fs ) 
@@ -1072,7 +1072,7 @@ SEXP Rmatrix_intervals( SEXP Rints , SEXP ch , SEXP ann  )
   
   for (int s=0; s< signals.size(); s++) 
     {      
-      if ( rdata->edf.header.is_data_channel( s ) )
+      if ( rdata->edf.header.is_data_channel( signals(s) ) )
 	{
 	  if ( fs < 0 ) fs = rdata->edf.header.sampling_freq( signals(s) );
 	  else if ( rdata->edf.header.sampling_freq( signals(s) ) != fs ) 
@@ -1558,7 +1558,7 @@ SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP byannot , SEXP w, SEXP rho )
   
   for (int s=0; s< signals.size(); s++) 
     {      
-      if ( rdata->edf.header.is_data_channel( s ) )
+      if ( rdata->edf.header.is_data_channel( signals(s) ) )
 	{
 	  if ( fs < 0 ) fs = rdata->edf.header.sampling_freq( signals(s) );
 	  else if ( rdata->edf.header.sampling_freq( signals(s) ) != fs ) 
