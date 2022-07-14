@@ -1348,7 +1348,8 @@ lcmd <- function(filename) {
 #' @export
 #'
 #' @examples
-#' lstgcols(c("NREM1", "NREM2", "NREM3", "NREM4", "REM", "wake", "?"))
+
+#' lstgcols(c("N1", "N2", "N3", "R", "W", "?", "L"))
 #'
 #' @importFrom grDevices rgb
 lstgcols <- function(s) {
@@ -1358,14 +1359,16 @@ lstgcols <- function(s) {
         ifelse(x == "NREM3" | x == "N3", rgb(0, 0, 80, 255, maxColorValue = 255),
           ifelse(x == "NREM4" | x == "N3", rgb(0, 0, 50, 255, maxColorValue = 255),
             ifelse(x == "REM" | x == "R", rgb(250, 20, 50, 255, maxColorValue = 255),
-              ifelse(x == "wake" | x == "W", rgb(49, 173, 82, 255, maxColorValue = 255),
+             ifelse(x == "L", rgb( 246, 243, 42, 255, maxColorValue = 255),
+               ifelse(x == "wake" | x == "W", rgb(49, 173, 82, 255, maxColorValue = 255),
                 rgb(100, 100, 100, 100, maxColorValue = 255)
-              )
+              ) 
             )
           )
         )
       )
     )
+   )	
   }))
 }
 
@@ -1381,7 +1384,7 @@ lstgn <- function(x) {
 }
 
 lstgpal <- function() {
-  c("N1", "N2", "N3", "REM", "W")
+  c("N1", "N2", "N3", "R", "W", "L" )
 }
 
 
@@ -1431,8 +1434,10 @@ ldenoise <- function(x, lambda) {
 #' @export
 #'
 #' @note This is a wrapper around the method implemented by the \code{FILTER} command.
-lfilter <- function(x, sr, lwr, upr) {
-  .Call("R_filter", as.numeric(x), as.numeric(sr), as.numeric(lwr), as.numeric(upr), 1, 0.02, PACKAGE = "luna")
+lfilter <- function(x, sr, lwr, upr, tw=1, ripple=0.02 ) {
+ cat( "filtering with " , tw, ripple , "\n" )
+ if ( upr > sr/2 ) upr <- sr/2
+  .Call("R_filter", as.numeric(x), as.numeric(sr), as.numeric(lwr), as.numeric(upr), as.numeric(tw), as.numeric(ripple), PACKAGE = "luna")
 }
 
 
