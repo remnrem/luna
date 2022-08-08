@@ -4,7 +4,7 @@
 \alias{lfilter}
 \title{FIR filtering}
 \usage{
-lfilter(x, sr, lwr, upr)
+lfilter(x, sr, lwr, upr, tw = 1, ripple = 0.02)
 }
 \arguments{
 \item{x}{a time series vector}

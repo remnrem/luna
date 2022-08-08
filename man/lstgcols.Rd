@@ -17,6 +17,6 @@ a corresponding vector of colors
 Convenience function to return colors for stage labels, to be used in plotting
 }
 \examples{
-lstgcols(c("NREM1", "NREM2", "NREM3", "NREM4", "REM", "wake", "?"))
+lstgcols(c("N1", "N2", "N3", "R", "W", "?", "L"))
 
 }

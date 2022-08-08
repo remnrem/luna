@@ -8,11 +8,12 @@
 luna.globals <- new.env()
 
 luna.globals$version <- "v0.27"
-luna.globals$date <- "24-Feb-2022"
+luna.globals$date <- "08-Aug-2022"
 luna.globals$id <- ""
 luna.globals$edf <- ""
 luna.globals$annots <- ""
 luna.globals$logmode <- 0
+
 
 ####################################################
 ##                                                ##
@@ -30,8 +31,6 @@ luna.globals$logmode <- 0
   luna.globals$xy <- ldefault.xy()
   luna.globals$xy.coh <- ldefault.coh.xy(luna.globals$xy)
 
-  luna.globals$turbo.colors <- make.turbo.colors()
-  luna.globals$plasma.colors <- make.turbo.colors()
   luna.globals$rbpal <- grDevices::colorRampPalette(c("navy", "blue", "white", "red", "darkred"))
 
   requireNamespace("plotrix", quietly = T, warn.conflicts = F)
@@ -315,7 +314,7 @@ ledf <- function(edf, id = ".", annots = character(0)) {
   invisible(1)
 }
 
-#' report on the in-memory EDF what is in memory
+#' Reports on the in-memory EDF
 #'
 #' One line description to console of the currently-attached EDF
 #'
@@ -328,7 +327,12 @@ lstat <- function() {
   invisible(.Call("Rstat", PACKAGE = "luna"))
 }
 
-## report on the in-memory EDF what is in memory
+#' Describes the contents of an attach EDF
+#'
+#' @return list with EDF header information, including channel labels & sample rates
+#' @export
+#'
+#' @note This command does not currently report on annotations
 ldesc <- function() {
   .Call("Rdesc", PACKAGE = "luna")
 }
@@ -1336,7 +1340,6 @@ lcmd <- function(filename) {
   newlines
 }
 
-# nb. NREM4->N3 in color scheme
 #' Maps typical stage labels to colors (for plotting)
 #'
 #' Convenience function to return colors for stage labels, to be used in plotting
@@ -1362,30 +1365,16 @@ lstgcols <- function(s) {
              ifelse(x == "L", rgb( 246, 243, 42, 255, maxColorValue = 255),
                ifelse(x == "wake" | x == "W", rgb(49, 173, 82, 255, maxColorValue = 255),
                 rgb(100, 100, 100, 100, maxColorValue = 255)
-              ) 
+              )
             )
           )
         )
       )
     )
-   )	
+   )
   }))
 }
 
-
-lstgn <- function(x) {
-  x[x == "N1"] <- 1
-  x[x == "N2"] <- 2
-  x[x == "N3"] <- 3
-  x[x == "REM"] <- 4
-  x[x == "W"] <- 5
-  x[x == "?"] <- 6
-  as.numeric(x)
-}
-
-lstgpal <- function() {
-  c("N1", "N2", "N3", "R", "W", "L" )
-}
 
 
 ####################################################
@@ -1393,15 +1382,6 @@ lstgpal <- function() {
 ## Statistical helper functions                   ##
 ##                                                ##
 ####################################################
-
-#' @importFrom stats sd
-loutliers <- function(x, m = mean(x, na.rm = T), sdev = sd(x, na.rm = T), t = 3) {
-  lwr <- m - t * sdev
-  upr <- m + t * sdev
-  x[x < lwr] <- NA
-  x[x > upr] <- NA
-  x
-}
 
 
 #' 1D total variation denoiser
@@ -1429,6 +1409,8 @@ ldenoise <- function(x, lambda) {
 #' @param sr Sample rate of \code{x}
 #' @param lwr Lower transition frequency
 #' @param upr Upper transition frequency
+#' @param tw  Transition width (Hz) (default 1 Hz)
+#' @param ripple Ripple (default 0.02)
 #'
 #' @return a filtered version of \code{x}
 #' @export
@@ -1527,7 +1509,7 @@ lbands <- function(l) {
 #' @importFrom graphics image abline
 #' @importFrom stats quantile
 lheatmap <- function(x, y, z,
-                     col = luna.globals$turbo.colors(100),
+                     col = lturbo(100),
                      mt = "",
                      f = rep(T, length(z)),
                      zero = rep(F, length(z)),
@@ -2184,7 +2166,7 @@ ltopo.dconn <- function(ch, chs1, chs2, z, flt = T, zr = NULL, cex = 2, w = 8, t
 ltopo.heat2 <- function(c, x, y, z, zlim = NULL,
                         f = rep(T, length(x)),
                         sz = 0.08, cex = 1,
-                        col = luna.globals$turbo.colors(100), lwd = 0.5,
+                        col = lturbo(100), lwd = 0.5,
                         ylab = "Frequency (Hz)", xlab = "Time", zlab = "log(power)", mt = "") {
   topo <- ldefault.xy()
   c <- lremap.chs(c)
@@ -2262,12 +2244,6 @@ lwin <- function(x, p = 0.05) {
   x
 }
 
-#
-## TOPO-TOPO : each point is a ltopo.rb() plot
-#    c    high-level channel
-#    c2   within-plot channel
-#    z    plot value
-#
 
 #' LUNA plotting
 #'
@@ -2361,11 +2337,16 @@ ltopo.topo <- function(c, c2, z, zlim = NULL,
 
 ##############################################################
 #
-# SUDS viewers
+# POPS viewers
 #
 ##############################################################
 
-#' @importFrom graphics points axis rect
+#' Plot a hypnogram
+#'
+#' @param ss vector of sleep stages (N1,N2,N3,R,W,?,L)
+#'
+#' @return none
+#' @export
 lhypno <- function(ss, cycles = NULL) {
   ss[is.na(ss)] <- "?"
   e <- 1:length(ss)
@@ -2397,15 +2378,21 @@ lhypno <- function(ss, cycles = NULL) {
   }
 }
 
-lstgn <- function(x) {
-  x[x == "N1"] <- -1
-  x[x == "N2"] <- -2
-  x[x == "N3"] <- -3
-  x[x == "R"] <- 0
-  x[x == "W"] <- 1
-  x[x == "?"] <- 2
-  x[is.na(x)] <- 2
-  as.numeric(x)
+#' Numeric encoding of sleep stage labels
+#'
+#' @param ss vector of sleep stages (N1,N2,N3,R,W,?,L)
+#'
+#' @return vector of numerically encoded sleep stages
+#' @export
+lstgn <- function(ss) {
+  ss[ss == "N1"] <- -1
+  ss[ss == "N2"] <- -2
+  ss[ss == "N3"] <- -3
+  ss[ss == "R"] <- 0
+  ss[ss == "W"] <- 1
+  ss[ss == "?"] <- 2
+  ss[is.na(ss)] <- 2
+  as.numeric(ss)
 }
 
 
@@ -2445,7 +2432,12 @@ lf100 <- function(x) {
   t[1:100]
 }
 
-# expecting
+#' Plot POPS posterior probabilities
+#'
+#' @param m data table from POPS (epoch-stratified)
+#'
+#' @return none
+#' @export
 #' @importFrom graphics image
 lpp <- function(m) {
   e <- m$E
@@ -2464,6 +2456,12 @@ lpp <- function(m) {
   image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F)
 }
 
+#' Plot POPS posterior probabilities & hypnogram
+#'
+#' @param m data table from POPS (epoch-stratified)
+#'
+#' @return none
+#' @export
 #' @importFrom graphics par image points
 lpp2 <- function(m) {
   par(mfcol = c(2, 1), mar = c(0.2, 0.2, 0.2, 0.2))
@@ -2478,7 +2476,7 @@ lpp2 <- function(m) {
   h[h > 100] <- 100
   hh <- t(apply(h, 1, lf100))
   stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W"), "lightgray")
-  # build pallete, taking only observed values
+  # build palette, taking only observed values
   stgpal <- stgpal[as.integer(names(table(hh)))]
   image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F)
   # next plot
@@ -2501,7 +2499,53 @@ lpp2 <- function(m) {
 #'
 #' @return vector of color values, length \code{n}
 #' @export
-lturbo <- function( n = 100 ) { luna.globals$turbo.colors( n ) }
+lturbo <- function( n = 100 )
+{
+  turbo.hex <- c(
+    "#30123B", "#321543", "#33184A", "#341B51", "#351E58", "#36215F", "#372466",
+    "#38276D", "#392A73", "#3A2D79", "#3B2F80", "#3C3286", "#3D358B", "#3E3891",
+    "#3F3B97", "#3F3E9C", "#4040A2", "#4143A7", "#4146AC", "#4249B1", "#424BB5",
+    "#434EBA", "#4451BF", "#4454C3", "#4456C7", "#4559CB", "#455CCF", "#455ED3",
+    "#4661D6", "#4664DA", "#4666DD", "#4669E0", "#466BE3", "#476EE6", "#4771E9",
+    "#4773EB", "#4776EE", "#4778F0", "#477BF2", "#467DF4", "#4680F6", "#4682F8",
+    "#4685FA", "#4687FB", "#458AFC", "#458CFD", "#448FFE", "#4391FE", "#4294FF",
+    "#4196FF", "#4099FF", "#3E9BFE", "#3D9EFE", "#3BA0FD", "#3AA3FC", "#38A5FB",
+    "#37A8FA", "#35ABF8", "#33ADF7", "#31AFF5", "#2FB2F4", "#2EB4F2", "#2CB7F0",
+    "#2AB9EE", "#28BCEB", "#27BEE9", "#25C0E7", "#23C3E4", "#22C5E2", "#20C7DF",
+    "#1FC9DD", "#1ECBDA", "#1CCDD8", "#1BD0D5", "#1AD2D2", "#1AD4D0", "#19D5CD",
+    "#18D7CA", "#18D9C8", "#18DBC5", "#18DDC2", "#18DEC0", "#18E0BD", "#19E2BB",
+    "#19E3B9", "#1AE4B6", "#1CE6B4", "#1DE7B2", "#1FE9AF", "#20EAAC", "#22EBAA",
+    "#25ECA7", "#27EEA4", "#2AEFA1", "#2CF09E", "#2FF19B", "#32F298", "#35F394",
+    "#38F491", "#3CF58E", "#3FF68A", "#43F787", "#46F884", "#4AF880", "#4EF97D",
+    "#52FA7A", "#55FA76", "#59FB73", "#5DFC6F", "#61FC6C", "#65FD69", "#69FD66",
+    "#6DFE62", "#71FE5F", "#75FE5C", "#79FE59", "#7DFF56", "#80FF53", "#84FF51",
+    "#88FF4E", "#8BFF4B", "#8FFF49", "#92FF47", "#96FE44", "#99FE42", "#9CFE40",
+    "#9FFD3F", "#A1FD3D", "#A4FC3C", "#A7FC3A", "#A9FB39", "#ACFB38", "#AFFA37",
+    "#B1F936", "#B4F836", "#B7F735", "#B9F635", "#BCF534", "#BEF434", "#C1F334",
+    "#C3F134", "#C6F034", "#C8EF34", "#CBED34", "#CDEC34", "#D0EA34", "#D2E935",
+    "#D4E735", "#D7E535", "#D9E436", "#DBE236", "#DDE037", "#DFDF37", "#E1DD37",
+    "#E3DB38", "#E5D938", "#E7D739", "#E9D539", "#EBD339", "#ECD13A", "#EECF3A",
+    "#EFCD3A", "#F1CB3A", "#F2C93A", "#F4C73A", "#F5C53A", "#F6C33A", "#F7C13A",
+    "#F8BE39", "#F9BC39", "#FABA39", "#FBB838", "#FBB637", "#FCB336", "#FCB136",
+    "#FDAE35", "#FDAC34", "#FEA933", "#FEA732", "#FEA431", "#FEA130", "#FE9E2F",
+    "#FE9B2D", "#FE992C", "#FE962B", "#FE932A", "#FE9029", "#FD8D27", "#FD8A26",
+    "#FC8725", "#FC8423", "#FB8122", "#FB7E21", "#FA7B1F", "#F9781E", "#F9751D",
+    "#F8721C", "#F76F1A", "#F66C19", "#F56918", "#F46617", "#F36315", "#F26014",
+    "#F15D13", "#F05B12", "#EF5811", "#ED5510", "#EC530F", "#EB500E", "#EA4E0D",
+    "#E84B0C", "#E7490C", "#E5470B", "#E4450A", "#E2430A", "#E14109", "#DF3F08",
+    "#DD3D08", "#DC3B07", "#DA3907", "#D83706", "#D63506", "#D43305", "#D23105",
+    "#D02F05", "#CE2D04", "#CC2B04", "#CA2A04", "#C82803", "#C52603", "#C32503",
+    "#C12302", "#BE2102", "#BC2002", "#B91E02", "#B71D02", "#B41B01", "#B21A01",
+    "#AF1801", "#AC1701", "#A91601", "#A71401", "#A41301", "#A11201", "#9E1001",
+    "#9B0F01", "#980E01", "#950D01", "#920B01", "#8E0A01", "#8B0902", "#880802",
+    "#850702", "#810602", "#7E0502", "#7A0403"
+  )
+
+  turbo.colors <- grDevices::colorRampPalette(colors = turbo.hex, space = "rgb", interpolate = "spline")
+
+  turbo.colors( n )
+
+}
 
 #' Generating a plasma palette (based on \code{viridis} package)
 #'
@@ -2509,19 +2553,57 @@ lturbo <- function( n = 100 ) { luna.globals$turbo.colors( n ) }
 #'
 #' @return vector of color values, length \code{n}
 #' @export
-lplasma <- function( n = 100 ) { luna.globals$plasma.colors( n ) }
+lplasma <- function( n = 100 )
+{
+  plasma.hex <- c(
+    "#0D0887FF", "#100788FF", "#130789FF", "#16078AFF", "#19068CFF", "#1B068DFF",
+    "#1D068EFF", "#20068FFF", "#220690FF", "#240691FF", "#260591FF", "#280592FF",
+    "#2A0593FF", "#2C0594FF", "#2E0595FF", "#2F0596FF", "#310597FF", "#330597FF",
+    "#350498FF", "#370499FF", "#38049AFF", "#3A049AFF", "#3C049BFF", "#3E049CFF",
+    "#3F049CFF", "#41049DFF", "#43039EFF", "#44039EFF", "#46039FFF", "#48039FFF",
+    "#4903A0FF", "#4B03A1FF", "#4C02A1FF", "#4E02A2FF", "#5002A2FF", "#5102A3FF",
+    "#5302A3FF", "#5502A4FF", "#5601A4FF", "#5801A4FF", "#5901A5FF", "#5B01A5FF",
+    "#5C01A6FF", "#5E01A6FF", "#6001A6FF", "#6100A7FF", "#6300A7FF", "#6400A7FF",
+    "#6600A7FF", "#6700A8FF", "#6900A8FF", "#6A00A8FF", "#6C00A8FF", "#6E00A8FF",
+    "#6F00A8FF", "#7100A8FF", "#7201A8FF", "#7401A8FF", "#7501A8FF", "#7701A8FF",
+    "#7801A8FF", "#7A02A8FF", "#7B02A8FF", "#7D03A8FF", "#7E03A8FF", "#8004A8FF",
+    "#8104A7FF", "#8305A7FF", "#8405A7FF", "#8606A6FF", "#8707A6FF", "#8808A6FF",
+    "#8A09A5FF", "#8B0AA5FF", "#8D0BA5FF", "#8E0CA4FF", "#8F0DA4FF", "#910EA3FF",
+    "#920FA3FF", "#9410A2FF", "#9511A1FF", "#9613A1FF", "#9814A0FF", "#99159FFF",
+    "#9A169FFF", "#9C179EFF", "#9D189DFF", "#9E199DFF", "#A01A9CFF", "#A11B9BFF",
+    "#A21D9AFF", "#A31E9AFF", "#A51F99FF", "#A62098FF", "#A72197FF", "#A82296FF",
+    "#AA2395FF", "#AB2494FF", "#AC2694FF", "#AD2793FF", "#AE2892FF", "#B02991FF",
+    "#B12A90FF", "#B22B8FFF", "#B32C8EFF", "#B42E8DFF", "#B52F8CFF", "#B6308BFF",
+    "#B7318AFF", "#B83289FF", "#BA3388FF", "#BB3488FF", "#BC3587FF", "#BD3786FF",
+    "#BE3885FF", "#BF3984FF", "#C03A83FF", "#C13B82FF", "#C23C81FF", "#C33D80FF",
+    "#C43E7FFF", "#C5407EFF", "#C6417DFF", "#C7427CFF", "#C8437BFF", "#C9447AFF",
+    "#CA457AFF", "#CB4679FF", "#CC4778FF", "#CC4977FF", "#CD4A76FF", "#CE4B75FF",
+    "#CF4C74FF", "#D04D73FF", "#D14E72FF", "#D24F71FF", "#D35171FF", "#D45270FF",
+    "#D5536FFF", "#D5546EFF", "#D6556DFF", "#D7566CFF", "#D8576BFF", "#D9586AFF",
+    "#DA5A6AFF", "#DA5B69FF", "#DB5C68FF", "#DC5D67FF", "#DD5E66FF", "#DE5F65FF",
+    "#DE6164FF", "#DF6263FF", "#E06363FF", "#E16462FF", "#E26561FF", "#E26660FF",
+    "#E3685FFF", "#E4695EFF", "#E56A5DFF", "#E56B5DFF", "#E66C5CFF", "#E76E5BFF",
+    "#E76F5AFF", "#E87059FF", "#E97158FF", "#E97257FF", "#EA7457FF", "#EB7556FF",
+    "#EB7655FF", "#EC7754FF", "#ED7953FF", "#ED7A52FF", "#EE7B51FF", "#EF7C51FF",
+    "#EF7E50FF", "#F07F4FFF", "#F0804EFF", "#F1814DFF", "#F1834CFF", "#F2844BFF",
+    "#F3854BFF", "#F3874AFF", "#F48849FF", "#F48948FF", "#F58B47FF", "#F58C46FF",
+    "#F68D45FF", "#F68F44FF", "#F79044FF", "#F79143FF", "#F79342FF", "#F89441FF",
+    "#F89540FF", "#F9973FFF", "#F9983EFF", "#F99A3EFF", "#FA9B3DFF", "#FA9C3CFF",
+    "#FA9E3BFF", "#FB9F3AFF", "#FBA139FF", "#FBA238FF", "#FCA338FF", "#FCA537FF",
+    "#FCA636FF", "#FCA835FF", "#FCA934FF", "#FDAB33FF", "#FDAC33FF", "#FDAE32FF",
+    "#FDAF31FF", "#FDB130FF", "#FDB22FFF", "#FDB42FFF", "#FDB52EFF", "#FEB72DFF",
+    "#FEB82CFF", "#FEBA2CFF", "#FEBB2BFF", "#FEBD2AFF", "#FEBE2AFF", "#FEC029FF",
+    "#FDC229FF", "#FDC328FF", "#FDC527FF", "#FDC627FF", "#FDC827FF", "#FDCA26FF",
+    "#FDCB26FF", "#FCCD25FF", "#FCCE25FF", "#FCD025FF", "#FCD225FF", "#FBD324FF",
+    "#FBD524FF", "#FBD724FF", "#FAD824FF", "#FADA24FF", "#F9DC24FF", "#F9DD25FF",
+    "#F8DF25FF", "#F8E125FF", "#F7E225FF", "#F7E425FF", "#F6E626FF", "#F6E826FF",
+    "#F5E926FF", "#F5EB27FF", "#F4ED27FF", "#F3EE27FF", "#F3F027FF", "#F2F227FF",
+    "#F1F426FF", "#F1F525FF", "#F0F724FF", "#F0F921FF"
+  )
 
-##############################################################
-#
-# Misc helper functions
-#
-##############################################################
+  plasma.colors <- grDevices::colorRampPalette(colors = plasma.hex, space = "rgb", interpolate = "spline")
 
+  plasma.colors( n )
 
-
-##############################################################
-#
-# Loaders
-#
-##############################################################
+}
 
