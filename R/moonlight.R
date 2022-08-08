@@ -2227,12 +2227,14 @@ moonlight <- function(sample.list = NULL,
           na <- length(annots)
           nc <- length(chs)
 
-cat("chs\n")
- print( chs ) 
+#cat("chs\n")
+# print( chs ) 
+#cat("units\n")
+# print( values$units ) 
+#cat( "chs len " , nc , "\n")
+#cat( "dim len" , length(  values$units ) , "\n" )
 
-cat("units\n")
- print( values$units ) 
- 
+
           #
           # Plot parameters
           #
@@ -2311,25 +2313,21 @@ cat("units\n")
               for (ch in rev(chs)) {
                 req(epochs[1] >= 1, epochs[2] <= values$ne)
 
-		cat( "ch",ch,"\n")
-		cat( "ep" , epochs , "\n")
+#		cat( "ch",ch,"\n")
+#		cat( "ep" , epochs , "\n")
+
                 dat <- ldata(epochs[1]:epochs[2], chs = ch)
                 dat <- dat[dat$SEC >= secs[1] & dat$SEC <= secs[2], ]
                 ts <- dat$SEC
                 dy <- dat[, 4]
-
 		
-		print(dat)
-		print( dy ) 
-
                 # filter?
                 if (values$bandpass) {
                   dy <- ldetrend(dy)
-		  dy <- lfilter(dy, values$sr[ch], values$bpflt[1] , values$bpflt[2] )
+		  dy <- lfilter(dy, values$sr[ch], values$bpflt[1] , values$bpflt[2] , 5, 0.05 )
                 }
                 yr <- range(dy)
 
-		print(yr)
                 # zero-centered signal?
                 zc <- yr[1] < 0 & yr[2] > 0
                 # mean center

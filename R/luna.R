@@ -1434,9 +1434,10 @@ ldenoise <- function(x, lambda) {
 #' @export
 #'
 #' @note This is a wrapper around the method implemented by the \code{FILTER} command.
-lfilter <- function(x, sr, lwr, upr) {
-  if ( upr > sr/2 ) upr <- sr/2
-  .Call("R_filter", as.numeric(x), as.numeric(sr), as.numeric(lwr), as.numeric(upr), 1, 0.02, PACKAGE = "luna")
+lfilter <- function(x, sr, lwr, upr, tw=1, ripple=0.02 ) {
+ cat( "filtering with " , tw, ripple , "\n" )
+ if ( upr > sr/2 ) upr <- sr/2
+  .Call("R_filter", as.numeric(x), as.numeric(sr), as.numeric(lwr), as.numeric(upr), as.numeric(tw), as.numeric(ripple), PACKAGE = "luna")
 }
 
 

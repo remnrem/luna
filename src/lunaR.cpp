@@ -510,7 +510,7 @@ void Radd_annot_fromR( SEXP name , SEXP a )
 void Radd_annot( SEXP ann )
 {
   
-  if ( rdata == R_NilValue )
+  if ( rdata == NULL )
     {
       R_error( "no EDF attached" );
       unprotect();
@@ -531,10 +531,10 @@ void Radd_annot( SEXP ann )
 void Rdrop()
 {
   
-  if ( rdata != R_NilValue )
+  if ( rdata != NULL )
     {
       delete rdata;
-      rdata = R_NilValue;
+      rdata = NULL; 
     }
   
 }
