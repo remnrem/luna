@@ -1496,10 +1496,8 @@ moonlight <- function(sample.list = NULL,
             colnames(df_final)[2] <- "Value"
           }
           df_final
-        },
-        rownames = FALSE,
-        options = list(pageLength = 20, rownames = F, columnDefs = list(list(className = "dt-center", targets = "_all")))
-      )
+        DT::datatable(df_final,list(pageLength = 20, rownames = F, columnDefs = list(list(className = "dt-center", targets = "_all"))) ,rownames= FALSE) 
+      })
     }
 
 
@@ -1677,24 +1675,26 @@ moonlight <- function(sample.list = NULL,
 
         k <- values$eval$HEADERS$BL
         k$EPOCH <- k$TOT_DUR_SEC / 30.0
-
+print(dim(k))
+print(k)
         df <- data.frame(t(k))
 
         df$VAR <- c(
-          "ID",
-          "ID (EDF header)",
-          "EDF Type",
-          "Number of records",
-          "Number of selected signals",
-          "Total number of signals",
-          "Record duration (secs)",
-          "Start date",
-          "Start time",
-	  "Stop time",
-          "Duration (hh:mm:ss)",
-          "Duration (secs)",
+          "ID",                         
+          "ID (EDF header)",		
+          "EDF Type",			
+          "Number of records",		
+          "Number of selected signals",	
+          "Total number of signals",	
+          "Record duration (secs)",	
+          "Start date",			
+          "Start time",			
+	  "Stop time",			
+          "Duration (hh:mm:ss)",	
+          "Duration (secs)",		
           "Duration (epoch)"
         )
+
 
         # return value
         df[, c(2, 1)]
@@ -1710,7 +1710,7 @@ moonlight <- function(sample.list = NULL,
     output$header.channels <- renderDataTable(
       {
         req(attached.edf())
-	cat( "in here\n" )
+
         k <- values$eval$HEADERS$CH
 
         k$ID <- NULL
@@ -2927,12 +2927,11 @@ moonlight <- function(sample.list = NULL,
     if (opt_nap) {
       output$issue.table <- renderDataTable(
         {
-          req(attached.edf(), values$issuesData)
-          values$issuesData
-        },
-        rownames = FALSE,
-        options = list(pageLength = 20, rownames = F, columnDefs = list(list(className = "dt-center", targets = "_all")))
-      )
+         req(attached.edf(), values$issuesData)
+         DT::datatable( values$issuesData, 
+                        rownames = FALSE,
+                        options = list(pageLength = 20, rownames = F, columnDefs = list(list(className = "dt-center", targets = "_all"))))
+      })
     }
 
 
