@@ -16,7 +16,7 @@ Authors@R:
 Depends: R (>= 3.3.0)
 Description: Interface for the 'Luna' sleep signal library 
   <http://zzz.bwh.harvard.edu/luna/>.
-SystemRequirements: fftw3, C++11
+SystemRequirements: fftw3, lgbm, C++11
 License: GPL (>= 2)
 Imports: 
     git2r,

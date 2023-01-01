@@ -8,7 +8,7 @@
 luna.globals <- new.env()
 
 luna.globals$version <- "v0.27"
-luna.globals$date <- "08-Aug-2022"
+luna.globals$date <- "23-Dec-2022"
 luna.globals$id <- ""
 luna.globals$edf <- ""
 luna.globals$annots <- ""
@@ -605,6 +605,16 @@ lchs <- function() {
 #'
 ldrop <- function() {
   .Call("Rdrop", PACKAGE = "luna")
+  invisible(1)
+}
+
+#' Set error handler to moonlight mode
+#'
+#' @return no explicit return value
+#' @export
+#'
+lmoonlight_mode <- function() {
+  .Call("R_moonlight_mode", PACKAGE = "luna")
   invisible(1)
 }
 
@@ -1532,7 +1542,7 @@ lheatmap <- function(x, y, z,
   if (!is.null(win)) {
     d$z <- lwin(d$z, win)
   }
-  if (is.null(zlim)) zlim <- range(d$z)
+  if (is.null(zlim)) zlim <- range(d$z,na.rm=T)
 
   m <- matrix(d$z, byrow = T, nrow = ny, ncol = nx)
   image(t(m[1:ny, ]), col = col, xaxt = "n", yaxt = "n", main = mt, zlim = zlim)
@@ -2344,15 +2354,25 @@ ltopo.topo <- function(c, c2, z, zlim = NULL,
 #' Plot a hypnogram
 #'
 #' @param ss vector of sleep stages (N1,N2,N3,R,W,?,L)
+#' @param cycles vector of NREM cycle codes (NA,1,2,3...)
+#' @param times vector of epoch times (default, 0, 30, 60, etc)
+#' @param start start time of plot (seconds, default 0)
+#' @param stop stop time of plot (seconds, default last epoch)
 #'
 #' @return none
 #' @export
-lhypno <- function(ss, cycles = NULL) {
+lhypno <- function(ss, cycles = NULL, times = seq( 0 , by = 30 , length.out = length(ss) ) , start = 0 , stop = max(times) ) {
   ss[is.na(ss)] <- "?"
-  e <- 1:length(ss)
-  e <- e / 120
+  e <- times / 3600
   sn <- lstgn(ss)
-  plot(e, sn, type = "l", lwd = 2, col = "gray", axes = F, ylim = c(-3, 3.5), ylab = "", yaxt = "n", xaxs = "i", xlab = "Time (hrs)")
+  plot(e, sn, type = "n", lwd = 2, col = "gray", axes = F, ylim = c(-3, 3.5), ylab = "", yaxt = "n", xaxs = "i", xlim=c(start,stop)/3600,xlab = "Time (hrs)")
+  # change points
+  chgs <- which( ss[ 1:(length(ss)-1)] != ss[2:length(ss) ]  )  
+  for (chg in chgs) {
+   # do not plot connector if change spans a gap; gap define assuming 30-second eppchs
+   if ( ! ( times[chg+1] - times[chg] > 40 ) ) 
+     lines( rep( (( times[chg]+times[chg+1])/2 ) / 3600, 2 ) , c( sn[chg] , sn[chg+1] ) , lwd = 2, col = "gray" ) 
+  }
   points(e, sn, col = lstgcols(ss), type = "p", cex = 1, pch = 20)
   axis(1) # axis(1, at=seq(0,round(max(e)),2))
   axis(2, 2, "?", col.axis = "black", las = 2)
@@ -2385,12 +2405,12 @@ lhypno <- function(ss, cycles = NULL) {
 #' @return vector of numerically encoded sleep stages
 #' @export
 lstgn <- function(ss) {
-  ss[ss == "N1"] <- -1
-  ss[ss == "N2"] <- -2
-  ss[ss == "N3"] <- -3
-  ss[ss == "R"] <- 0
-  ss[ss == "W"] <- 1
-  ss[ss == "?"] <- 2
+  ss[ss == "N1" | ss == "NREM1" ] <- -1
+  ss[ss == "N2" | ss == "NREM2" ] <- -2
+  ss[ss == "N3" | ss == "NREM3" ] <- -3
+  ss[ss == "R"  | ss== "REM" ] <- 0
+  ss[ss == "W" | ss == "wake" ]  <- 1
+  ss[ss == "?" | ss == "L" ] <- 2
   ss[is.na(ss)] <- 2
   as.numeric(ss)
 }
@@ -2401,9 +2421,9 @@ lstgn2 <- function(x) {
   x[x == "N1"] <- 3
   x[x == "N2"] <- 4
   x[x == "N3"] <- 5
-  x[x == "R"] <- 6
+  x[x == "R" | x == "REM" ] <- 6
   x[x == "W"] <- 2
-  x[x == "?"] <- 1
+  x[x == "?" | x == "L" ] <- 1
   x[is.na(x)] <- 1
   as.numeric(x)
 }
@@ -2442,6 +2462,12 @@ lf100 <- function(x) {
 lpp <- function(m) {
   e <- m$E
   ne <- max(e)
+  # ensure all 5 cols
+  if ( !any( names( m ) == "PP_N1" ) ) m$PP_N1 <- 0
+  if ( !any( names( m ) == "PP_N2" ) ) m$PP_N2 <- 0
+  if ( !any( names( m ) == "PP_N3" ) ) m$PP_N3 <- 0
+  if ( !any( names( m ) == "PP_R"  ) ) m$PP_R  <- 0
+  if ( !any( names( m ) == "PP_W"  ) ) m$PP_W  <- 0
   h <- m[, c("PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W")]
   xr <- c(1, ne)
   hh <- matrix(NA, nrow = max(e), ncol = 100)
@@ -2450,9 +2476,9 @@ lpp <- function(m) {
   h[h < 0] <- 0
   h[h > 100] <- 100
   hh <- t(apply(h, 1, lf100))
-  stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W"), "lightgray")
+  stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W") )
   # build pallete, taking only observed values
-  stgpal <- stgpal[as.integer(names(table(hh)))]
+  # IGNORE stgpal <- stgpal[as.integer(names(table(hh)))]
   image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F)
 }
 
@@ -2467,6 +2493,11 @@ lpp2 <- function(m) {
   par(mfcol = c(2, 1), mar = c(0.2, 0.2, 0.2, 0.2))
   e <- m$E
   ne <- max(e)
+  if ( !any( names( m ) == "PP_N1" ) ) m$PP_N1 <- 0
+  if ( !any( names( m ) == "PP_N2" ) ) m$PP_N2 <- 0
+  if ( !any( names( m ) == "PP_N3" ) ) m$PP_N3 <- 0
+  if ( !any( names( m ) == "PP_R"  ) ) m$PP_R  <- 0
+  if ( !any( names( m ) == "PP_W"  ) ) m$PP_W  <- 0
   h <- m[, c("PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W")]
   xr <- c(1, ne)
   hh <- matrix(NA, nrow = max(e), ncol = 100)
@@ -2475,9 +2506,9 @@ lpp2 <- function(m) {
   h[h < 0] <- 0
   h[h > 100] <- 100
   hh <- t(apply(h, 1, lf100))
-  stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W"), "lightgray")
+  stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W") )
   # build palette, taking only observed values
-  stgpal <- stgpal[as.integer(names(table(hh)))]
+  # IGNORE stgpal <- stgpal[as.integer(names(table(hh)))]
   image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F)
   # next plot
   plot(e, rep(1.5, length(e)), col = lstgcols(m$PRED), pch = "|", ylim = c(0, 2), xlab = "", ylab = "", axes = F, xaxs = "i")

@@ -137,9 +137,16 @@ extern "C" {
 
   SEXP Riterate( SEXP fn , SEXP chs , SEXP annots, SEXP byannot , SEXP w, SEXP rho );
 
+
   // clear/reset EDF store  ( ldrop() )
 
   void Rdrop();
+
+
+  // set error handler
+
+  void R_moonlight_mode();
+  
 
   // clear writer (should not be called by user)
   
@@ -216,6 +223,18 @@ struct Rfndata {
 void R_bail_function( const std::string & msg )
 {
   R_error( msg );
+  return;
+}
+
+void R_moonlight_bail_function( const std::string & msg )
+{
+  Rprintf( ("error: " + msg).c_str() );
+  return;
+}
+
+void R_message_function( const std::string & msg )
+{
+  Rprintf( msg.c_str() );
   return;
 }
 

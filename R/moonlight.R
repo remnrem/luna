@@ -334,7 +334,6 @@ moonlight <- function(sample.list = NULL,
             column(width = 1, offset = 0, actionButton("button_epoch_prv", " < Prev", width = "100%")),
             column(width = 1, actionButton("button_epoch_nxt", "Next > ", width = "100%")),
             column(width = 1, offset = 0, actionButton("entire.record", "All", width = "100%")),
-#           column(width = 2, offset = 0, actionButton("rescale.ylim", "Toggle Y scaling", width = '100%' )),
             column(width = 2, offset = 0, actionButton("bandpass", "Toggle Bandpass", width = "100%")),
             column(width = 1, offset = 0 ),
             column(width = 6, verbatimTextOutput("info2") )
