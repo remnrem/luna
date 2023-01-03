@@ -12,22 +12,22 @@ fi
 
 echo "detected OS: ${LUNA_ARCH}"
 
-#rm -rf luna-base
-#${R_HOME}/bin/Rscript -e "git2r::clone(\"${git_url}\", local_path='luna-base')"
-#cd luna-base
-#rm -rf .git .github
-#make -j 2 ARCH=${LUNA_ARCH} FFTW=${FFTW} LGBM=${LGBM};
-#mkdir -p ../include
+rm -rf luna-base
+${R_HOME}/bin/Rscript -e "git2r::clone(\"${git_url}\", local_path='luna-base')"
+cd luna-base
+rm -rf .git .github
+make -j 2 ARCH=${LUNA_ARCH} FFTW=${FFTW} LGBM=${LGBM};
+mkdir -p ../include
 
 # TMP
-#mv *.a *.o ../include
-#mv eval.h luna.h cmddefs.h ../include
+mv *.a *.o ../include
+mv eval.h luna.h cmddefs.h ../include
 # TMP (del these)
 #cp *.a *.o ../include
 #cp eval.h luna.h cmddefs.h ../include
 
-#cd ../
+cd ../
 
-#${R_HOME}/bin/Rscript copier.R
+${R_HOME}/bin/Rscript copier.R
 
-#rm -rf luna-base
+rm -rf luna-base

@@ -2446,7 +2446,7 @@ lstgmat <- function(m) {
 lf100 <- function(x) {
   t <- numeric()
   if (any(is.na(x))) {
-    return(rep(6, 100))
+   return(rep(6, 100))
   }
   for (s in rev(order(x))) t <- c(t, rep(s, x[s]))
   t[1:100]
@@ -2468,7 +2468,9 @@ lpp <- function(m) {
   if ( !any( names( m ) == "PP_N3" ) ) m$PP_N3 <- 0
   if ( !any( names( m ) == "PP_R"  ) ) m$PP_R  <- 0
   if ( !any( names( m ) == "PP_W"  ) ) m$PP_W  <- 0
-  h <- m[, c("PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W")]
+  m$PP_NA <- as.integer( m$FLAG == -1 )
+  h <- m[, c("PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W", "PP_NA")]
+  h[ is.na(h) ] <- 0
   xr <- c(1, ne)
   hh <- matrix(NA, nrow = max(e), ncol = 100)
   yy <- numeric(ne)
@@ -2476,10 +2478,8 @@ lpp <- function(m) {
   h[h < 0] <- 0
   h[h > 100] <- 100
   hh <- t(apply(h, 1, lf100))
-  stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W") )
-  # build pallete, taking only observed values
-  # IGNORE stgpal <- stgpal[as.integer(names(table(hh)))]
-  image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F)
+  stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W"), lstgcols("?") )
+  image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F , breaks=0.5 + ( 0:6) )
 }
 
 #' Plot POPS posterior probabilities & hypnogram
@@ -2498,7 +2498,9 @@ lpp2 <- function(m) {
   if ( !any( names( m ) == "PP_N3" ) ) m$PP_N3 <- 0
   if ( !any( names( m ) == "PP_R"  ) ) m$PP_R  <- 0
   if ( !any( names( m ) == "PP_W"  ) ) m$PP_W  <- 0
-  h <- m[, c("PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W")]
+  m$PP_NA <- as.integer( m$FLAG == -1 ) 
+  h <- m[, c("PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W", "PP_NA")]
+  h[ is.na(h) ] <- 0 
   xr <- c(1, ne)
   hh <- matrix(NA, nrow = max(e), ncol = 100)
   yy <- numeric(ne)
@@ -2506,10 +2508,8 @@ lpp2 <- function(m) {
   h[h < 0] <- 0
   h[h > 100] <- 100
   hh <- t(apply(h, 1, lf100))
-  stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W") )
-  # build palette, taking only observed values
-  # IGNORE stgpal <- stgpal[as.integer(names(table(hh)))]
-  image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F)
+  stgpal <- c(lstgcols("N1"), lstgcols("N2"), lstgcols("N3"), lstgcols("R"), lstgcols("W") , lstgcols("?") )
+  image(hh, col = stgpal, xaxt = "n", yaxt = "n", axes = F , breaks=0.5 + ( 0:6) ) 
   # next plot
   plot(e, rep(1.5, length(e)), col = lstgcols(m$PRED), pch = "|", ylim = c(0, 2), xlab = "", ylab = "", axes = F, xaxs = "i")
   points(e, rep(0.5, length(e)), col = lstgcols(m$PRIOR), pch = "|")

@@ -146,11 +146,19 @@ extern "C" {
   // set error handler
 
   void R_moonlight_mode();
-  
 
+  bool R_last_eval_failed;
+
+  std::string R_last_eval_errmsg;
+
+  // SEXP R_failed_eval_yesno();
+  // SEXP R_failed_eval_errmsg();
+
+  
   // clear writer (should not be called by user)
   
   void Rclear_out();
+
   
 
   // clear/reset cmd_t::vars  ( lreset() )
@@ -228,7 +236,9 @@ void R_bail_function( const std::string & msg )
 
 void R_moonlight_bail_function( const std::string & msg )
 {
-  Rprintf( ("error: " + msg).c_str() );
+  Rprintf( ("moonlight-error: " + msg).c_str() );
+  R_last_eval_failed = true;
+  R_last_eval_errmsg = msg;
   return;
 }
 
