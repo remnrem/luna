@@ -30,6 +30,7 @@ jobs:
         cd build
         cmake ..
         make -j4
+        sudo ln -s ${HOME}/LightGBM/lib_lightgbm.so /usr/local/lib/lib_lightgbm.so
         cd ${HOME}
         sudo R -e "install.packages('git2r', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('plotrix', repos='https://cloud.r-project.org')"
