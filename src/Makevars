@@ -2,7 +2,7 @@ CXX_STD = CXX11
 
 PKG_CPPFLAGS=-I./include/ -I$(FFTW)/include/ 
 
-PKG_LIBS=include/libluna.a -L$(FFTW)/lib/ -lfftw3 -l_lightgbm
+PKG_LIBS=include/libluna.a -L$(FFTW)/lib/ -L${LGBM_PATH} -lfftw3 -l_lightgbm
 
 #PKG_CPPFLAGS=-I./include/ `pkg-config --cflags fftw3`
 #PKG_LIBS=include/libluna.a `pkg-config --libs fftw3`
