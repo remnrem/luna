@@ -16,7 +16,7 @@ rm -rf luna-base
 ${R_HOME}/bin/Rscript -e "git2r::clone(\"${git_url}\", local_path='luna-base')"
 cd luna-base
 rm -rf .git .github
-make -j 2 ARCH=${LUNA_ARCH} FFTW=${FFTW} LGBM=${LGBM};
+make -j 2 ARCH=${LUNA_ARCH} FFTW=${FFTW} LGBM=${LGBM} LGBM_PATH=${LGBM_PATH};
 mkdir -p ../include
 
 # TMP

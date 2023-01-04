@@ -44,4 +44,4 @@ jobs:
         sudo R -e "install.packages('wkb', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('digest', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('aws.s3', repos='https://cloud.r-project.org')"
-        sudo R CMD INSTALL ${GITHUB_WORKSPACE}
+        sudo LGBM=1 LGBM_PATH=${HOME}/LightGBM/ R CMD INSTALL ${GITHUB_WORKSPACE}
