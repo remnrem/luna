@@ -2498,7 +2498,8 @@ lpp2 <- function(m) {
   if ( !any( names( m ) == "PP_N3" ) ) m$PP_N3 <- 0
   if ( !any( names( m ) == "PP_R"  ) ) m$PP_R  <- 0
   if ( !any( names( m ) == "PP_W"  ) ) m$PP_W  <- 0
-  m$PP_NA <- as.integer( m$FLAG == -1 ) 
+  m$PP_NA <- 0
+  if ( "FLAG" %in% names(m) ) m$PP_NA <- as.integer( m$FLAG == -1 ) 
   h <- m[, c("PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W", "PP_NA")]
   h[ is.na(h) ] <- 0 
   xr <- c(1, ne)

@@ -993,7 +993,8 @@ SEXP Rmatrix_epochs( SEXP e , SEXP ch , SEXP ann )
 	  else if ( rdata->edf.header.sampling_freq( signals(s) ) != fs ) 
 	    {
 	      unprotect();
-	      Helper::halt( "requires uniform sampling rate across signals" ); 	  
+	      Helper::halt( "requires uniform sampling rate across signals" );
+              return( R_NilValue );
 	    }
 	}
     }
@@ -1028,19 +1029,23 @@ SEXP Rmatrix_epochs( SEXP e , SEXP ch , SEXP ann )
   
   rdata->edf.timeline.ensure_epoched();
   
-  int total_epochs = rdata->edf.timeline.num_epochs();
+  int total_epochs = rdata->edf.timeline.num_total_epochs();
   
-  // check epochs, given 1-based epoch count
-  for (int epoch=0;epoch<epochs.size();epoch++)
+  // SKIP for now... check epochs, given 1-based epoch count
+  if ( 0 )
+    {
+    for (int epoch=0;epoch<epochs.size();epoch++)
     {      
       if ( epochs[epoch] < 1 || epochs[epoch] > total_epochs )
 	{
 	  unprotect();
 	  Helper::halt( "invalid epoch number (expecting between 1 and "
 			+ Helper::int2str( total_epochs ) + ")" );
+          return( R_NilValue );
 	}
     }  
-
+    }
+  
   std::vector<interval_t> epoch_intervals;
   for (int epoch=0;epoch<epochs.size();epoch++)
     {
