@@ -445,10 +445,21 @@ SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
       Helper::halt( "problem attaching EDF" + edf_file );
     }
 
-  // attach annotations
+  // attach EDF+ annotations
+  if ( rdata->edf.header.edfplus )
+    {
+      // must read if EDF+D (but only the time-track will be taken in)
+      // if EDF+C, then look at 'skip-edf-annots' flag      
+      if ( rdata->edf.header.continuous && ! globals::skip_edf_annots )
+	rdata->edf.timeline.annotations.from_EDF( rdata->edf , rdata->edf.edfz_ptr() );
+      else if ( ! rdata->edf.header.continuous )
+	rdata->edf.timeline.annotations.from_EDF( rdata->edf , rdata->edf.edfz_ptr() );
+    }
+  
+  // attach other file-based annotations
   for (int a=0;a<annots.size();a++)
     rdata->add_annotations( annots[a] );
-
+  
   // define channel types
   cmd_t::define_channel_type_variables( rdata->edf );
   
@@ -1031,28 +1042,26 @@ SEXP Rmatrix_epochs( SEXP e , SEXP ch , SEXP ann )
   
   int total_epochs = rdata->edf.timeline.num_total_epochs();
   
-  // SKIP for now... check epochs, given 1-based epoch count
+  // SKIP for now: check epochs, given 1-based epoch count
   if ( 0 )
     {
-    for (int epoch=0;epoch<epochs.size();epoch++)
-    {      
-      if ( epochs[epoch] < 1 || epochs[epoch] > total_epochs )
-	{
-	  unprotect();
-	  Helper::halt( "invalid epoch number (expecting between 1 and "
-			+ Helper::int2str( total_epochs ) + ")" );
-          return( R_NilValue );
-	}
-    }  
+      for (int epoch=0;epoch<epochs.size();epoch++)
+	{      
+	  if ( epochs[epoch] < 1 || epochs[epoch] > total_epochs )
+	    {
+	      unprotect();
+	      Helper::halt( "invalid epoch number (expecting between 1 and "
+			    + Helper::int2str( total_epochs ) + ")" );
+	      return( R_NilValue );
+	    }
+	}  
     }
   
   std::vector<interval_t> epoch_intervals;
   for (int epoch=0;epoch<epochs.size();epoch++)
     {
       int epoch0 = epochs[epoch] - 1;
-      
-      interval_t interval = rdata->edf.timeline.epoch( epoch0 ); 
-      
+      interval_t interval = rdata->edf.timeline.epoch( epoch0 );       
       epoch_intervals.push_back( interval );
     }
   
