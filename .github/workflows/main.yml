@@ -1,6 +1,5 @@
 name: lunaR CI
 
-
 on:
   workflow_dispatch:
     inputs:
@@ -23,14 +22,6 @@ jobs:
 
     - name: make lunaR
       run: |
-        # cd ${HOME}
-        #  git clone --recursive https://github.com/microsoft/LightGBM
-        # cd LightGBM
-        # mkdir build
-        # cd build
-        # cmake ..
-        # make -j4
-        # sudo ln -s ${HOME}/LightGBM/lib_lightgbm.so /usr/local/lib/lib_lightgbm.so
         cd ${HOME}
         sudo R -e "install.packages('git2r', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('plotrix', repos='https://cloud.r-project.org')"
@@ -46,4 +37,4 @@ jobs:
         sudo R -e "install.packages('digest', repos='https://cloud.r-project.org')"
         sudo R -e "install.packages('aws.s3', repos='https://cloud.r-project.org')"
         # sudo LGBM=1 LGBM_PATH=${HOME}/LightGBM/ R CMD INSTALL ${GITHUB_WORKSPACE}
-	sudo R CMD INSTALL ${GITHUB_WORKSPACE}
+        sudo R CMD INSTALL ${GITHUB_WORKSPACE}
