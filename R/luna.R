@@ -270,8 +270,13 @@ lreset <- function() {
 }
 
 
-
-
+#' Indicate whether lunaR is already initated in this session
+#'
+#' @export
+#'
+lmoonlock <- function( s ) {
+  .Call("Rmoonlock", as.character(s), PACKAGE = "luna")
+}
 
 
 
@@ -303,7 +308,6 @@ lreset <- function() {
 #' nsrr02 : 14 signals, 10 annotations, of 09:57:30 duration
 #' }
 ledf <- function(edf, id = ".", annots = character(0)) {
-  ldrop()
   # EDF, ID, annotations
   .Call("Rattach_edf", as.character(edf), as.character(id), as.character(annots), PACKAGE = "luna")
   lflush()

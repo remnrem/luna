@@ -44,7 +44,7 @@ extern "C" {
   
   void Rflush_log();
 
-  // attach an EDF (ID, annots)
+  // attach an EDF (ID, annots )
   
   SEXP Rattach_edf( SEXP x , SEXP y , SEXP z );
 
@@ -147,6 +147,10 @@ extern "C" {
 
   void R_moonlight_mode();
 
+  SEXP Rmoonlock( SEXP s );
+  bool moonlock( const std::string & );
+  std::string moonlock_hash;
+  
   bool R_last_eval_failed;
 
   std::string R_last_eval_errmsg;
@@ -205,7 +209,7 @@ struct Rdata_t {
 
   std::string id;
 
-
+  
   // increase we need to expand beyond the interval of the EDF in annotation space  
   // this can be >= than the EDF total_size
 

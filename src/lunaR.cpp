@@ -66,6 +66,8 @@ void R_init_luna(DllInfo *info)
   
   global.init_defs();
   
+  moonlock_hash = "";
+  
   // redefine error handler
   globals::bail_function = &R_bail_function;
 
@@ -94,6 +96,46 @@ void R_init_luna(DllInfo *info)
   msg += "\n";
   
   Rprintf( msg.c_str() );
+}
+
+
+SEXP Rmoonlock( SEXP x )
+{
+  const std::string s = CHAR( STRING_ELT( x , 0 ) );  
+  SEXP result;
+  PROTECT(result = NEW_INTEGER(1));
+  protect();
+  INTEGER(result)[0] = (int)moonlock( s );
+  unprotect();
+  return result;
+}
+
+bool moonlock( const std::string & s )
+{
+
+  std::cout << " any rdata attached? " << ( rdata != NULL ) << "\n";
+  
+  std::cout << " testing moonlock; current = [" << moonlock_hash << "]\n";
+  std::cout << "                       new = [" << s << "]\n";
+
+  if ( s == "" )
+    {
+      std::cout << " * reseting ML to null \n";
+      moonlock_hash = "";
+      return true;
+    }
+    
+  
+  if ( moonlock_hash == "" )
+    {
+      std::cout << " * seting ML to " << s << "\n";
+      moonlock_hash = s;
+      return true;
+    }
+
+  std::cout << "  ML eval = " << ( moonlock_hash == s ) << "\n";
+  
+  return moonlock_hash == s ;
 }
 
 
@@ -400,22 +442,23 @@ SEXP Rlogmode( SEXP i )
 
 SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
 {
-
   
-  // clear any old data
+  //
+  // Is any existing EDF attached?
+  //
+  
   if ( rdata != NULL ) 
     {
       delete rdata;
       rdata = NULL;
     }
-
-  unprotect();
   
   //
   // Basic details about what to attach
   //
-  std::string edf_file = Helper::expand( CHAR( STRING_ELT( x , 0 ) ) );
 
+  std::string edf_file = Helper::expand( CHAR( STRING_ELT( x , 0 ) ) );
+  
   // check EDF exists
   if ( ! Helper::fileExists( edf_file ) )
     {
@@ -558,6 +601,7 @@ void Rdrop()
     }
   
 }
+
 
 void Rclear_out()
 {
