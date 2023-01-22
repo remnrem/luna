@@ -1565,6 +1565,73 @@ lheatmap <- function(x, y, z,
 
 }
 
+## ------------------------------------------------------------
+##
+## Point-plot (cf heatmap but w/ sparse grid) 
+##
+## ------------------------------------------------------------
+
+#' LUNA plotting
+#'
+#' draws a sparse heatmap
+#'
+#' @param x x-axis values
+#' @param y y-axis values, of \code{length(x)}
+#' @param z z-axis values, of \code{length(x)}
+#' @param xs x-axis size of each point
+#' @param ys y-axis size of each point
+#' @param xlim min/max of x-axis values
+#' @param ylim min/max of x-axis values
+#' @param col 100-valued color palette, defaults to \code{\link{lturbo}(100)}
+#' @param mt main title (string)
+#' @param xlines draw vertical lines along the x-axis at these values (default: none)
+#' @param ylines draw horizontal lines along the y-axus at these values (default: none)
+#' @param zlim set range for Z axis (defaults to observed range in Z)
+#' @param win winsorize Z at this percentile, e.g. 0.05
+#'
+#' @return plot is generated in the current graphics device
+#' @export
+#'
+#' @importFrom graphics image abline
+lpointmap <- function(x, y, z,
+                      xlim = range( x , na.rm=T ) , ylim=range( y , na.rm=T ),
+		      xs , ys , 
+                      col = lturbo(100),
+                      mt = "",
+                      zlim = NULL,
+                      win = NULL ) {		       
+  nx <- length(x);ny <- length(y);nz <- length(z)
+  if (nz == 0) stop("no data to plot")
+  if (nz != nx || nz != ny ) stop("x, y and z must be of similar length" )
+  d <- data.frame(x, y, z)
+  if (!is.null(win)) {
+    d$z <- lwin(d$z, win)
+  }
+  if (is.null(zlim)) zlim <- range(d$z,na.rm=T)
+
+  # scale x on xlim: plot from 0 to 1
+  d$x <- ( d$x - xlim[1] ) / ( xlim[2] - xlim[1] )
+  d$y <- ( d$y - ylim[1] ) / ( ylim[2] - ylim[1] )
+
+  # scale/limit z?
+  d$z <- round( 100 * ( d$z - zlim[1] ) / ( zlim[2] - zlim[1] ) )
+  d$z[ d$z < 1 ] <- 1 ; d$z[ d$z > 100 ] <- 100 ; 
+
+  # remove out of scope points
+  d <- d[ d$x >= 0 & d$x <= 1 & d$y >= 0 & d$y <= 1 , ]
+
+  # size of rects
+  xp <- xs / ( xlim[2] - xlim[1] )
+  yp <- ys / ( ylim[2] - ylim[1] )
+  print( head( d ) )
+  
+  # canvas
+  plot( c(0,1), c(0,1) , type="n" , main = mt , xlab="", ylab="", axes=F , xaxs="i", yaxs="i" ) 
+  # draw
+  rect( d$x , d$y , d$x + xp , d$y + yp , col = col[d$z] , border = NA )
+
+}
+
 
 ## --------------------------------------------------------------------------------
 ##
