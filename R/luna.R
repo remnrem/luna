@@ -1623,7 +1623,6 @@ lpointmap <- function(x, y, z,
   # size of rects
   xp <- xs / ( xlim[2] - xlim[1] )
   yp <- ys / ( ylim[2] - ylim[1] )
-  print( head( d ) )
   
   # canvas
   plot( c(0,1), c(0,1) , type="n" , main = mt , xlab="", ylab="", axes=F , xaxs="i", yaxs="i" ) 
