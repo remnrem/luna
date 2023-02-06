@@ -8,7 +8,7 @@
 luna.globals <- new.env()
 
 luna.globals$version <- "v0.27"
-luna.globals$date <- "23-Dec-2022"
+luna.globals$date <- "02-Feb-2023"
 luna.globals$id <- ""
 luna.globals$edf <- ""
 luna.globals$annots <- ""
@@ -2587,6 +2587,34 @@ lpp2 <- function(m) {
 }
 
 
+####################################################
+##                                                ##
+## lsummary.page()                                ##
+##                                                ##
+####################################################
+
+lsummviz <- function( chs , hypno = T , pdf.file = NULL , cols = 1 )
+{
+np <- cols + length( chs )
+rows <- ceiling( np / cols ) 
+
+if ( ! is.null( pdf.file ) )
+pdf( file = pdf.file , width = 12 , height = rows  ) 
+par( mfrow = c( rows , cols ) , mar=c(1.5,3,2,2) )
+if ( hypno ) {
+ k <- leval( "EPOCH align & HYPNO epoch" )
+ for (c in 1:cols) lhypno( k$HYPNO$E$STAGE ) 
+}
+for (ch in chs) {
+ k <- leval( paste( "PSD sig=" , ch , " epoch-spectrum dB max=25 min=0.5" , sep="" ) ) 
+ d <- k$PSD$CH_E_F
+ lheatmap( d$E , d$F , d$PSD , win = 0.05 , mt = ch ) 
+}
+if ( ! is.null( pdf.file ) ) dev.off()
+}
+
+lsummviz( chs=c( "EEG_C3_A2" , "EEG_C4_A1" ) , cols=2 , pdf.file = "p1.pdf" )
+
 
 ##############################################################
 #
@@ -2649,6 +2677,8 @@ lturbo <- function( n = 100 )
 
 }
 
+
+
 #' Generating a plasma palette (based on \code{viridis} package)
 #'
 #' @param n number of colors to return
@@ -2708,4 +2738,6 @@ lplasma <- function( n = 100 )
   plasma.colors( n )
 
 }
+
+
 

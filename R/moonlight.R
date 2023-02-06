@@ -245,7 +245,7 @@ moonlight <- function(sample.list = NULL,
     # Application title
     #
 
-    dashboardHeader(title = "Luna | Moonlight | NAP"),
+    dashboardHeader(title = "Luna | NAP"),
     dashboardSidebar(
       uiOutput("cohort"),
       uiOutput("samplesLocal"),
@@ -847,14 +847,12 @@ moonlight <- function(sample.list = NULL,
       if (opt_nap && input$harmedf) {
         harm.sl <- list()
         harm.sl.edfz <- list()
-
+	
         harm.sl[[input$edfs]]$EDF <- list.files(paste(nap.dir, values$ID, "data/", sep = "/"),
-                                                full.names = T, pattern = "*harm.edf$"
-        )
-
+                                                full.names = T, pattern = paste( values$ID , ".edf$" , sep="" ) )
+        
         harm.sl.edfz[[input$edfs]]$EDF <- list.files(paste(nap.dir, values$ID, "data/", sep = "/"),
-                                                     full.names = T, pattern = "*harm.edf.gz$"
-        )
+                                                     full.names = T, pattern = paste( values$ID , ".edf.gz$" , sep="" ) )
 
         # this gets populated below w/ harm.lst anyway
         harm.sl[[input$edfs]]$ANNOT <- character(0)
@@ -2049,7 +2047,11 @@ print(k)
         req(attached.edf(), values$data$luna_suds_SOAP)
         par(mar = c(1, 1, 1, 1))
         epp <- values$data$luna_suds_SOAP$"luna_suds_SOAP_E"$data[, c("E", "PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W")]
+	#epp[ is.na( epp ) ] <- 0
+	epp$FLAG <- 0 
+print( head( epp ) ) 
         fphyp(epp)
+	lpp(epp)
       })
 
       # stage durations
@@ -2096,7 +2098,9 @@ print(k)
         req(attached.edf(), values$data$luna_suds_POPS)
         par(mar = c(1, 1, 1, 1))
         epp <- values$data$luna_suds_POPS$luna_suds_POPS_E$data[, c("E", "PP_N1", "PP_N2", "PP_N3", "PP_R", "PP_W")]
-        fphyp(epp)
+        epp$FLAG <- 0
+	lpp(epp)
+	#fphyp(epp)
       })
 
 
