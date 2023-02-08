@@ -2613,7 +2613,6 @@ for (ch in chs) {
 if ( ! is.null( pdf.file ) ) dev.off()
 }
 
-lsummviz( chs=c( "EEG_C3_A2" , "EEG_C4_A1" ) , cols=2 , pdf.file = "p1.pdf" )
 
 
 ##############################################################

@@ -22,7 +22,7 @@ mkdir -p ../include
 # TMP
 #mv *.a *.o ../include
 #mv eval.h luna.h cmddefs.h ../include
-# TMP (del these)
+# TMP 
 cp *.a *.o ../include
 cp eval.h luna.h cmddefs.h ../include
 
@@ -31,3 +31,5 @@ cd ../
 ${R_HOME}/bin/Rscript copier.R
 
 rm -rf luna-base
+
+rm -rf luna.so lunaR.o

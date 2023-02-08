@@ -149,7 +149,7 @@ extern "C" {
 
   SEXP Rmoonlock( SEXP s );
   bool moonlock( const std::string & );
-  std::string moonlock_hash;
+
   
   bool R_last_eval_failed;
 
@@ -192,6 +192,11 @@ extern "C" {
   
 }
 
+//
+// misc
+//
+
+std::string moonlock_hash;
 
 //
 // internal helper functions
