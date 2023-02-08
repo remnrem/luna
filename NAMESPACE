@@ -153,6 +153,5 @@ importFrom(utils,tail)
 importFrom(utils,write.table)
 importFrom(wkb,hex2raw)
 importFrom(xtable,xtable)
-exportPattern("^[^\\.]")
-#useDynLib(luna, .registration=TRUE)
-useDynLib(luna)
+useDynLib(luna, .registration=TRUE)
+
