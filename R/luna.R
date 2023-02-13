@@ -1530,7 +1530,8 @@ lheatmap <- function(x, y, z,
                      xlines = NULL, ylines = NULL,
                      zlim = NULL,
                      win = NULL ,
-		     legend = NULL ) {
+		     legend = NULL ,
+		     useRaster = T ) {
   # assumes a square matrix
   z[zero] <- 0
   x <- x[f]
@@ -1549,7 +1550,7 @@ lheatmap <- function(x, y, z,
   if (is.null(zlim)) zlim <- range(d$z,na.rm=T)
 
   m <- matrix(d$z, byrow = T, nrow = ny, ncol = nx)
-  image(t(m[1:ny, ]), col = col, xaxt = "n", yaxt = "n", main = mt, zlim = zlim)
+  image(t(m[1:ny, ]), col = col, xaxt = "n", yaxt = "n", main = mt, zlim = zlim, useRaster=useRaster)
   xr <- range(x)
   yr <- range(y)
   if (!is.null(xlines)) abline(v = ((xlines - xr[1]) / (xr[2] - xr[1])))
