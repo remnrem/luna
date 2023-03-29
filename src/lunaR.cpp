@@ -452,7 +452,15 @@ SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
       delete rdata;
       rdata = NULL;
     }
-  
+
+  //
+  // Clear any flags
+  //
+
+  globals::problem = false;
+
+  globals::empty = false;
+    
   //
   // Basic details about what to attach
   //
