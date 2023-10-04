@@ -7,8 +7,8 @@
 
 luna.globals <- new.env()
 
-luna.globals$version <- "v0.27"
-luna.globals$date <- "02-Feb-2023"
+luna.globals$version <- "v1.00"
+luna.globals$date <- "04-Oct-2023"
 luna.globals$id <- ""
 luna.globals$edf <- ""
 luna.globals$annots <- ""
@@ -154,6 +154,10 @@ lattach <- function(sl, idx = "") {
   }
   ledf(sl[[idx]]$EDF, id, sl[[idx]]$ANNOT)
 }
+
+
+
+
 
 #' Setting variables
 #'
@@ -317,6 +321,34 @@ ledf <- function(edf, id = ".", annots = character(0)) {
   luna.globals$annots <- as.character(annots)
   invisible(1)
 }
+
+
+#' Generates an empty EDF
+#'
+#' @param id an optional ID that will be associated with this EDF
+#' @param rs an optional EDF record size (defaults to 1 second)
+#' @param nr an optional number of records (defaults to 86400, i.e. 24 hours if rs is 1)
+#'
+#' @return No explicit return value
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' > lempty.edf()
+#' . : 0 signals, 0 annotations, of 24:00:00 duration
+#' }
+lempty.edf <- function( id = "." , rs = 1 , nr = 86400 )
+{
+  .Call("Rempty_edf", as.character(id), as.integer(rs), as.integer(nr), PACKAGE = "luna")
+  lflush()
+  lstat()
+  luna.globals$edf <- ""
+  luna.globals$id <- as.character(id)
+  luna.globals$annots <- ""
+  invisible(1)
+}
+
+
 
 #' Reports on the in-memory EDF
 #'
@@ -1998,8 +2030,8 @@ ldefault.coh.xy <- function(xy) {
 #' @importFrom geosphere gcIntermediate
 #' @importFrom graphics lines
 farc <- function(c1, c2, kol, w = 4) {
-  gc <- gcIntermediate(as.vector(luna.globals$xy.coh[luna.globals$xy.coh$CH == c1, c("X", "Y")]),
-    as.vector(luna.globals$xy.coh[luna.globals$xy.coh$CH == c2, c("X", "Y")]),
+  gc <- gcIntermediate(unlist(luna.globals$xy.coh[luna.globals$xy.coh$CH == c1, c("X", "Y")]),
+                       unlist(luna.globals$xy.coh[luna.globals$xy.coh$CH == c2, c("X", "Y")]),
     breakAtDateLine = TRUE, n = 100
   )
   lines(gc, lwd = w + 1, col = "black")
@@ -2010,8 +2042,8 @@ farc <- function(c1, c2, kol, w = 4) {
 #' @importFrom geosphere gcIntermediate
 #' @importFrom graphics segments
 farc.signed <- function(c1, c2, k1, k2, w = 4) {
-  gc <- gcIntermediate(as.vector(luna.globals$xy.coh[luna.globals$xy.coh$CH == c1, c("X", "Y")]),
-    as.vector(luna.globals$xy.coh[luna.globals$xy.coh$CH == c2, c("X", "Y")]),
+  gc <- gcIntermediate(unlist(luna.globals$xy.coh[luna.globals$xy.coh$CH == c1, c("X", "Y")]),
+                       unlist(luna.globals$xy.coh[luna.globals$xy.coh$CH == c2, c("X", "Y")]),
     breakAtDateLine = TRUE,
     n = 100
   )

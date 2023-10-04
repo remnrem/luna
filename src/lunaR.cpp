@@ -434,7 +434,74 @@ SEXP Rlogmode( SEXP i )
   return( R_NilValue );
 }
 
+//
+// make an empty EDF
+//
 
+SEXP Rempty_edf( SEXP id , SEXP rs_ , SEXP nr_ )
+{
+
+  //
+  // Is any existing EDF attached?
+  //
+
+  if ( rdata != NULL )
+    {
+      delete rdata;
+      rdata = NULL;
+    }
+
+  //
+  // Clear any flags
+  //
+  
+  globals::problem = false;
+  globals::empty = false;
+
+  //
+  // Parse
+  //
+
+  std::vector<int> m1 = Rluna_to_intvector(nr_);
+  std::vector<int> m2 = Rluna_to_intvector(rs_);
+  std::string edf_id  = CHAR( STRING_ELT( id , 0 ) );
+
+  
+  if ( m1.size() != 1 || m2.size() != 1 )
+    {
+      unprotect();
+      Helper::halt( "arguments to Rempty_edf(): nr, rs" );
+    }
+  
+  const int nr = m1[0];
+  const int rs = m2[0];
+
+  const std::string startdate = "01.01.85";
+  const std::string starttime = "00.00.00";
+
+  //
+  // attach actual EDF
+  //
+
+  rdata = new Rdata_t;
+  
+  const bool okay = rdata->edf.init_empty( edf_id , nr , rs , startdate , starttime );
+
+  if ( ! okay ) 
+    {
+      unprotect();
+      Helper::halt( "problem creating an empty EDF" );
+    }
+  
+  // define channel types
+  cmd_t::define_channel_type_variables( rdata->edf );
+  
+  unprotect();
+  return(R_NilValue);
+
+}
+
+		
 
 //
 // attach an EDF

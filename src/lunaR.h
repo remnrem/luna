@@ -48,6 +48,10 @@ extern "C" {
   
   SEXP Rattach_edf( SEXP x , SEXP y , SEXP z );
 
+  // make an empty EDF
+
+  SEXP Rempty_edf( SEXP id , SEXP rs , SEXP nr );
+  
   // add an annotation file (i.e. after attaching the EDF)
   
   void Radd_annot( SEXP a );

@@ -1,5 +1,5 @@
 Package: luna
-Version: 0.27
+Version: 1.00
 Title: Analysis of Sleep Signal Data
 Authors@R: 
     c(
