@@ -388,11 +388,14 @@ SEXP R_filter( SEXP x , SEXP Rsr, SEXP Rlwr , SEXP Rupr , SEXP Rtw , SEXP Rrippl
   const double upr = Rf_asReal( Rupr );
   const double tw = Rf_asReal( Rtw );
   const double ripple = Rf_asReal( Rripple );
+
+  const std::vector<double> tw1(1,tw);
+  const std::vector<double> ripple1(1,ripple);
   
   d  = dsptools::apply_fir( d , sr ,
 			    fir_t::BAND_PASS ,
 			    1, // kaiser 
-			    ripple , tw , lwr , upr );
+			    ripple1 , tw1 , lwr , upr );
   
   SEXP retval;
   PROTECT( retval = Rmake_dblvector( d ) );
