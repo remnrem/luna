@@ -328,6 +328,8 @@ ledf <- function(edf, id = ".", annots = character(0)) {
 #' @param id an optional ID that will be associated with this EDF
 #' @param rs an optional EDF record size (defaults to 1 second)
 #' @param nr an optional number of records (defaults to 86400, i.e. 24 hours if rs is 1)
+#' @param date an optional EDF start date format dd.mm.yy (default 01.01.85)
+#' @param start an optional EDF start time format hh:mm:ss (default 00:00:00)
 #'
 #' @return No explicit return value
 #' @export
@@ -337,9 +339,9 @@ ledf <- function(edf, id = ".", annots = character(0)) {
 #' > lempty.edf()
 #' . : 0 signals, 0 annotations, of 24:00:00 duration
 #' }
-lempty.edf <- function( id = "." , rs = 1 , nr = 86400 )
+lempty.edf <- function( id = "." , rs = 1 , nr = 86400 , date = "01.01.85" , start = "00:00:00" )
 {
-  .Call("Rempty_edf", as.character(id), as.integer(rs), as.integer(nr), PACKAGE = "luna")
+  .Call("Rempty_edf", as.character(id), as.integer(rs), as.integer(nr), as.character(date), as.character(start), PACKAGE = "luna")
   lflush()
   lstat()
   luna.globals$edf <- ""

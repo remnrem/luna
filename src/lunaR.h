@@ -50,7 +50,7 @@ extern "C" {
 
   // make an empty EDF
 
-  SEXP Rempty_edf( SEXP id , SEXP rs , SEXP nr );
+  SEXP Rempty_edf( SEXP id , SEXP rs , SEXP nr , SEXP edfdate , SEXP edftime );
   
   // add an annotation file (i.e. after attaching the EDF)
   

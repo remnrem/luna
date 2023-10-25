@@ -438,7 +438,7 @@ SEXP Rlogmode( SEXP i )
 // make an empty EDF
 //
 
-SEXP Rempty_edf( SEXP id , SEXP rs_ , SEXP nr_ )
+SEXP Rempty_edf( SEXP id , SEXP rs_ , SEXP nr_ , SEXP startdate , SEXP starttime )
 {
 
   //
@@ -465,6 +465,8 @@ SEXP Rempty_edf( SEXP id , SEXP rs_ , SEXP nr_ )
   std::vector<int> m1 = Rluna_to_intvector(nr_);
   std::vector<int> m2 = Rluna_to_intvector(rs_);
   std::string edf_id  = CHAR( STRING_ELT( id , 0 ) );
+  std::string edf_date = CHAR( STRING_ELT( startdate , 0 ) );
+  std::string edf_time = CHAR( STRING_ELT( starttime , 0 ) );
 
   
   if ( m1.size() != 1 || m2.size() != 1 )
@@ -476,16 +478,13 @@ SEXP Rempty_edf( SEXP id , SEXP rs_ , SEXP nr_ )
   const int nr = m1[0];
   const int rs = m2[0];
 
-  const std::string startdate = "01.01.85";
-  const std::string starttime = "00.00.00";
-
   //
   // attach actual EDF
   //
 
   rdata = new Rdata_t;
   
-  const bool okay = rdata->edf.init_empty( edf_id , nr , rs , startdate , starttime );
+  const bool okay = rdata->edf.init_empty( edf_id , nr , rs , edf_date , edf_time );
 
   if ( ! okay ) 
     {
