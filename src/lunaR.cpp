@@ -2222,7 +2222,7 @@ SEXP Rout_list( retval_t & r )
 	  //
 	  
 	  
-	  std::set<retval_indiv_strata_t> rows;
+	  std::set<Rretval_indiv_strata_t> rows;
 	  
 	  std::map<retval_var_t,
 	    std::map<retval_strata_t,
@@ -2244,7 +2244,7 @@ SEXP Rout_list( retval_t & r )
 		  std::map<retval_indiv_t,retval_value_t>::iterator ii = ss->second.begin();
 		  while ( ii != ss->second.end() )
 		    {
-		      rows.insert( retval_indiv_strata_t( ii->first , s )  );
+		      rows.insert( Rretval_indiv_strata_t( ii->first , s )  );
 		      ++ii;
 		    }
 		      
@@ -2311,7 +2311,7 @@ SEXP Rout_list( retval_t & r )
 	  // populate w/ IDs
 	  // consider all indiv/factor/level rows
 	  int r_cnt = 0;
-	  std::set<retval_indiv_strata_t>::iterator rr =  rows.begin();
+	  std::set<Rretval_indiv_strata_t>::iterator rr =  rows.begin();
 	  while ( rr != rows.end() )
 	    {	      
 	      retval_indiv_t indiv = rr->indiv;
@@ -2362,7 +2362,7 @@ SEXP Rout_list( retval_t & r )
 	      
 	      // consider all indiv/factor/level rows
 	      int r_cnt = 0;
-	      std::set<retval_indiv_strata_t>::iterator rr =  rows.begin();
+	      std::set<Rretval_indiv_strata_t>::iterator rr =  rows.begin();
 	      while ( rr != rows.end() )
 		{
 		  
@@ -2457,7 +2457,7 @@ SEXP Rout_list( retval_t & r )
 
 	      int r_cnt = 0;
 
-	      std::set<retval_indiv_strata_t>::iterator rr =  rows.begin();
+	      std::set<Rretval_indiv_strata_t>::iterator rr =  rows.begin();
 	      while ( rr != rows.end() )
 		{
 		  

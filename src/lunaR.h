@@ -273,12 +273,12 @@ std::string Rversion();
 // Assist struct
 //
 
-struct retval_indiv_strata_t { 
-retval_indiv_strata_t( const retval_indiv_t & indiv , const retval_strata_t & strata ) 
+struct Rretval_indiv_strata_t { 
+Rretval_indiv_strata_t( const retval_indiv_t & indiv , const retval_strata_t & strata ) 
 : indiv(indiv) , strata(strata) { } 
   retval_indiv_t indiv;
   retval_strata_t strata;
-  bool operator<( const retval_indiv_strata_t & rhs ) const 
+  bool operator<( const Rretval_indiv_strata_t & rhs ) const 
   {
     // needs strata-first ordering to match the below
     // can change this potentially
