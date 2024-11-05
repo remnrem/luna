@@ -95,7 +95,7 @@ void R_init_luna(DllInfo *info)
   msg += globals::date;
   msg += "\n";
   
-  Rprintf( msg.c_str() );
+  Rprintf( "%s", msg.c_str() );
 }
 
 
@@ -224,7 +224,7 @@ SEXP Rstat()
   
   ss << "\n";
 
-  Rprintf( ss.str().c_str() );
+  Rprintf( "%s", ss.str().c_str() );
   
   return( R_NilValue );
 
@@ -773,9 +773,9 @@ void Rset_var( SEXP x , SEXP y)
   for (int i=0;i<tok0.size();i++)
     {
       Rprintf( "setting [" );
-      Rprintf( tok0[i].c_str() );
+      Rprintf( "%s", tok0[i].c_str() );
       Rprintf( "] to [" );
-      Rprintf( tok1[i].c_str() );
+      Rprintf( "%s", tok1[i].c_str() );
       Rprintf( "]\n" );
 
       // special treatment for `sig`.   This will just append 
@@ -1073,7 +1073,7 @@ SEXP Rdb2retval( SEXP x , SEXP y )
   
   std::string msg = "read data on " + Helper::int2str( (int)ids.size() ) + " individuals\n";
   
-  Rprintf( msg.c_str() );
+  Rprintf( "%s", msg.c_str() );
   
   //
   // convert retval_t to R list and return 
@@ -1791,7 +1791,7 @@ SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP byannot , SEXP w, SEXP rho )
 	      // progress report
 	      ++cnt;
 	  
-	      if ( cnt % 40 == 0 ) Rprintf( (". " + Helper::int2str(cnt)+" epochs\n").c_str() );       
+	      if ( cnt % 40 == 0 ) Rprintf( "%s", (". " + Helper::int2str(cnt)+" epochs\n").c_str() );
 	      else Rprintf( "." );
 	      
 	      // check for user interupt as this may be long-running...
@@ -1822,7 +1822,7 @@ SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP byannot , SEXP w, SEXP rho )
 	      
 	    }
 	  
-	  Rprintf( (" "+Helper::int2str(cnt)+ " intervals, done\n").c_str() );
+	  Rprintf( "%s", (" "+Helper::int2str(cnt)+ " intervals, done\n").c_str() );
 	  
 	}
       
@@ -1846,7 +1846,7 @@ SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP byannot , SEXP w, SEXP rho )
 	  
 	  ++cnt;
 	  
-	  if ( cnt % 40 == 0 ) Rprintf( (". " + Helper::int2str(cnt)+" epochs\n").c_str() );       
+	  if ( cnt % 40 == 0 ) Rprintf( "%s", (". " + Helper::int2str(cnt)+" epochs\n").c_str() );
 	  else Rprintf( "." );
 	  
 	  // check for user interupt as this may be long-running...
@@ -1875,7 +1875,7 @@ SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP byannot , SEXP w, SEXP rho )
 	  
 	}
       
-      Rprintf( (" "+Helper::int2str(cnt)+ " epochs, done\n").c_str() );
+      Rprintf( "%s", (" "+Helper::int2str(cnt)+ " epochs, done\n").c_str() );
 
     }
 
@@ -2012,7 +2012,7 @@ SEXP Rmake_intvector( const std::vector<int> & r )
 
 void Rflush_log()
 {
-  Rprintf( logger.print_buffer().c_str() );
+  Rprintf( "%s", logger.print_buffer().c_str() );
 }
 
 
@@ -2020,14 +2020,14 @@ void Rflush_log()
 void R_error( const std::string & s )
 {
   // this means we are bailing, so unprotect resources
-  Rf_error( s.c_str() ) ; 
+  Rf_error( "%s", s.c_str() ) ;
   unprotect();
 } 
 
 
 void R_warning( const std::string & s )
 {
-  Rf_warning( s.c_str() ) ; 
+  Rf_warning( "%s", s.c_str() ) ;
 } 
 
 
