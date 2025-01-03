@@ -249,7 +249,7 @@ void R_bail_function( const std::string & msg )
 
 void R_moonlight_bail_function( const std::string & msg )
 {
-  Rprintf( ("moonlight-error: " + msg + "\n" ).c_str() );
+  Rprintf( "%s", ("moonlight-error: " + msg + "\n" ).c_str() );
   R_last_eval_failed = true;
   R_last_eval_errmsg = msg;
   return;
@@ -257,7 +257,7 @@ void R_moonlight_bail_function( const std::string & msg )
 
 void R_message_function( const std::string & msg )
 {
-  Rprintf( msg.c_str() );
+  Rprintf( "%s", msg.c_str() );
   return;
 }
 
