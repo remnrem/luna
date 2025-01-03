@@ -202,11 +202,11 @@ SEXP Rstat()
   std::stringstream ss;
   
   int n_data_channels = 0;
-  int n_annot_channels = 0;
+  //  int n_annot_channels = 0;
   for (int i=0;i<rdata->edf.header.ns;i++) 
     {
       if ( rdata->edf.header.is_data_channel( i ) ) ++n_data_channels;
-      else ++n_annot_channels;
+      //     else ++n_annot_channels;
     }
 
   ss << rdata->edf.id << " : "

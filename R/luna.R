@@ -7,13 +7,13 @@
 
 luna.globals <- new.env()
 
-luna.globals$version <- "v1.00"
-luna.globals$date <- "04-Oct-2023"
+luna.globals$version <- "v1.2.0"
+luna.globals$date <- "03-Jan-2025"
 luna.globals$id <- ""
 luna.globals$edf <- ""
 luna.globals$annots <- ""
 luna.globals$logmode <- 0
-
+luna.globals$user_xy <- F
 
 ####################################################
 ##                                                ##
@@ -1695,8 +1695,23 @@ lremap.chs <- function(chs) {
 #' - Label matching is case-insenstive;
 #' - Currently, coordinates are only specified for standard 64-channel montages;
 #' - This function is primarily used internally by other luna plotting functions;
+#' - If user set by lset.xy(), just returns those instead
+
 ldefault.xy <- function(chs = character(0)) {
-  chlab <- c(
+
+# use user-defined set?
+
+if ( luna.globals$user_xy )
+{
+  if (length(chs) == 0) {
+    return(luna.globals$xy )
+  }
+  return( luna.globals$xy[ luna.globals$xy$CH %in% toupper(chs), ] )
+}
+
+# use, build something sensible (for 64-chs)
+
+chlab <- c(
     "Fp1", "AF7", "AF3", "F1",  "F3",  "F5",  "F7",  "FT7", "FC5", "FC3", "FC1", "C1",
     "C3",  "C5",  "T7",  "TP7", "CP5", "CP3", "CP1", "P1",  "P3",  "P5",  "P7",  "P9",
     "PO7", "PO3", "O1",  "Iz",  "Oz",  "POz", "Pz",  "CPz", "Fpz", "Fp2", "AF8", "AF4",
@@ -1739,6 +1754,36 @@ ldefault.xy <- function(chs = character(0)) {
   chxy <- chxy[chxy$CH %in% toupper(chs), ]
   return(chxy)
 }
+
+## --------------------------------------------------------------------------------
+##
+## Set EEG X/Y co-ords
+##
+## --------------------------------------------------------------------------------
+
+
+#' Pass a data frame with arbitrary 2D plot coords for EEG positions
+#'
+#' @param d a data frame with required columns CH, X and Y
+#'
+#' @return a data frame of channel, X and Y co-ordiantes (CH, X and Y);  if the
+#' @export
+#'
+#' @note
+#' - Label matching is case-insenstive;
+
+lset.xy <- function( d ) { 
+
+cols <- names(d)
+if ( length(cols) != 3 || cols[1] != "CH" || cols[2] != "X" || cols[3] != "Y" )
+ stop( "requires CH X Y" )
+
+luna.globals$xy <- d
+
+luna.globals$user_xy = T 
+
+}
+
 
 
 ## --------------------------------------------------------------------------------
@@ -1866,6 +1911,112 @@ ltopo.xy <- function(c, x, y, z = NA, zlim = NA,
     }
   }
 }
+
+## --------------------------------------------------------------------------------
+##
+## larrow
+##
+## --------------------------------------------------------------------------------
+
+# z   : sets line orientation and thickness
+# z2  : sets line color (default == z), e.g. to reflect C/C differences it can be set separately
+
+# zr  : optional range for z
+# z2r : optional range for z2
+# flt : optional filter of points 
+# dst : only show connections that are local (i.e. < dst threshold )
+
+larrow <- function(chs1, chs2, z, flt = NULL, zr = NULL , z2 = NULL , z2r = NULL , cex = 2, title = "", head = T , dst = 0.35 , lwd1 = 0.5,  lwd2 = 2 , directional = F )
+{
+    # directional (instead of z2)
+    if ( directional & ! is.null( z2 ) ) stop( "cannot specify both directional and z2" )
+
+    # z  : sets line orientation and thickness
+    # z2 : sets line color (default == z) ; to reflect C/C differences can be set separately 
+    has.z2 <- ! is.null( z2 ) 
+    if ( is.null( z2 ) ) z2 <- z
+
+
+    if ( is.null( flt ) ) flt <- rep(T,length(z))
+    chs1 <- lremap.chs(chs1); chs2 <- lremap.chs(chs2)
+    xy   <- ldefault.xy(unique(c(chs1, chs2)))
+
+    conns <- character()
+    for (c1 in unique( chs1[ ! is.na( chs1 ) ] ) )
+    for (c2 in unique( chs2[ ! is.na( chs2 ) ] ) )	
+     {
+      d <- sqrt( ( xy$X[ xy$CH == c1 ] - xy$X[ xy$CH == c2 ] )^2 + ( xy$Y[ xy$CH == c1 ] - xy$Y[ xy$CH == c2 ] )^2  )
+      if ( d < dst ) conns <- c( conns , toupper( paste( c1, c2 ) ) , toupper( paste( c2 , c1 ) ) )
+     }
+     if ( length(conns) == 0 ) return(0)
+    inc <- toupper( paste( chs1 , chs2 ) ) %in% conns
+    chs1 <- chs1[inc];     chs2 <- chs2[inc]
+    z <- z[inc] ; z2 <- z2[inc]; flt <- flt[inc]
+
+    # assume double-entered, only plot positives (for Z); but may keep z2 as negative
+    flt[ z < 0 ] <- F
+    chs1 <- chs1[flt]; chs2 <- chs2[flt]; z <- z[flt]; z2 <- z2[flt ]
+    if ( length(chs1) == 0 ) return
+    if ( is.null( zr ) ) zr <- range(z)
+    if ( is.null( z2r ) ) z2r <- range(z2)
+    if ( has.z2 ) z2r <- c( -1 * max(abs(z2r)) , max(abs(z2r)) )
+   
+    oz <- order(abs(z))
+    chs1 <- chs1[oz];     chs2 <- chs2[oz]
+    z <- z[oz] ; z2 <- z2[oz] ; 
+    if (length(chs1) != length(z))  stop("bad inputs to ltopo.conn()")
+
+    xy.coh <- xy
+    z <- round(100 * (z - zr[1])/(zr[2] - zr[1]))
+    z[z == 0] <- 1;    z[z > 100] <- 100
+    z2 <- round(100 * (z2 - z2r[1])/(z2r[2] - z2r[1]))
+    z2[z2 == 0] <- 1;    z2[z2 > 100] <- 100
+
+    rbpal <- grDevices::colorRampPalette(c("gray", "orange", "red"))(100)
+    if ( has.z2 ) rbpal <- grDevices::colorRampPalette(c("navy", "blue", "lightblue", "gray", "pink", "red", "darkred"))(100)
+
+    dirpalD1 <- grDevices::colorRampPalette(c("lightblue","blue","navy"))(100)
+    dirpalD2 <- grDevices::colorRampPalette(c("pink", "red", "darkred"))(100)
+    dirpalEQL <- grDevices::colorRampPalette(c("gray", "black"))(100)
+
+    plot(xy.coh$X, xy.coh$Y, pch = 21, cex = cex, main = title,
+        lwd = 0.5, bg = NA, col = "gray", axes = F, xaxt = "n",
+        yaxt = "n", xlab = "", ylab = "", ylim = c(-0.55, 0.55), xlim = c(-0.55, 0.55))
+
+    for (j in 1:length(chs1)) {
+       p1 <- unlist( xy.coh[ xy.coh$CH == chs1[j] , c( "X","Y" ) ] )
+       p2 <- unlist( xy.coh[ xy.coh$CH == chs2[j] , c( "X","Y" ) ] )
+       if ( ! is.na( p1[1] ) ) { 
+        px <- fshorten( p1[1],p1[2],p2[1],p2[2],p=0.4)
+
+        if ( directional ) {
+
+          if ( p1[2] > p2[2] ) {
+           arrows( px[1], px[2] , px[3] , px[4] , col = dirpalD1[z2[j]] ,  length = 0.08, angle = 10 , lwd=lwd1+lwd2*(z[j]/100) )
+	  } else {           
+            if ( p1[2] == p2[2] ) { 
+              arrows( px[1], px[2] , px[3] , px[4] , col = dirpalEQL[z2[j]] ,  length = 0.08, angle = 10 , lwd=lwd1+lwd2*(z[j]/100) )
+	     } else {
+              arrows( px[1], px[2] , px[3] , px[4] , col = dirpalD2[z2[j]] ,  length = 0.08, angle = 10 , lwd=lwd1+lwd2*(z[j]/100) )
+             }
+	  }
+         } else {	           
+           arrows( px[1], px[2] , px[3] , px[4] , col = rbpal[z2[j]] ,  length = 0.08, angle = 10 , lwd=lwd1+lwd2*(z[j]/100) )
+         }
+      }
+     }
+
+    points(xy.coh$X, xy.coh$Y, pch = 21, cex = cex, lwd = 0.5, bg = NA, col = "gray")
+    if (head) {
+        draw.ellipse(0, 0, 0.5, 0.5, lwd = 0.75, border = "darkgray")
+        lines(c(0,  -0.05), c(0.55, 0.5), lwd = 0.75, col = "darkgray")
+        lines(c(0,   0.05), c(0.55, 0.5), lwd = 0.75, col = "darkgray")
+    }
+ cat( length(chs1) , "pairs, range" , zr , "\n" )
+
+}
+
+
 
 
 ## --------------------------------------------------------------------------------

@@ -6,3 +6,4 @@ PKG_LIBS=include/libluna.a -L$(FFTW)/lib/ -lfftw3 ${EXTRA_PKG_LIBS}
 # redundant
 #PKG_CPPFLAGS=-I./include/ `pkg-config --cflags fftw3`
 #PKG_LIBS=include/libluna.a `pkg-config --libs fftw3`
+#PKG_LIBS=include/libluna.a -L$(FFTW)/lib/ -L${LGBM_PATH} -lfftw3 -l_lightgbm
