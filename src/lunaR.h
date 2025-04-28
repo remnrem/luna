@@ -213,8 +213,12 @@ std::vector<double> Rluna_to_dblvector( SEXP );
 
 
 struct Rdata_t {
-    
+
+  Rdata_t() : edf( &annotations ) { } 
+  
   edf_t edf;
+
+  annotation_set_t annotations;
 
   std::string id;
 

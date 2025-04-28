@@ -212,7 +212,7 @@ SEXP Rstat()
   ss << rdata->edf.id << " : "
      << n_data_channels << " (of " << rdata->edf.header.ns_all <<  ") signals, ";
   //  if ( n_annot_channels ) ss << n_annot_channels << " EDF annotations, ";
-  ss   << rdata->edf.timeline.annotations.names().size() << " annotations, "
+  ss   << rdata->edf.annotations->names().size() << " annotations, "
        << Helper::timestring( duration_tp ) << " duration";
   
   if ( rdata->edf.timeline.epoched() )
@@ -571,9 +571,9 @@ SEXP Rattach_edf( SEXP x , SEXP id , SEXP ann )
       // must read if EDF+D (but only the time-track will be taken in)
       // if EDF+C, then look at 'skip-edf-annots' flag      
       if ( rdata->edf.header.continuous && ! globals::skip_edf_annots )
-	rdata->edf.timeline.annotations.from_EDF( rdata->edf , rdata->edf.edfz_ptr() );
+	rdata->edf.annotations->from_EDF( rdata->edf , rdata->edf.edfz_ptr() );
       else if ( ! rdata->edf.header.continuous )
-	rdata->edf.timeline.annotations.from_EDF( rdata->edf , rdata->edf.edfz_ptr() );
+	rdata->edf.annotations->from_EDF( rdata->edf , rdata->edf.edfz_ptr() );
     }
   
   // attach other file-based annotations
@@ -627,7 +627,7 @@ void Radd_annot_fromR( SEXP name , SEXP a )
   
   // fine with annot_label already exists, this will append new intervals
 
-  annot_t * annot = rdata->edf.timeline.annotations.add( annot_label );
+  annot_t * annot = rdata->edf.annotations->add( annot_label );
   
   if ( annot->description == "" ) 
     annot->description = annot_label;
@@ -1144,7 +1144,7 @@ SEXP Rmatrix_epochs( SEXP e , SEXP ch , SEXP ann )
   
   for (int i=0;i<a.size();i++)
     {
-      if ( rdata->edf.timeline.annotations( a[i] ) != NULL ) // is this an interval annotation? 
+      if ( rdata->edf.annotations->find( a[i] ) != NULL ) // is this an interval annotation? 
 	atype[ a[i] ] = 1;
       else if ( rdata->edf.timeline.epoch_annotation( a[i] ) ) // or an epoch-annotation?
 	atype[ a[i] ] = 2;
@@ -1256,7 +1256,7 @@ SEXP Rmatrix_intervals( SEXP Rints , SEXP ch , SEXP ann  )
   
   for (int i=0;i<a.size();i++)
     {
-      if ( rdata->edf.timeline.annotations( a[i] ) != NULL ) // is this an interval annotation? 
+      if ( rdata->edf.annotations->find( a[i] ) != NULL ) // is this an interval annotation? 
 	atype[ a[i] ] = 1;
       else if ( rdata->edf.timeline.epoch_annotation( a[i] ) ) // or an epoch-annotation?
 	atype[ a[i] ] = 2;
@@ -1375,7 +1375,7 @@ SEXP Rmask( SEXP ann )
   
   for (int a=0;a<annots.size();a++)
     {
-      if ( rdata->edf.timeline.annotations( annots[a] ) != NULL ) // is this an interval annotation? 
+      if ( rdata->edf.annotations->find( annots[a] ) != NULL ) // is this an interval annotation? 
 	atype[ annots[a] ] = 1; 
       else if ( rdata->edf.timeline.epoch_annotation( annots[a] ) ) // or an epoch-annotation?
 	atype[ annots[a] ] = 2; 
@@ -1528,7 +1528,7 @@ SEXP Rmask( SEXP ann )
 	  
 	  if ( aa->second == 1 ) 
 	    {		  
-	      annot_t * annot = rdata->edf.timeline.annotations( aa->first );
+	      annot_t * annot = rdata->edf.annotations->find( aa->first );
 	      annot_map_t events = annot->extract( interval );
 	      bool has_annot = events.size() ;
 	      INTEGER( col_annots[acnt] )[ ee ] = ( has_annot ? 1 : 0 ) ;
@@ -1624,7 +1624,7 @@ SEXP Rannots()
     }
   
   SEXP retval;
-  PROTECT( retval = Rmake_strvector( rdata->edf.timeline.annotations.names() ) );
+  PROTECT( retval = Rmake_strvector( rdata->edf.annotations->names() ) );
   protect();
 
   //
@@ -1741,7 +1741,7 @@ SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP byannot , SEXP w, SEXP rho )
   
   for (int i=0;i<a.size();i++)
     {
-      if ( rdata->edf.timeline.annotations( a[i] ) != NULL ) // is this an interval annotation? 
+      if ( rdata->edf.annotations->find( a[i] ) != NULL ) // is this an interval annotation? 
 	atype[ a[i] ] = 1;
       else if ( rdata->edf.timeline.epoch_annotation( a[i] ) ) // or an epoch-annotation?
 	atype[ a[i] ] = 2;
@@ -1766,7 +1766,7 @@ SEXP Riterate( SEXP fn , SEXP ch , SEXP ann , SEXP byannot , SEXP w, SEXP rho )
       // get annotations
       //
       
-      annot_t * annot = rdata->edf.timeline.annotations.find( annot_class );
+      annot_t * annot = rdata->edf.annotations->find( annot_class );
       
       int na = 0;
   
@@ -1907,7 +1907,7 @@ SEXP Rannot( SEXP ann )
   // get annotations
   //
 
-  annot_t * annot = rdata->edf.timeline.annotations.find( annot_class );
+  annot_t * annot = rdata->edf.annotations->find( annot_class );
 
   int na = 0;
   
@@ -2876,7 +2876,7 @@ SEXP Rmatrix_internal( const std::vector<interval_t> & intervals ,
 			{
 			  // get exact point      
 			  interval_t interval2 = interval_t( (*tp)[r] , (*tp)[r] + 1LLU );
-			  annot_t * annot = rdata->edf.timeline.annotations( aa->first );
+			  annot_t * annot = rdata->edf.annotations->find( aa->first );
 			  annot_map_t events = annot->extract( interval2 );
 			  bool has_annot = events.size() ;
 			  INTEGER(annot_col[a_col])[row] = (int)(has_annot ? 1 : 0 );
